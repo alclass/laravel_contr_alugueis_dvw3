@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 import datetime
 
+def get_corr_monet_percent_for_month_year(month_year=None):
+  return 0.38
+
+
 class User:
 
   def __init__(self, name, cpf, address):
@@ -58,109 +62,6 @@ class RentContract:
     tamanho_m2 = %(m2_tamanho_m2)s
     '''
     return outstr
-
-
-def generate_month_sequence(month_year, up_til_date):
-  pass
-
-class MoraQuinhao(dict):
-  '''
-  This class is planned to use 4 attributes, they are:
-  1) the rubrica type (either multa, or juros or corr_monet)
-  2) the percentual to be applied on the rubrica
-  3) the original (or base) value to which the percentual will be applied
-  4) [dynamic] the component amount that results from the percentual on the base value
-  '''
-
-  RUBRICA_MULTA_CONTR = 1
-  RUBRICA_JUROS_AM    = 2
-  RUBRICA_CORR_MONET  = 3
-
-  KEYS = ['rubrica', 'basevalue', 'percentual', 'fixed_amount']
-
-  def __setitem__(self, key, value):
-    if key in MoraQuinhao.KEYS:
-      if key == 'rubrica':
-        self.check_rubrica_validity(value)
-      return dict.__setitem__(key, value)
-    else:
-      raise KeyError('key %s is not in %s' %(str(key), str(MoraQuinhao.KEYS)))
-
-  @property
-  def basevalue(self):
-    try:
-      return self['percentual']
-    except KeyError:
-      pass
-    return None
-
-  @property
-  def percentual(self):
-    try:
-      return self['percentual']
-    except KeyError:
-      pass
-    return None
-
-  @property
-  def fixed_amount(self):
-    try:
-      return self['fixed_amount']
-    except KeyError:
-      pass
-    return None
-
-  @property
-  def valor_componente_da_rubrica(self):
-    fixed_amount = self.fixed_amount
-    if fixed_amount is not None:
-      return fixed_amount
-    basevalue  = self.basevalue
-    if basevalue is None:
-      return None
-    percentual = self.percentual
-    if percentual is None:
-      return None
-    return basevalue * percentual
-
-  def check_rubrica_validity(self, rubrica):
-    if rubrica not in MoraQuinhao.rubricas_list():
-      raise ValueError('Rubrica not in QuinhaoList = %s' %str(MoraQuinhao.rubricas_list()))
-
-  @classmethod
-  def rubricas_list(cls):
-    return [MoraQuinhao.RUBRICA_MULTA_CONTR, MoraQuinhao.RUBRICA_CORR_MONET, MoraQuinhao.RUBRICA_JUROS_AM]
-
-  def get_rubrica_by_name(self):
-    if self.rubrica == MoraQuinhao.RUBRICA_JUROS_AM:
-      return 'juros a.m.'
-    elif self.rubrica == MoraQuinhao.RUBRICA_CORR_MONET:
-      return 'correção monetária'
-    elif self.rubrica == MoraQuinhao.RUBRICA_MULTA_CONTR:
-      return 'multa contratual'
-    return 'componente'
-
-  def __str__(self):
-    outstr = '''Quinhão:
-    Rubrica : %(rubrica_name)s
-    ''' %({'rubrica_name':self.get_rubrica_by_name()})
-    if self.fixed_amount is not None:
-      outstr += ''' ==============
-      Valor Aplic.: %(fixed_amount)s
-      ''' %({'fixed_amount':str(self.fixed_amount)})
-      return outstr
-    outstr += ''' ==============
-    Valor Base: %(basevalue)s
-    Percentual: %(percentual)s
-    ''' %({'basevalue':str(self.basevalue), 'percentual':str(self.percentual)})
-    return outstr
-
-def adhost_test():
-  mora_quinhao = MoraQuinhao()
-  mora_quinhao['rubrica', MoraQuinhao.RUBRICA_MULTA_CONTR]
-  mora_quinhao['basevalue', 1000]
-  mora_quinhao['percentual', 0.10]
-  print (mora_quinhao)
 
 
 if __name__ == '__main__':

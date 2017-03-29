@@ -1,5 +1,21 @@
 #!/usr/bin/env python3
-from cobranca_calculus import MoraMonthly
+#from cobranca_calculus import MoraMonthly
+
+class Klass:
+
+  cte = 10
+
+  @staticmethod
+  def meth():
+    return __class__.cte
+
+print ('test Klass.meth() = ', Klass.meth())
+
+class SetterTest:
+
+
+
+
 
 # test data
 ref_month_year_orig_oblig = 0
@@ -9,14 +25,14 @@ multa_percent = 0.10
 juros_am_percent = 10
 bool_aplicar_corr_monet = True
 
-mora = MoraMonthly(
-  ref_month_year_orig_oblig = 0,
-  valor_orig = 1000,
-  data_para_atualizar_a_obrig = 3,  # an integer for the time being
-  multa_percent = 0.10,
-  juros_am_percent = 10,
-  bool_aplicar_corr_monet = True,
-)
+# mora = MoraMonthly(
+#   ref_month_year_orig_oblig = 0,
+#   valor_orig = 1000,
+#   data_para_atualizar_a_obrig = 3,  # an integer for the time being
+#   multa_percent = 0.10,
+#   juros_am_percent = 10,
+#   bool_aplicar_corr_monet = True,
+# )
 
-output = mora.report_mora()
-print (output)
+# output = mora.report_mora()
+# print (output)
