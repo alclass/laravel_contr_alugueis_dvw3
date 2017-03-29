@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import datetime
+import datetime, decimal
 
 
 def get_corr_monet_percent_for_month_year(month_year=None):
@@ -20,6 +20,17 @@ class ContractConventionsMockClass:
   def get_corr_monet_percent_for_month_year(self, month_year=None):
     return get_corr_monet_percent_for_month_year(month_year)
 
+  def __str__(self):
+    lines = []
+    line = 'Mora Contratual Convencionada:'; lines.append(line)
+    line = '=============================='; lines.append(line)
+    line = 'Multa Contratual (em percentual): %s' %('{:.1f}'.format(self.multa_contr_percent)); lines.append(line)
+    line = 'Juros a.m. (em percentual): %s' %('{:.1f}'.format(self.juros_am_percent)); lines.append(line)
+    if self.bool_aplicar_corr_monet:
+      line = 'Aplicar Corr. Monet. (ao mês ref. em tabela pública).'; lines.append(line)
+    line = '=============================='; lines.append(line)
+    outstr = '\n'.join(lines)
+    return outstr
 
 class QuinhaoOfMora:
   '''
@@ -35,6 +46,9 @@ class QuinhaoOfMora:
   RUBRICA_CORR_MONET = 1
   RUBRICA_JUROS_AM = 2
   RUBRICA_MULTA_CONTR = 3
+
+  CENTS = decimal.Decimal('.01')
+  ONEHUNDRED = decimal.Decimal('100.00')
 
   KEYS = [
     'basevalue',
@@ -132,7 +146,10 @@ class QuinhaoOfMora:
 
   @basevalue.setter
   def basevalue(self, basevalue):
-    self.__basevalue = basevalue
+    if basevalue is None:
+      self.__basevalue = None
+      return
+    self.__basevalue = decimal.Decimal(basevalue)
     # self.__dict__['basevalue'] = basevalue
 
   @property
@@ -146,7 +163,10 @@ class QuinhaoOfMora:
 
   @percentual.setter
   def percentual(self, percentual):
-    self.__percentual = percentual
+    if percentual is None:
+      self.__percentual = None
+      return
+    self.__percentual = decimal.Decimal(percentual)
     # self.__dict__['percentual'] = percentual
 
   @property
@@ -160,7 +180,10 @@ class QuinhaoOfMora:
 
   @fixed_amount.setter
   def fixed_amount(self, fixed_amount):
-    self.__fixed_amount = fixed_amount
+    if fixed_amount is None:
+      self.__fixed_amount = None
+      return
+    self.__fixed_amount = decimal.Decimal(fixed_amount)
     # self.__dict__['fixed_amount'] = fixed_amount
 
   @property
@@ -174,8 +197,9 @@ class QuinhaoOfMora:
     percentual = self.percentual
     if percentual is None:
       return None
-    f = percentual / 100.0  # works in Python 2 & 3
-    return basevalue * f
+    f = percentual / __class__.ONEHUNDRED  # works in Python 2 & 3
+    v = basevalue * f
+    return v.quantize(__class__.CENTS, decimal.ROUND_HALF_UP)
 
   def __str__(self):
     outstr = '''Quinhão:
@@ -189,28 +213,34 @@ class QuinhaoOfMora:
     outstr += '''==============
     Valor Base: %(basevalue)s
     Percentual: %(percentual)s
-    Componente: %(valor_componente_da_rubrica)s
-    ''' % ({'basevalue': str(self.basevalue),
-            'percentual': str(self.percentual),
-            'valor_componente_da_rubrica': self.valor_componente_da_rubrica
-            })
+    Componente: %(valor_componente_da_rubrica)s''' % ({
+      'basevalue': "{:.2f}".format(self.basevalue),
+      'percentual': "{:.2f}".format(self.percentual),
+      'valor_componente_da_rubrica': self.valor_componente_da_rubrica
+    })
     return outstr
 
 
 class MonthlyQuinhoesOfMora:  # no need to inherit dict, it's already available in the underlying root Object
 
-  def __init__(self, basevalue, n_of_months_in_mora, n_of_days_in_mora=0, contract_conventions=None):
+  def __init__(self,
+               basevalue,
+               n_of_months_in_mora,
+               n_of_days_in_mora=0,
+               contract_conventions=None):
 
-    self.basevalue = basevalue
+    self.basevalue           = basevalue
     self.n_of_months_in_mora = n_of_months_in_mora
-    self.n_of_days_in_mora = n_of_days_in_mora
+    self.n_of_days_in_mora   = n_of_days_in_mora
 
     self.set_contract_conventions(contract_conventions)
 
     # copy basevalue to ongoing_value, which will increase month by month
     self.ongoing_value = self.basevalue
 
+    # This variable is a list of list: it keeps month quinhoes all months
     self.quinhoes_mes_a_mes = []
+    # calculates mora from this constructor (__init__)
     self.calcula_mora_mes_a_mes()
 
   def set_contract_conventions(self, contract_conventions=None):
@@ -261,25 +291,42 @@ class MonthlyQuinhoesOfMora:  # no need to inherit dict, it's already available 
       percentual=self.contract_conventions.get_corr_monet_percent_for_month_year(),
     )
 
+  def calc_total_para_quitar_mes(self):
+    '''
+    In this dynamic retrieval, we consider the following sum:
+    1) the basevalue in the last month
+       plus
+    2) the amount of increment that above quantity has
+       (this amount is taken from quinhao.valor_componente_da_rubrica)
+    ---------------------------------
+    So, this dynamic retrieval is: basevalue + quinhao.valor_componente_da_rubrica
+    ---------------------------------
+    :return:
+    '''
+    quinhoes_ultimo_mes = self.mora_mes_a_mes[-1]
+    mora_ultimo_mes = 0
+    quinhao = quinhoes_ultimo_mes[0]
+    basevalue = quinhao.basevalue
+    for quinhao in quinhoes_ultimo_mes:
+      mora_ultimo_mes += quinhao.valor_componente_da_rubrica
+    return basevalue + mora_ultimo_mes
+
   def report_mora(self):
     lines = []
-    line = '>> Mora:';
-    lines.append(line)
-    line = '=======';
-    lines.append(line)
+    line = '>> Mora:'; lines.append(line)
+    line = '======='; lines.append(line)
+    line = '   Valor inicial: %s' %("{:.2f}".format(self.basevalue)); lines.append(line)
+    line = '   Componentes da Mora Contratual:'; lines.append(line)
+    line = str(self.contract_conventions); lines.append(line)
     for i, quinhoes_do_mes in enumerate(self.mora_mes_a_mes):
       n_mes = i + 1
-      line = '> Mês: %d' % n_mes;
-      lines.append(line)
+      line = '> Mês: %d' % n_mes; lines.append(line)
       total_mes = 0
       for quinhao_mora in quinhoes_do_mes:
-        line = '> Mês: %d' % n_mes;
-        lines.append(line)
-        line = str(quinhao_mora);
-        lines.append(line)
+        line = str(quinhao_mora); lines.append(line)
         total_mes += quinhao_mora.valor_componente_da_rubrica
-      line = 'Total mês: %s' % (str(total_mes));
-      lines.append(line)
+      line = 'Total Mora Mês: %s' % (str(total_mes)); lines.append(line)
+      line = 'Total Quita Mês: %s' % (str(total_mes+quinhao_mora.basevalue)); lines.append(line)
     outstr = '\n'.join(lines)
     return outstr
 
@@ -301,6 +348,8 @@ def adhost_test():
     n_of_months_in_mora=3,
   )
   print(mqm.report_mora())
+  print('*'*50)
+  print('mqm.calc_total_para_quitar_mes() => ', mqm.calc_total_para_quitar_mes())
 
 
 if __name__ == '__main__':
