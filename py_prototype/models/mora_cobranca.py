@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import datetime
-from models import User, Imovel, MonthlyQuinhoesOfMora
+from models.imovel_user_rent_contract import User, Imovel
+from calc_lib.mora_calculator_via_quinhao import MonthlyQuinhoesOfMora
 
 
 def get_corr_monet_percent_for_month_year(month_year=None):
@@ -80,3 +81,4 @@ class MoraTotal:
 
 if __name__ == '__main__':
   print ('This script is run under the adhoc_test.py script in this folder.')
+
