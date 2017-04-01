@@ -22,3 +22,4 @@ phpunit.xml
 readme.md
 server.php
 *.pyc
+*.sqlite

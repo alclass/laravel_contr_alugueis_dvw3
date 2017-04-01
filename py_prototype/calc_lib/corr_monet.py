@@ -1,55 +1,29 @@
 #!/usr/bin/env python3
+import datetime, os, sys
+import sqlite3
+import __init__
 
 
 def get_corr_monet_percent_for_month_year(month_year=None):
-  return 0.38
+  sqlite_database_abspath = __init__.getAppPaths().get_sqlite_database_abspath()
+  conn = sqlite3.connect(sqlite_database_abspath)
+  sql = '''SELECT corr_monet FROM corr_monet_indices
+   WHERE
+     year = ? AND
+     month = ?
+  '''
+  cursor = conn.cursor()
+  month = month_year.month
+  year  = month_year.year
+  values = [month, year]
+  result_set = cursor.execute(sql, values)
+  if result_set:
+    record = result_set.fetchone()
+    corr_monet = record[0]
+  return corr_monet
 
 class CorrMonetFetcher:
 
-  corr_monet_dict = {
-    2015: {
-      1: 0.2,
-      2: 0.2,
-      3: 0.2,
-      4: 0.2,
-      5: 0.2,
-      6: 0.2,
-      7: 0.2,
-      8: 0.2,
-      9: 0.38,
-      10: 0.38,
-      11: 0.38,
-      12: 0.38,
-    },
-    2016: {
-      1: 0.2,
-      2: 0.2,
-      3: 0.2,
-      4: 0.2,
-      5: 0.2,
-      6: 0.2,
-      7: 0.2,
-      8: 0.2,
-      9: 0.38,
-      10: 0.38,
-      11: 0.38,
-      12: 0.38,
-    },
-    2017: {
-      1: 0.2,
-      2: 0.2,
-      3: 0.2,
-      4: 0.2,
-      5: 0.2,
-      6: 0.2,
-      7: 0.2,
-      8: 0.2,
-      9: 0.38,
-      10: 0.38,
-      11: 0.38,
-      # 12: 0.38,
-    },
-  }
   @staticmethod
   def fetch(monthyear):
     year  = monthyear.year
@@ -61,5 +35,11 @@ class CorrMonetFetcher:
       print (e)
       return None
 
+def adhoc_test():
+  month_year = datetime.date(year=2016, month=1, day=1)
+  corr_monet = get_corr_monet_percent_for_month_year(month_year)
+  print('corr_monet', corr_monet, 'for', month_year)
+
+
 if __name__ == '__main__':
-  pass
+  adhoc_test()
