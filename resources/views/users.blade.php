@@ -21,26 +21,26 @@
 
 @if(count($users)>0)
 
-  @foreach ($users as $user)
+@foreach ($users as $user)
 
-  <?php
-    $imovel_endereco = 'bla';
-    $imovel_apelido = 'bla b';
-    if ( ! $user->imoveis->isEmpty() ) {
-      $imovel = $user->imoveis->first();
-      $imovel_endereco = $imovel->logradouro;
-      $imovel_apelido  = $imovel->apelido;
-    }
-  ?>
+<?php
+  $imovel_endereco = 'bla';
+  $imovel_apelido = 'bla b';
+  if ( ! $user->imoveis->isEmpty() ) {
+    $imovel = $user->imoveis->first();
+    $imovel_endereco = $imovel->logradouro;
+    $imovel_apelido  = $imovel->apelido;
+  }
+?>
 
-    <tr>
-      <td data-th="inquilino"> {{ $user->name_first_last() }} </td>
-      <td data-th="imovel_apelido"> {{ $imovel_apelido }} </td>
-      <td data-th="imovel_endereco"> {{ $imovel_endereco }} </td>
-      <td data-th="email"> {{ $user->email }} </td>
-      <td data-th="is_pay_on_date"> * </td>
-    </tr>
-  @endforeach
+  <tr>
+    <td data-th="inquilino"> {{ $user->name_first_last() }} </td>
+    <td data-th="imovel_apelido"> {{ $imovel_apelido }} </td>
+    <td data-th="imovel_endereco"> {{ $imovel_endereco }} </td>
+    <td data-th="email"> {{ $user->email }} </td>
+    <td data-th="is_pay_on_date"> * </td>
+  </tr>
+@endforeach
 
 @endif
 

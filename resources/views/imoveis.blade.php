@@ -40,7 +40,7 @@
     ?>
       <tr>
         <td data-th="imovel_apelido"> {{ $imovel->apelido }} </td>
-        <td data-th="imovel_endereco"> {{ $imovel->full_address() }} </td>
+        <td data-th="imovel_endereco"> {{ $imovel->get_street_address() }} </td>
 
         <td data-th="valor_aluguel"> {{ $imovel->valor_aluguel }} </td>
         <td data-th="is_pay_on_date"> * </td>
