@@ -34,7 +34,7 @@
 ?>
 
   <tr>
-    <td data-th="inquilino"> {{ $user->name_first_last() }} </td>
+    <td data-th="inquilino"> <a href="{{ route('user.route', $user) }}">{{ $user->name_first_last() }} </a></td>
     <td data-th="imovel_apelido"> {{ $imovel_apelido }} </td>
     <td data-th="imovel_endereco"> {{ $imovel_endereco }} </td>
     <td data-th="email"> {{ $user->email }} </td>
