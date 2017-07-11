@@ -10,6 +10,8 @@
 | and give it the controller to call when that URI is requested.
 |
 */
+use Carbon\Carbon;
+
 use App\Imovel;
 use App\User;
 use App\Payment;
@@ -69,4 +71,19 @@ Route::get('/registerpayment2', array(
 	)
 );
 
-Route::resource('/registerpayment', 'PaymentController@store');
+Route::resource('/payments/history', 'PaymentController@index');
+Route::resource('/payments/registerafterreceived', 'PaymentController@store');
+
+Route::resource('/cobranca/abrir', 'CobrancaController@store');
+Route::resource('/cobranca/abertas', 'CobrancaController@abertas');
+Route::resource('/cobranca/emmora', 'CobrancaController@abertas');
+Route::resource('/cobranca/consiliadas', 'CobrancaController@consiliadas');
+
+Route::get('/testCarbon', function() {
+	//return 'hi';
+	$deposited_on = Carbon::createFromFormat('d/m/Y', '1/1/2017');
+	// return $deposited_on->toDateTimeString();
+	return $deposited_on;
+
+
+});

@@ -7,6 +7,7 @@ use App\User;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class PaymentController extends Controller {
@@ -38,22 +39,22 @@ class PaymentController extends Controller {
 	 * @return Response
 	 */
 	public function store(\Illuminate\Http\Request $request) {
-		//
-		// return 'hi';
-		// return var_dump($request);  OBS: this crashed firefox and almost the computer due to RECURSION
-		/*
+
 		$payment = null;
+		$testword = 'testword (should change)';
 		if (empty($request)) {
 			// returns right away, don't go further here request has nothing
 			return view('registerpayment', ['payment' => $payment]);
 		}
+
 		$user = null;
-		if ($request->has('user_id')) {
-			$user = User::find($request->input('user_id'));
+		if ($request->has('payer_id')) {
+			$user = User::findOrFail($request->input('payer_id'));
+			// $testword = $user->name_first_last();
 		}
 		$imovel = null;
 		if ($request->has('imovel_id')) {
-			$imovel = Imovel::find($request->has('imovel_id'));
+			$imovel = Imovel::findOrFail($request->input('imovel_id'));
 		}
 		$amount = null;
 		if ($request->has('amount')) {
@@ -61,7 +62,8 @@ class PaymentController extends Controller {
 		}
 		$deposited_on = null;
 		if ($request->has('deposited_on')) {
-			$deposited_on = $request->input('deposited_on');
+			$date_str = $request->input('deposited_on');
+			$deposited_on = Carbon::createFromFormat('d/m/Y', $date_str);
 		}
 		$bankname = null;
 		if ($request->has('bankname')) {
@@ -72,29 +74,12 @@ class PaymentController extends Controller {
 			$payment = new Payment;
 			$payment->amount       = $amount;
 			$payment->deposited_on = $deposited_on;
-			$payment->bankname = $bankname;
-			$payment->user   = $user;
-			$payment->imovel = $imovel;
+			$payment->bankname     = $bankname;
+			$payment->user()->associate($user);
+			$payment->imovel()->associate($imovel);
 			$payment->save();
 		}
-		*/
-		// return 'hi';
-		$user = User::find(1);
-		$imovel = Imovel::find(1);
-		// return var_dump($imovel);
-
-		$payment = new Payment;
-		$payment->amount       = 100;
-		$payment->deposited_on = strtotime('1/1/2017');
-		$payment->bankname = 'Itaú';
-		$payment->user()->associate($user);
-		$payment->imovel()->associate($imovel);
-
-		// return var_dump($payment);
-
-		$payment->save();
-
-
+		// return 'hi testword -> '. $testword;
 		return view('registerpayment', ['payment' => $payment]);
 	}
 
