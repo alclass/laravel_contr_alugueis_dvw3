@@ -12,11 +12,11 @@ class Payment extends Model {
 	];
 
   public function user() {
-    return $this->hasOne('App\User');
+    return $this->belongsTo('App\User');
   }
 
   public function imovel() {
-    return $this->hasOne('App\Imovel');
+    return $this->belongsTo('App\Imovel');
   }
 
 }

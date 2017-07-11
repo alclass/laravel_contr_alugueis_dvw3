@@ -14,6 +14,7 @@ use App\Imovel;
 use App\User;
 use App\Payment;
 use Illuminate\Http\Request;
+// use App\Http\Controllers\PaymentController;
 
 Route::get('/', 'WelcomeController@index');
 
@@ -59,48 +60,13 @@ Route::get('/imovel/{id}', array(
 	)
 );
 
-Route::get('/registerpay', array(
-	'as' => 'registerpay_get.route',
+Route::get('/registerpayment2', array(
+	'as' => 'registerpayment2.route',
 	'uses' =>
 	  function () {
-			return view('registerpay');
+			return view('registerpayment');
 		}
 	)
 );
 
-/*
-Route::post('/registerpay', array(
-	'as' => 'registerpay_post.route',
-  'uses' =>
-	  function (Illuminate\Http\Request $request) {
-			$user = null;
-			if ($request->has('user_id') {
-				$user = User::find($request->input('user_id'));
-			}
-			$imovel = null;
-			if ($request->has('imovel_id') {
-				$imovel = Imovel::find($request->has('imovel_id'));
-			}
-			$amount = null;
-			if ($request->has('amount') {
-				$amount = $request->input('amount');
-			}
-			$deposited_on = null;
-			if ($request->has('deposited_on') {
-				$deposited_on = $request->input('deposited_on');
-			}
-			$payment = null;
-			if !(empty($user) || !empty($amount) || !empty($deposited_on)) {
-				$payment = new Payment;
-				$payment->amount       = $amount;
-				$payment->deposited_on = $deposited_on;
-				$payment->user   = $user;
-				$payment->imovel = $imovel;
-				$payment->save();
-			}
-			return view('registerpay', ['payment' => $payment]);
-			// return 'hi';
-	  }
-	)
-);
-*/
+Route::resource('/registerpayment', 'PaymentController@store');
