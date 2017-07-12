@@ -23,9 +23,10 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 	 * @var array
 	 */
 	protected $fillable = [
-		'first_name', 'middle_names', 'last_name', 'cpf',
+		'username', 'first_name', 'middle_names', 'last_name',
+		'cpf', 'rg',
 		'tipo_relacao',
-		'email', 'password'
+		'email', 'password',
 	];
 
 	/**
@@ -35,7 +36,7 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 	 */
 	protected $hidden = ['password', 'remember_token'];
 
-	public function full_name( ) {
+	public function get_full_name( ) {
 		$name = "";
 		$name = $this->first_name;
 		if ( strlen($this->middle_names) > 0 ) {
@@ -43,15 +44,14 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 		}
 		$name = $name . ' ' . $this->last_name;
 		return $name;
-  }
-	public function name_first_last()	{
+	} // ends function get_full_name()
+
+	public function get_first_n_last_names()	{
 		return $name = $this->first_name . ' ' . $this->last_name;
-	}
+	} // ends function get_first_n_last_names()
 
-	public function imoveis( ) {
-		return $this->belongsToMany('App\Imovel');
-  }
+	public function contracts( ) {
+		return $this->belongsToMany('App\Contract');
+  }  // ends function contracts()
 
-
-
-}
+} // ends class User

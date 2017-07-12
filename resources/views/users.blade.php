@@ -1,7 +1,7 @@
 
 @extends('layouts.master')
 @section('title')
-    Controle Locação
+    Sistema de Controle Locação
 @endsection
 @section('styles')
     <link rel="stylesheet" href="{{ URL::asset('css/rwd-table.css') }}">

@@ -1,5 +1,6 @@
 <?php namespace App;
 
+use App\Contract;
 use Illuminate\Database\Eloquent\Model;
 
 class Imovel extends Model {
@@ -20,7 +21,7 @@ class Imovel extends Model {
 		'apelido',
 		'logradouro', 'tipo_lograd', 'numero', 'complemento', 'cep',
 		'tipo_imov',
-		'is_rentable', 'valor_aluguel',
+		'is_rentable', 'm2_no_iptu',
 	];
 
 	/**
@@ -53,8 +54,16 @@ class Imovel extends Model {
 		return $lines;
   } // ends function full_address_lines_array( )
 
-	public function users( ) {
-		return $this->belongsToMany('App\User');
+	public function get_current_rent_contract_if_any() {
+		$contract = Contract::where('is_active', 1)->first();
+		if (!empty($contract)) {
+			return $contract;
+		}
+		return null;
+	}
+
+	public function contracts() {
+		return $this->hasMany('App\Contract');
   }
 
 } // ends class Imovel extends Model

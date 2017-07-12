@@ -1,6 +1,6 @@
 @extends('layouts.master')
 @section('title')
-    Controle Locação
+    Register Pagamento Efetuado
 @endsection
 @section('styles')
     <link rel="stylesheet" href="{{ URL::asset('css/rwd-table.css') }}">
@@ -44,5 +44,4 @@
         });
     });
   </script>
-
 @endsection

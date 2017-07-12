@@ -13,9 +13,9 @@ class CobrancaTipo extends Model {
 	 * @var array
 	 */
 	protected $fillable = [
-		'billing_type_brief_description ', 'is_repasse ',
+		'brief_description ', 'is_repasse ',
     'aplicar_percentual ', 'percentual_a_aplicar ', 'percentual_a_aplicar_descricao',
-    'billing_type_long_description ',
+    'long_description ',
   ];
 
   public function cobranca() {

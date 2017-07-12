@@ -22,32 +22,23 @@ class Cobranca extends Model {
     'has_been_paid',
 	];
 
-  public function get_valor() {
-    return 10;
-  }
-
-/*
-  public function get_valor() {
+  public function get_valor_total() {
     $total = 0;
     foreach ($this->billingitems as $billingitem) {
-      $total = $total + $billingitem->value;
+      $total += $billingitem->value;
     }
     return $total;
   }
-*/
   public function user() {
     return $this->belongsTo('App\User');
-  }
-  public function imovel() {
-    return $this->belongsTo('App\Imovel');
   }
   public function contract() {
     return $this->belongsTo('App\Contract');
   }
   public function bankaccount() {
-    return $this->hasOne('App\BankAccount');
+    return $this->belongsTo('App\BankAccount');
   }
   public function billingitems() {
-    return $this->hasMany('App\BillingItems');
+    return $this->hasMany('App\BillingItem');
   }
 }

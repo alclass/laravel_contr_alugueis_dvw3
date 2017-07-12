@@ -16,6 +16,14 @@ class BillingItem extends Model {
 		'monthref', 'other_ref_if_any', 'value',
   ];
 
+  public function repasse_ou_branco() {
+    $item_type = $this->billing_item_type;
+    if (!empty($item_type) && $item_type->is_repasse == true) {
+      return 'repasse';
+    }
+    return '';
+  }
+
   public function cobranca() {
     return $this->belongsTo('App\Cobranca');
   }

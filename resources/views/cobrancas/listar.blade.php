@@ -1,6 +1,6 @@
 @extends('layouts.master')
 @section('title')
-    Controle Locação
+    Exibir Cobranças
 @endsection
 @section('styles')
     <link rel="stylesheet" href="{{ URL::asset('css/rwd-table.css') }}">
@@ -18,10 +18,7 @@
       <th>Em dia?</th>
     </tr>
 
-
   @foreach ($cobrancas as $cobranca)
-
-
     <tr>
       <td data-th="monthref">  {{ $cobranca->mainmonthref }} </td>
       <td data-th="objeto"> Contrato {{ $cobranca->mainmonthref }} </td>
@@ -29,9 +26,6 @@
       <td data-th="valor">     {{ $cobranca->get_valor() }} </td>
       <td data-th="is_pay_on_date"> * </td>
     </tr>
-
- @endforeach
-
+  @endforeach
   </table>
-
 @endsection

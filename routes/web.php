@@ -10,19 +10,15 @@
 | contains the "web" middleware group. Now create something great!
 |
 */
-
-
-
-use Carbon\Carbon;
-
+use App\Contract;
 use App\Imovel;
 use App\User;
 use App\Payment;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 // use App\Http\Controllers\PaymentController;
 
 // Route::get('/', 'WelcomeController@index');
-
 Route::get('/', function () {
     return view('welcome');
 });
@@ -54,7 +50,6 @@ Route::get('/imovel/{id}', [
   'uses' => 'ImovelController@show'
 ]);
 
-
 Route::get('/payments/history', 'PaymentController@index');
 Route::post('/payments/toregister', 'PaymentController@store');
 /*
@@ -62,6 +57,13 @@ Route::post('/payments/toregister', 'PaymentController@store');
 	'uses' => 'PaymentController@store'
 ]);
 */
+Route::get('/cobranca/{id}/mostrar',
+  function($id) {
+    $contract = Contract::findOrFail($id);
+    return view('cobranca.mostrar', ['contract'=>$contract]);
+  }
+);
+
 Route::get('/cobrancas/abertas',     'CobrancaController@abertas');
 Route::get('/cobrancas/emmora',      'CobrancaController@emmora');
 Route::get('/cobrancas/consiliadas', 'CobrancaController@conciliadas');
