@@ -8,6 +8,7 @@ vendor/
 .buildpath
 .idea/
 __pycache__/
+.env
 .project
 .settings/
 artisan

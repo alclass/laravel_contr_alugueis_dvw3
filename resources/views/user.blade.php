@@ -15,7 +15,7 @@
 
 <h2>Imóvel</h2>
 @foreach($user->imoveis as $imovel)
-  <h4> Endereço:  <a href="{{ route('imovel.route', $imovel) }}">{{ $imovel->get_street_address() }} </a></h4>
+  <h4> Endereço:  <a href="{{ route('imovel.show', $imovel) }}">{{ $imovel->get_street_address() }} </a></h4>
   <h4> Aluguel: {{ $imovel->valor_aluguel }} </h4>
 @endforeach
 
