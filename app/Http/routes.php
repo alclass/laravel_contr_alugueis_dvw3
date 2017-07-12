@@ -43,47 +43,31 @@ Route::get('/user/{id}', array(
 	)
 );
 
-Route::get('/imoveis', function () {
-	$imoveis = Imovel::where('is_rentable', 1)->get();
-	$imoveis->load('users');
-	//$imoveis = '1';
-	// return var_dump($imoveis);
-	return view('imoveis', ['imoveis' => $imoveis]);
-	// return 'hi';
-});
+Route::get('/imoveis', [
+	'as'   => 'imoveis',
+  'uses' => 'ImovelController@index'
+]);
+Route::get('/imovel/{id}', [
+	'as'   => 'imovel.show',
+  'uses' => 'ImovelController@show'
+]);
 
-Route::get('/imovel/{id}', array(
-	'as' => 'imovel.route',
-  'uses' =>
-	  function ($id) {
-			$imovel = Imovel::findOrFail($id);
-			return view('imovel', ['imovel' => $imovel]);
-	  }
-	)
-);
 
-Route::get('/registerpayment2', array(
-	'as' => 'registerpayment2.route',
-	'uses' =>
-	  function () {
-			return view('registerpayment');
-		}
-	)
-);
-
-Route::resource('/payments/history', 'PaymentController@index');
-Route::resource('/payments/registerafterreceived', 'PaymentController@store');
-
-Route::resource('/cobranca/abrir', 'CobrancaController@store');
-Route::resource('/cobranca/abertas', 'CobrancaController@abertas');
-Route::resource('/cobranca/emmora', 'CobrancaController@abertas');
-Route::resource('/cobranca/consiliadas', 'CobrancaController@consiliadas');
+Route::get('/payments/history', 'PaymentController@index');
+Route::resource('/payments/toregister', 'PaymentController@store');
+/*
+	'as'   => 'payments.toregister',
+	'uses' => 'PaymentController@store'
+]);
+*/
+Route::get('/cobrancas/abertas',     'CobrancaController@abertas');
+Route::get('/cobrancas/emmora',      'CobrancaController@emmora');
+Route::get('/cobrancas/consiliadas', 'CobrancaController@conciliadas');
+Route::resource('/cobrancas/abrir',  'CobrancaController@store');
 
 Route::get('/testCarbon', function() {
 	//return 'hi';
 	$deposited_on = Carbon::createFromFormat('d/m/Y', '1/1/2017');
 	// return $deposited_on->toDateTimeString();
 	return $deposited_on;
-
-
 });

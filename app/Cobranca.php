@@ -1,5 +1,9 @@
 <?php namespace App;
 
+use App\BankAccount;
+use App\Contract;
+use App\Imovel;
+use App\User;
 use Illuminate\Database\Eloquent\Model;
 
 class Cobranca extends Model {
@@ -14,10 +18,15 @@ class Cobranca extends Model {
 	 */
 	protected $fillable = [
 		'mainmonthref', 'duedate',
-    'n_parcelas', 'are_parcels_month', 'parcel_n_days_interval',
+    'n_parcelas', 'are_parcels_monthly', 'parcel_n_days_interval',
     'has_been_paid',
 	];
 
+  public function get_valor() {
+    return 10;
+  }
+
+/*
   public function get_valor() {
     $total = 0;
     foreach ($this->billingitems as $billingitem) {
@@ -25,7 +34,7 @@ class Cobranca extends Model {
     }
     return $total;
   }
-
+*/
   public function user() {
     return $this->belongsTo('App\User');
   }

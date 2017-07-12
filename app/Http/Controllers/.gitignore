@@ -1,3 +1,4 @@
-*
-!.gitignore
-!PaymentController.php
+Auth/
+Controller.php
+HomeController.php
+WelcomeController.php

@@ -1,4 +1,3 @@
-*
-!Controllers/
-!.gitignore
-!routes.php
+Middleware/
+Requests/
+Kernel.php

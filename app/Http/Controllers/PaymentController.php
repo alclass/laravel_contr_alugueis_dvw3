@@ -69,6 +69,7 @@ class PaymentController extends Controller {
 		if ($request->has('bankname')) {
 			$bankname = $request->input('bankname');
 		}
+		
 
 		if (!empty($user) && !empty($amount) && !empty($deposited_on)) {
 			$payment = new Payment;
