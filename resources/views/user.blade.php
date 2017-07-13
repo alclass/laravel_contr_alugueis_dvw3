@@ -6,28 +6,36 @@
     <link rel="stylesheet" href="{{ URL::asset('css/rwd-table.css') }}">
 @endsection
 @section('content')
+  <h1>Inquilino</h1>
+  <h4> {{ $user->get_first_n_last_names() }} </h4>
+  <h5> {{ $user->email }} </h5>
+  @if (empty($user->contracts))
+    <h4> Atualmente não há um contrato vigente.</h4>
+  @endif {{-- @if (empty($user->contracts)) --}}
 
-<h1>Inquilino</h1>
-<h4> {{ $user->get_first_n_last_names() }} </h4>
-<h5> {{ $user->email }} </h5>
-<?php
-  $contracts = $user->contracts;
-?>
-@if (empty($contracts))
-  <h4> Atualmente não há um contrato vigente.</h4>
-@endif
+  @foreach ($user->contracts as $contract)
+    <h3> Dados Resumidos do Contrato ID {{ $contract->id }}</h3>
+    <?php
+      $endereco = "n/a";
+      $imovel_href = "#";
+      $current_rent_value = "";
+      $tipo_imov = "";
+      $area_edif_iptu_m2 = "";
+      $imovel = $contract->imovel;
+      if ($imovel != null) {
+        $endereco = $imovel->get_street_address();
+        $imovel_href = route('imovel.show', $imovel);
+        $tipo_imov = $imovel->tipo_imov;
+        $area_edif_iptu_m2	= $imovel->area_edif_iptu_m2;
+      }
+    ?>
+    <h3> Imóvel {{ $tipo_imov }} </h3>
+    <h4> Endereço:  <a href="{{ $imovel_href }}"> {{ $endereco }} </a></h4>
+    <h4> Área IPTU: {{ $area_edif_iptu_m2	 }} m2</h4>
+    <h4> Início do Contrato: {{ $contract->start_date }} </h4>
+    <h5> Aluguel no Início do Contrato:  {{ $contract->initial_rent_value }} </h5>
+    <h4> Valor Atual do Aluguel:   {{ $contract->current_rent_value }} </h4>
+    <h5> Próximo Reajuste: {{ $contract->get_next_rent_value_reajust_date()->toFormattedDateString() }} </h4>
+  @endforeach  {{-- @foreach ($user->contracts as $contract) --}}
 
-@if (!empty($contracts))
-  @foreach($contracts as $contract)
-    <h3> Dados Resumidos do Contrato de Aluguel</h3>
-    @foreach($contract->imoveis as $imovel)
-      <h3>Imóvel</h3>
-      <h4> Endereço:  <a href="{{ route('imovel.show', $imovel) }}">{{ $imovel->get_street_address() }} </a></h4>
-      <h4> Tipo: {{ $imovel->tipo_imov }} </h4>
-      <h4> Área IPTU: {{ $imovel->m2_no_iptu }} m2</h4>
-      <h4> Valor Aluguel: {{ $contract->current_rent_value }} </h4>
-    @endforeach
-  @endforeach
-@endif
-{{-- @if ()!empty($contracts)) --}}
 @endsection

@@ -10,26 +10,30 @@
 
   <h1>Exibir Imóvel</h1>
   <h4> {{ $imovel->get_street_address() }} </h4>
-  <h5> {{ $imovel->valor_aluguel  }} </h5>
 
   <?php
     $contract = $imovel->get_current_rent_contract_if_any();
-    if (!empty($contract) && $contract->users->isEmpty() ) {
-      // create dummy user row
-      $user = new \App\User;
-      $user->first_name = "Sem";
-      $user->last_name = "Ocupação";
-      $user->email = "---";
-      $contract->users->add($user);
+    $n_users = 0;
+    if ($contract != null) {
+      if ( $contract->users->isEmpty() ) {
+        // create a dummy user row, just for the table presentation, it won't be db-saved
+        $user = new \App\User;
+        $user->first_name = "Sem";
+        $user->last_name = "Ocupação";
+        $user->email = "---";
+        $contract->users->add($user);
+      }
     }
-    $n_users = $contract->users->count();
-    $total_valor_alugueis += $contract->current_rent_value;
   ?>
-
-  @if (!empty($contract))
+  @if ($contract == null)
+    <h5> Não há contratos no banco de dados relativos a este imóvel. </h5>
+  @endif
+  @if ($contract != null)
+    <h5> Valor Atual: {{ $contract->current_rent_value }} </h5>
+    <h5> nº contrante(s): {{ $contract->users->count() }} </h5>
     <h2>Inquilino(s)</h2>
     @foreach($contract->users as $user)
-      <h4> <a href="{{ route('user.route', $user) }}">{{ $user->name_first_last() }} </a></h4>
+      <h4> <a href="{{ route('user.route', $user) }}">{{ $user->get_first_n_last_names() }} </a></h4>
       <h5> {{ $user->email }} </h5>
     @endforeach
   @endif

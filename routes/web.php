@@ -26,8 +26,9 @@ Route::get('/', function () {
 Route::get('home', 'HomeController@index');
 
 Route::get('/users', function () {
+  //return 'hi';
 	$users = User::all();
-	$users->load('imoveis');
+	//$users->load('contracts');
 	return view('users', ['users' => $users]);
 });
 
@@ -40,6 +41,24 @@ Route::get('/user/{id}', array(
 	  }
 	)
 );
+
+Route::get('/contracts', [
+	'as'   => 'contracts',
+  'uses' =>
+  function () {
+    $contracts = Contract::where('is_active', 1)->get();
+    return view('contracts.contracts', ['contracts' => $contracts]);
+  }
+]);
+
+Route::get('/contract', [
+	'as'   => 'contract',
+  'uses' =>
+  function ($id) {
+    $contract = Contract::findOrFail($id);
+    return view('contracts.contract', ['contract' => $contract]);
+  }
+]);
 
 Route::get('/imoveis', [
 	'as'   => 'imoveis',

@@ -18,7 +18,7 @@ class ImovelController extends Controller {
 	{
 		$imoveis = Imovel::where('is_rentable', 1)->get();
 		$imoveis->load('users');
-		return view('imoveis', ['imoveis' => $imoveis]);
+		return view('imoveis.imoveis', ['imoveis' => $imoveis]);
 	}
 
 	/**
@@ -50,7 +50,7 @@ class ImovelController extends Controller {
 	public function show($id)
 	{
 		$imovel = Imovel::findOrFail($id);
-		return view('imovel', ['imovel' => $imovel]);
+		return view('imoveis.imovel', ['imovel' => $imovel]);
 	}
 
 	/**

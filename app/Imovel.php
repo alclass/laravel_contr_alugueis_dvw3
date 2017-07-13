@@ -21,7 +21,7 @@ class Imovel extends Model {
 		'apelido',
 		'logradouro', 'tipo_lograd', 'numero', 'complemento', 'cep',
 		'tipo_imov',
-		'is_rentable', 'm2_no_iptu',
+		'is_rentable', 'area_edif_iptu_m2	', 'area_terr_iptu_m2',
 	];
 
 	/**
@@ -55,8 +55,8 @@ class Imovel extends Model {
   } // ends function full_address_lines_array( )
 
 	public function get_current_rent_contract_if_any() {
-		$contract = Contract::where('is_active', 1)->first();
-		if (!empty($contract)) {
+		$contract = $this->contracts->where('is_active', 1)->first();
+		if ($contract != null) {
 			return $contract;
 		}
 		return null;
