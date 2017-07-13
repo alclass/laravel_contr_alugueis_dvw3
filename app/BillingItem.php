@@ -13,7 +13,7 @@ class BillingItem extends Model {
 	 * @var array
 	 */
 	protected $fillable = [
-		'monthref', 'other_ref_if_any', 'value',
+		'monthyeardateref', 'other_ref_if_any', 'value',
   ];
 
   public function repasse_ou_branco() {
@@ -28,7 +28,7 @@ class BillingItem extends Model {
     return $this->belongsTo('App\Cobranca');
   }
 
-  public function billing_item_type() {
+  public function cobrancatipo() {
     return $this->hasOne('App\CobrancaTipo');
   }
 

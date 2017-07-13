@@ -29,12 +29,37 @@ class Contract extends Model {
     return $projected_date->addYear();
   }
 
+
+  public function gerar_cobranca() {
+    $today = Carbon::today();
+    $monthyeardateref = $today->addMonth(-1);
+    $cobranca = new Cobranca;
+    $billingitem = new BillingItem;
+    $billingitem->cobrancatipo_id = $this->get_cobrancatipo_id('name'=>'aluguel');
+    $billingitem->value = $this->current_rent_value;
+    $billingitem->dateref = $monthyeardateref;
+    $cobranca->billingitems->add($billingitem);
+    foreach ($this->contractbillingrules() as $contractbillingrule) {
+      $billingitem = new BillingItem;
+      $billingitem->monthyeardateref = $monthyeardateref;
+      $billingitem->cobrancatipo_id = $contractbillingrule->cobrancatipo_id;
+
+
+
+    }
+
+  }
+
   public function imovel() {
     return $this->belongsTo('App\Imovel');
   }
 
   public function cobrancas() {
     return $this->hasMany('App\Cobranca');
+  }
+
+  public function contractbillingrules() {
+    return $this->hasMany('App\contractBillingRule');
   }
 
   public function users() {
