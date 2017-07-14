@@ -33,6 +33,7 @@ class Contract extends Model {
   public function gerar_cobranca() {
     $today = Carbon::today();
     $monthyeardateref = $today->addMonth(-1);
+    // The first item in 'cobrança' is the rent itself
     $cobranca = new Cobranca;
     $billingitem = new BillingItem;
     $billingitem->cobrancatipo_id = $this->get_cobrancatipo_id('name'=>'aluguel');
@@ -41,11 +42,14 @@ class Contract extends Model {
     $cobranca->billingitems->add($billingitem);
     foreach ($this->contractbillingrules() as $contractbillingrule) {
       $billingitem = new BillingItem;
-      $billingitem->monthyeardateref = $monthyeardateref;
       $billingitem->cobrancatipo_id = $contractbillingrule->cobrancatipo_id;
-
-
-
+      $billingitem->monthyeardateref = $monthyeardateref;
+      if ($billingitem->cobrancatipo_id == $this->get_cobrancatipo_id('name'=>'condominio');)
+      $tarifa = AdditionTarifa::where('contract_id', $this->id)
+        ->where('cobrancatipo_id', $billingitem->cobrancatipo_i)
+        ->where('monthyeardateref', $billingitem->monthyeardateref)
+        ->get();
+      $billingitem->value = $tarifa->value;
     }
 
   }
