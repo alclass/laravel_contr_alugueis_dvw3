@@ -1,4 +1,5 @@
-<?php namespace App;
+<?php
+namespace App\Models\Billing;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -16,7 +17,7 @@ class Payment extends Model {
   }
 
   public function imovel() {
-    return $this->belongsTo('App\Imovel');
+    return $this->belongsTo('App\Models\Immeubles\Imovel');
   }
 
 }

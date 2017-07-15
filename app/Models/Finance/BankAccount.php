@@ -1,4 +1,4 @@
-<?php namespace App;
+<?php namespace App\Models\Finance;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -17,10 +17,8 @@ class BankAccount extends Model {
 		'banknumber', 'bankname', 'agency', 'account', 'customer', 'cpf',
   ];
 
-  /*
   public function user() {
     return $this->belongsTo('App\User');
   }
-  */
 
 }

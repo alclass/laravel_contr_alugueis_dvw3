@@ -1,5 +1,5 @@
 <?php
-namespace App;
+namespace App\Models\Billing;
 
 use Carbon\Carbon;
 
@@ -13,6 +13,14 @@ class RefForBillingItem {
 
   const K_REFTYPE_PARCEL_MONTHLY = 'PM';
   const K_REFTYPE_PARCEL_YEARLY  = 'PY';
+
+  const KEY_REF_TYPE = 'ref_type';
+  const KEY_DATE_FREQ_USED = 'date_freq_used';
+  const KEY_DATE_REF = 'date_ref';
+  const KEY_N_COTA = 'n_cota';
+  const KEY_TOTAL_COTAS = 'total_cotas';
+  const KEY_COTA_FREQ_USED = 'cota_freq_used';
+
 
   public $ref_type; // informs whether ref is dateful (D) or parcelful (P) (ie, N cotas each monthly)
   public $date_freq_used; // 'DM' (monthly) or 'DY' (yearly)

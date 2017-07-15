@@ -1,6 +1,7 @@
-<?php namespace App;
+<?php
+namespace App\Models\Immeubles;
 
-use App\Contract;
+// use App\Models\Immeubles\Contract;
 use Illuminate\Database\Eloquent\Model;
 
 class Imovel extends Model {
@@ -63,7 +64,7 @@ class Imovel extends Model {
 	}
 
 	public function contracts() {
-		return $this->hasMany('App\Contract');
+		return $this->hasMany('App\Models\Immeubles\Contract');
   }
 
 } // ends class Imovel extends Model
