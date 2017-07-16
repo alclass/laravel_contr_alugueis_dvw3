@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class CorrMonet extends Model
 {
+  const K_IGPM = 'IGP-M';
+  const K_IPCA = 'IPCA';
 
   protected $table = 'corrmonets';
 
@@ -15,6 +17,7 @@ class CorrMonet extends Model
    * @var array
    */
   protected $fillable = [
+    'indicador',
     'tarifa_valor',
     'monthyeardateref',
   ];

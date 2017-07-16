@@ -23,11 +23,11 @@ class BillingItemsForJson implements JsonSerializable {
   public function get_total() {
     $total = 0;
     foreach ($this->billingitems as $billingitem) {
-      $value = $billingitem->origvalue;
-      if ($billingitem->finalvalue != null) {
-        $value = $billingitem->origvalue;
+      $value = $billingitem->item_value;
+      if ($billingitem->modified_value != null) {
+        $value = $billingitem->modified_value;
       }
-      $total += $billingitem->get_total();
+      $total += $value;
     }
     return $total;
   }
@@ -36,11 +36,13 @@ class BillingItemsForJson implements JsonSerializable {
     /*
     The caller must issue json_encode($array) to get the related json-string
     */
-    $billingitems_as_assoc_arrays_for_json_serialize = array();
+    $billingitems_as_assoc_array_list = array();
     foreach ($this->billingitems as $billingitem) {
-      $billingitems_as_assoc_arrays_for_json_serialize[] = generate_n_return_assoc_array($assoc_array);
+      // PHP's append way (the [] sufix!)
+      $billingitems_as_assoc_array_list[] =
+        $billingitem->generate_n_return_assoc_array();
     }
-    return $billingitems_as_assoc_arrays_for_json_serialize;
+    return $billingitems_as_assoc_array_list;
   }
 
   public function get_json() {

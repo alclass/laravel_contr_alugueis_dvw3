@@ -1,33 +1,47 @@
 <?php
 namespace App\Models\Billing;
 
-use JsonSerializable;
+use App\Models\Billing\BillingItemsForJson;
+use App\Models\Billing\BillingItemObjToAssocArray as BItem;
 use App\Models\Billing\RefForBillingItem as Ref;
-use App\Models\Billing\BillingItemForJson;
+use Carbon\Carbon;
 
-class BillingItemObjToAssocArray {
+class BillingItemSeeder {
 
-  public function process () {
-    $billingitems = new BillingItemsForJson;
+  public $billingitems;
+  public $bitems;
+
+  public function __construct() {
+    $this->billingitems = new BillingItemsForJson;
+    $this->bitems = array();
+    $this->seed();
+  }
+
+  public function seed() {
+
     // 1
-    $billingitem = new BillingItemForJson;
+    $billingitem = new BItem;
     $billingitem->cobrancatipo_id = 1;
-    $billingitem->origvalue = 1000;
-    $billingitem->ref = new Ref; // the default is date type ref. with today's date
-    $billingitems->add($billingitem);
+    $billingitem->item_value      = 1000;
+    $monthyeardateref           = Carbon::createFromFormat('Y-m-d', '2016-02-02');
+    $billingitem->ref_obj = BItem::make_ref_obj_with_date($monthyeardateref);
+    $this->bitems[] = $billingitem;
+    $this->billingitems->add($billingitem);
 
     // 2
-    $billingitem = new BillingItemForJson;
+    $billingitem = new BItem;
     $billingitem->cobrancatipo_id = 2;
-    $billingitem->origvalue = 1500;
-    $billingitem->ref = new Ref; // the default is date type ref. with today's date
-    $billingitems->add($billingitem);
+    $billingitem->item_value      = 1500;
+    $n_cota_ref = 3;
+    $total_cotas_ref = 10;
+    $billingitem->ref_obj = BItem::make_ref_obj_with_parcels($n_cota_ref, $total_cotas_ref);
+    $this->bitems[] = $billingitem;
+    $this->billingitems->add($billingitem);
 
-    $billingitemsjson = $billingitems->get_json();
+  } // ends seed()
 
-    echo $billingitemsjson;
-
-    return $billingitemsjson;
-
+  public function json() {
+    return $this->billingitems->get_json();
   }
-}
+
+} // ends class BillingItemSeeder

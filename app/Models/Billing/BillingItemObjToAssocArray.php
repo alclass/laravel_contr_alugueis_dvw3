@@ -5,6 +5,30 @@ use App\Models\Billing\RefForBillingItem as Ref;
 
 class BillingItemObjToAssocArray {
 
+  private static function fill_in_ref_freq_used($ref_obj, $is_yearly=false) {
+    if ($is_yearly == true) {
+      $ref_obj->ref_freq_used = Ref::K_REF_IS_YEARLY;
+    } else {
+      $ref_obj->ref_freq_used = Ref::K_REF_IS_MONTHLY;
+    }
+    return $ref_obj;
+  }
+
+  public static function make_ref_obj_with_date($monthyeardateref, $is_yearly=false) {
+    $ref_obj = new Ref;
+    $ref_obj->ref_type = Ref::K_REFTYPE_DATE;
+    $ref_obj->date_ref = $monthyeardateref;
+    return self::fill_in_ref_freq_used($ref_obj, $is_yearly);
+  }
+
+  public static function make_ref_obj_with_parcels($n_cota_ref, $total_cotas_ref, $is_yearly=false) {
+    $ref_obj = new Ref;
+    $ref_obj->ref_type        = Ref::K_REFTYPE_PARCEL;
+    $ref_obj->n_cota_ref      = $n_cota_ref;
+    $ref_obj->total_cotas_ref = $total_cotas_ref;
+    return self::fill_in_ref_freq_used($ref_obj, $is_yearly);
+  }
+
   public $cobrancatipo_id;
   public $item_value;
   public $modified_value;
@@ -36,26 +60,26 @@ class BillingItemObjToAssocArray {
     // Item Ref
     // 1st case: ref type is K_REFTYPE_DATE
     if ($this->ref_obj->ref_type == Ref::K_REFTYPE_DATE) {
-      $assoc_array[Ref::K_KEY_REF_TYPE] = Ref::K_REFTYPE_DATE;
-      $assoc_array[Ref::K_KEY_DATE_REF] = $this->ref_obj->date_ref;
+      $assoc_array[Ref::KEY_REF_TYPE] = Ref::K_REFTYPE_DATE;
+      $assoc_array[Ref::KEY_DATE_REF] = $this->ref_obj->date_ref;
       // 1-1st case: date ref is MONTHLY
-      if ($this->ref_obj->freq_date_type == Ref::K_REFTYPE_DATE_MONTHLY) {
-        $assoc_array[Ref::K_KEY_DATE_FREQ_USED] = Ref::K_REFTYPE_DATE_MONTHLY;
+      if ($this->ref_obj->ref_freq_used == Ref::K_REF_IS_MONTHLY) {
+        $assoc_array[Ref::KEY_REF_FREQ_USED] = Ref::K_REF_IS_MONTHLY;
       // 1-2nd case: date ref is YEARLY
       } else {
-        $assoc_array[Ref::K_KEY_DATE_FREQ_USED] = Ref::K_REFTYPE_DATE_YEARLY;
+        $assoc_array[Ref::KEY_REF_FREQ_USED] = Ref::K_REF_IS_YEARLY;
       }
       // 2nd case: ref type is K_REFTYPE_PARCEL
     } else {
-      $assoc_array[Ref::K_KEY_REF_TYPE]    = Ref::K_REFTYPE_PARCEL;
-      $assoc_array[Ref::K_KEY_N_COTA]      = $this->ref_obj->n_cota_ref;
-      $assoc_array[Ref::K_KEY_TOTAL_COTAS] = $this->ref_obj->total_cotas_ref;
+      $assoc_array[Ref::KEY_REF_TYPE]      = Ref::K_REFTYPE_PARCEL;
+      $assoc_array[Ref::KEY_N_COTA_REF]      = $this->ref_obj->n_cota_ref;
+      $assoc_array[Ref::KEY_TOTAL_COTAS_REF] = $this->ref_obj->total_cotas_ref;
       // 2-1st case: cota ref is MONTHLY
-      if ($this->ref_obj->cota_freq_used == Ref::K_REFTYPE_PARCEL_MONTHLY) {
-        $assoc_array[Ref::K_KEY_COTA_FREQ_USED] = Ref::K_REFTYPE_PARCEL_MONTHLY;
+      if ($this->ref_obj->ref_freq_used == Ref::K_REF_IS_MONTHLY) {
+        $assoc_array[Ref::KEY_REF_FREQ_USED] = Ref::K_REF_IS_MONTHLY;
       // 2-2nd case: cota ref is YEARLY
       } else {
-        $assoc_array[Ref::K_KEY_COTA_FREQ_USED] = Ref::K_REFTYPE_PARCEL_YEARLY;
+        $assoc_array[Ref::KEY_REF_FREQ_USED] = Ref::K_REF_IS_YEARLY;
       }
     }
     return $assoc_array;
@@ -69,23 +93,23 @@ class BillingItemObjToAssocArray {
     $this->value_modifier_brief_descriptor_if_any = $assoc_array['value_modifier_brief_descriptor_if_any'];
     $ref = new Ref;
     // 1st case: ref type is K_REFTYPE_DATE
-    if ($assoc_array[Ref::K_KEY_REF_TYPE] == Ref::K_REFTYPE_DATE) {
+    if ($assoc_array[Ref::KEY_REF_TYPE] == Ref::K_REFTYPE_DATE) {
       $this->ref_obj->ref_type = Ref::K_REFTYPE_DATE;
-      $this->ref_obj->date_ref = $assoc_array[Ref::K_KEY_DATE_REF];
+      $this->ref_obj->date_ref = $assoc_array[Ref::KEY_DATE_REF];
       // 1-1st case: date ref is MONTHLY
-      if ($this->ref_obj->$date_freq_used == Ref::K_REFTYPE_DATE_MONTHLY) {
-        $this->ref_obj->$date_freq_used = Ref::K_REFTYPE_DATE_MONTHLY;
+      if ($this->ref_obj->ref_freq_used == Ref::K_REF_IS_MONTHLY) {
+        $this->ref_obj->ref_freq_used = Ref::K_REF_IS_MONTHLY;
       // 1-2nd case: date ref is YEARLY
       } else {
-        $this->ref_obj->$date_freq_used = Ref::K_REFTYPE_DATE_YEARLY;
+        $this->ref_obj->ref_freq_used = Ref::K_REF_IS_YEARLY;
       }
     // 2nd case: ref type is K_REFTYPE_PARCEL
     } else {
-      $this->ref_obj->ref_type    = Ref::K_REFTYPE_PARCEL;
-      $this->ref_obj->n_cota      = $assoc_array[Ref::K_KEY_N_COTA];
-      $this->ref_obj->total_cotas = $assoc_array[Ref::K_KEY_TOTAL_COTAS];
-      $this->ref_obj->cota_freq_used = $assoc_array[Ref::K_KEY_COTA_FREQ_USED];
+      $this->ref_obj->ref_type        = Ref::K_REFTYPE_PARCEL;
+      $this->ref_obj->n_cota_ref      = $assoc_array[Ref::KEY_N_COTA_REF];
+      $this->ref_obj->total_cotas_ref = $assoc_array[Ref::KEY_TOTAL_COTAS_REF];
+      $this->ref_obj->ref_freq_used   = $assoc_array[Ref::KEY_REF_FREQ_USED];
     }
-  } // ends transpose_n_set_billingitemobj_from_an_assoc_array()
+  } // ends set_attrs_from_assoc_array()
 
 } // ends class BillingItemForJson
