@@ -14,7 +14,7 @@
   @endif {{-- @if (empty($user->contracts)) --}}
 
   @foreach ($user->contracts as $contract)
-    <h3> Dados Resumidos do Contrato ID {{ $contract->id }}</h3>
+    <h3> Dados Resumidos do  <a href="{{ route('contract', $contract) }}"> Contrato ID {{ $contract->id }}</a></h3>
     <?php
       $endereco = "n/a";
       $imovel_href = "#";
@@ -35,7 +35,8 @@
     <h4> Início do Contrato: {{ $contract->start_date }} </h4>
     <h5> Aluguel no Início do Contrato:  {{ $contract->initial_rent_value }} </h5>
     <h4> Valor Atual do Aluguel:   {{ $contract->current_rent_value }} </h4>
-    <h5> Próximo Reajuste: {{ $contract->get_next_rent_value_reajust_date()->toFormattedDateString() }} </h4>
+    <h5> Próximo Reajuste: {{ $contract->find_rent_value_next_reajust_date() }} </h4>
+      {{-- ->toFormattedDateString() --}}
   @endforeach  {{-- @foreach ($user->contracts as $contract) --}}
 
 @endsection

@@ -53,7 +53,7 @@ Route::get('/contracts', [
   }
 ]);
 
-Route::get('/contract', [
+Route::get('/contract/{id}', [
 	'as'   => 'contract',
   'uses' =>
   function ($id) {
@@ -72,24 +72,37 @@ Route::get('/imovel/{id}', [
 ]);
 
 Route::get('/payments/history', 'PaymentController@index');
+Route::get('/payment/conciliar/{contract_id}/{year}/{month}', [
+  'as'   => 'payment.conciliar',
+  'uses' => 'PaymentController@conciliar'
+]);
+// Route::match(array('GET', 'POST') ...
+Route::post('/cobranca/editargerar', [
+  'as'=>'cobranca.editargerar',
+  'uses'=>'PaymentController@editargerar'
+]);
+//Route::resource('payment', 'PaymentController');
+
 Route::post('/payments/toregister', 'PaymentController@store');
 /*
 	'as'   => 'payments.toregister',
 	'uses' => 'PaymentController@store'
 ]);
 */
-Route::get('/cobranca/mostrar/{contract_id}/{year}/{month}',
-  function($contract_id, $year, $month) {
-    $monthyeardateref = Carbon::createFromDate($year, $month, 1);
-    $monthyeardateref->setTime(0,0,0);
-    $cobrancas = Cobranca
-      ::where('contract_id', $contract_id)
-      ->where('monthyeardateref', $monthyeardateref)
-      ->get();
-    // return var_dump($monthyeardateref->toDayDateTimeString());
-    return view('cobrancas.cobranca.mostrar', ['cobrancas'=>$cobrancas]);
-  } // ends closure function
-); // ends Route::get
+Route::get('/cobranca/mostrar/{contract_id}/{year}/{month}', [
+  'as'   => 'cobranca.mostrar',
+  'uses' =>
+    function($contract_id, $year, $month) {
+      $monthyeardateref = Carbon::createFromDate($year, $month, 1);
+      $monthyeardateref->setTime(0,0,0);
+      $cobrancas = Cobranca
+        ::where('contract_id', $contract_id)
+        ->where('monthyeardateref', $monthyeardateref)
+        ->get();
+      // return var_dump($monthyeardateref->toDayDateTimeString());
+      return view('cobrancas.cobranca.mostrar', ['cobrancas'=>$cobrancas]);
+    } // ends closure function
+]); // ends aarray & Route::get
 
 Route::get('/condominios/{imovel_id}',
   function($imovel_id) {

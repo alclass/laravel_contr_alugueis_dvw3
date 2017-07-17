@@ -2,6 +2,7 @@
 namespace App\Models\Immeubles;
 
 // use Carbon\Carbon;
+use App\Models\Utils\DateFunctions;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -9,6 +10,12 @@ class Contract extends Model {
 
 
   protected $table = 'contracts';
+
+  protected $dates = [
+    'signing_date',
+    'start_date',
+  ];
+
 
   private $today            = null;
   private $monthyeardateref = null;
@@ -33,17 +40,10 @@ class Contract extends Model {
   }
 
   public function find_rent_value_next_reajust_date($from_date = null) {
-    if ($from_date = null) {
-      $this->set_obj_dates_based_on_today();
-      $from_date = $this->today();
-    }
-    $start_date     = $this->start_date->copy();
-    $inbetween_date = $from_date;
-    $end_date       = $this->get_end_date();
     return DateFunctions::find_next_anniversary_date_with_triple_start_inbetween_end(
-      $start_date,
-      $inbetween_date,
-      $end_date
+      $this->start_date,
+      $from_date, //$inbetween_date,
+      $this->get_end_date()
     );
   }
 

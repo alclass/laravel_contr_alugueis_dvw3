@@ -1,7 +1,8 @@
 <?php namespace App\Http\Controllers;
 
-use App\Imovel;
-use App\Payment;
+use App\Models\Immeubles\Imovel;
+use App\Models\Billing\Payment;
+use App\Models\Billing\Cobranca;
 use App\User;
 
 use App\Http\Requests;
@@ -31,6 +32,37 @@ class PaymentController extends Controller {
 	public function create()
 	{
 		//
+	}
+
+	public function conciliar($contract_id, $year, $month, $n_seq_from_dateref=1) {
+
+		$monthyeardateref = Carbon::createFromDate($year, $month, 1);
+		$monthyeardateref->setTime(0,0,0);
+		$cobranca = Cobranca
+			::where('contract_id', $contract_id)
+			->where('monthyeardateref', $monthyeardateref)
+			->where('n_seq_from_dateref', $n_seq_from_dateref)
+			->first();
+		return view('cobrancas.payments.conciliar', ['cobranca' => $cobranca]);
+	}
+
+	public function editargerar(\Illuminate\Http\Request $request) {
+
+
+		$conciliar_aarray = array();
+		$conciliar_aarray['valor_recebido'] = $request->input('valor_recebido');
+		$conciliar_aarray['meio_de_pagto']  = $request->input('meio_de_pagto');
+		$cobranca_id = $request->input('cobranca_id');
+		$conciliar_aarray['data_recebido']  = $request->input('data_recebido');
+		$conciliar_aarray['debito_ou_credito'] = $request->input('debito_ou_credito');
+
+		// return var_dump($conciliar_aarray);
+
+		$cobranca = Cobranca::findOrFail($cobranca_id);
+		return view('cobrancas.cobranca.editargerar', [
+			'cobranca' => $cobranca,
+			'conciliar_aarray'=>$conciliar_aarray
+		]);
 	}
 
 	/**
@@ -69,7 +101,7 @@ class PaymentController extends Controller {
 		if ($request->has('bankname')) {
 			$bankname = $request->input('bankname');
 		}
-		
+
 
 		if (!empty($user) && !empty($amount) && !empty($deposited_on)) {
 			$payment = new Payment;

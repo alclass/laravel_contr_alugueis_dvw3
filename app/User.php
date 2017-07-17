@@ -51,7 +51,7 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 	} // ends function get_first_n_last_names()
 
 	public function contracts( ) {
-		return $this->belongsToMany('App\Contract');
+		return $this->belongsToMany('App\Models\Immeubles\Contract');
   }  // ends function contracts()
 
 } // ends class User

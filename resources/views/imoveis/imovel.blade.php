@@ -29,8 +29,9 @@
     <h5> Não há contratos no banco de dados relativos a este imóvel. </h5>
   @endif
   @if ($contract != null)
-    <h5> Valor Atual: {{ $contract->current_rent_value }} </h5>
-    <h5> nº contrante(s): {{ $contract->users->count() }} </h5>
+    <h5> <a href="{{ route('contract', $contract->id) }}">Contrato Atual</a> {{ $contract->start_date }} a {{ $contract->get_end_date() }}</h5>
+    <h5> Nº contratante(s): {{ $contract->users->count() }} </h5>
+    <h5> Aluguel Valor Atual: {{ $contract->current_rent_value }} | Próximo reajuste: {{ $contract->start_date }}</h5>
     <h2>Inquilino(s)</h2>
     @foreach($contract->users as $user)
       <h4> <a href="{{ route('user.route', $user) }}">{{ $user->get_first_n_last_names() }} </a></h4>

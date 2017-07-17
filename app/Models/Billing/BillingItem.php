@@ -2,6 +2,7 @@
 namespace App\Models\Billing;
 
 // use App\Models\Billing\Payment;
+use App\Models\Utils\DateFunctions;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
@@ -14,6 +15,38 @@ class BillingItem extends Model {
   const K_FREQ_USED_IS_WEEKLY  = 'W';
   const K_FREQ_USED_IS_MONTHLY = 'D';
   const K_FREQ_USED_IS_YEARLY  = 'Y';
+
+  public static createOrFindBilligItemForDebitoCredito(
+      $next_cobranca_id,
+      $monthyeardateref_of_item,
+      $value
+    ) {
+    $monthyeardateref_of_item->setTime(0,0,0);
+    $items = BillingItem
+      ::where('cobranca_id', $next_cobranca_id)
+      ->where('monthyeardateref', $monthyeardateref_of_item)
+      ->get();
+    if ($items->count()>0){
+      return $items->first();
+    }
+    // okay, create a new one
+    $billingitem = new BillingItem;
+    $billingitem->cobranca_id = $next_cobranca_id;
+    $CRED_OR_DEBT = 'CRED';
+    if ($value < 0) {
+      $CRED_OR_DEBT = 'DEBT';
+    }
+    $cobrancatipo = CobrancaTipo
+      ::where('char_id', $CRED_OR_DEBT)
+      ->first();
+    $billingitem->cobrancatipo_id = $cobrancatipo->id;
+    $billingitem->charged_value = $value;
+    $billingitem->monthyeardateref = $monthyeardateref_of_item;
+    $billingitem->type_ref = 'D'; // this is imposed !
+    $billingitem->freq_used_ref = 'M';
+    return $billingitem;
+  }
+
 
   protected $table = 'billingitems';
 

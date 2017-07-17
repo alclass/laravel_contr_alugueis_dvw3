@@ -7,13 +7,26 @@
 @endsection
 @section('content')
 
-  <h1>Exibir Contrato</h1>
-  <h4> {{ $imovel->get_street_address() }} </h4>
-  <h5> {{ $imovel->valor_aluguel  }} </h5>
+<?php
+  use Carbon\Carbon;
+  $imovel = $contract->imovel;
+  $street_address = 'n/a';
+  if ($imovel != null) {
+    $street_address = $imovel->get_street_address();
+  }
+  $today = Carbon::today();
+  $year  = $today->year;
+  $month = $today->month;
+?>
 
-  <h2>Inquilino(s)</h2>
-  @foreach($imovel->users as $user)
-    <h4> <a href="{{ route('user.route', $user) }}">{{ $user->name_first_last() }} </a></h4>
+  <h1>Exibir Contrato</h1>
+  <h4> {{ $street_address }} </h4>
+  <h5> {{ $contract->current_rent_value }} </h5>
+  <h5>  <a href="{{ route('cobranca.mostrar', [$contract->id, $year, $month]) }}">Ver cobrança atual</a></h5>
+
+  <h2>Contratante(s)</h2>
+  @foreach($contract->users as $user)
+    <h4> <a href="{{ route('user.route', $user) }}">{{ $user->get_first_n_last_names() }} </a></h4>
     <h5> {{ $user->email }} </h5>
   @endforeach
 
