@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class IPTUTabela extends Model {
 
+
+  const K_IPTU_TOTAL_COTAS = 10;
   protected $table = 'iptutabelas';
 
   protected $fillable = [

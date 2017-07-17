@@ -25,6 +25,30 @@ class RefForBillingItem {
   public $freq_used_in_ref; // 'M' (monthly) or 'Y' (yearly)
   public $brief_info;
 
+  private static function fill_in_ref_freq_used($ref_obj, $is_yearly=false) {
+    if ($is_yearly == true) {
+      $ref_obj->ref_freq_used = Ref::K_REF_IS_YEARLY;
+    } else {
+      $ref_obj->ref_freq_used = Ref::K_REF_IS_MONTHLY;
+    }
+    return $ref_obj;
+  }
+
+  public static function make_ref_obj_with_date($monthyeardateref, $is_yearly=false) {
+    $ref_obj = new Ref;
+    $ref_obj->ref_type = Ref::K_REFTYPE_DATE;
+    $ref_obj->date_ref = $monthyeardateref;
+    return self::fill_in_ref_freq_used($ref_obj, $is_yearly);
+  }
+
+  public static function make_ref_obj_with_parcels($n_cota_ref, $total_cotas_ref, $is_yearly=false) {
+    $ref_obj = new Ref;
+    $ref_obj->ref_type        = Ref::K_REFTYPE_PARCEL;
+    $ref_obj->n_cota_ref      = $n_cota_ref;
+    $ref_obj->total_cotas_ref = $total_cotas_ref;
+    return self::fill_in_ref_freq_used($ref_obj, $is_yearly);
+  }
+
   public function __construct() {
     // default to monthy date ref. type
     $this->type = self::K_REFTYPE_DATE;

@@ -1,0 +1,41 @@
+@extends('layouts.master')
+@section('title')
+    Histórico das Tarifas de Condomínio
+@endsection
+@section('styles')
+    <link rel="stylesheet" href="{{ URL::asset('css/rwd-table.css') }}">
+@endsection
+@section('content')
+  <h1>Histórico das Tarifas de Condomínio</h1>
+  <h4>Prédio {{ $imovel->predio_nome }}</h4>
+  <h5> {{ $imovel->get_address_without_complement() }}</h5>
+  @if (count($condominiotarifas)==0)
+    <br>
+    <h4>Não há registros dos valores das tarifas de condomínio no banco de dados.</h4>
+  @endif
+
+  @if (count($condominiotarifas)>0)
+    <?php
+      $n_seq = 0;
+    ?>
+    <table class="rwd-table">
+      <tr>
+        <th>n.</th>
+        <th>Ref.</th>
+        <th>Tarifa</th>
+      </tr>
+      @foreach($condominiotarifas as $condominiotarifa)
+        <tr>
+          <?php
+            $n_seq += 1;
+          ?>
+          <td data-th="n"> {{ $n_seq }} </td>
+          <td data-th="ref"> {{ $condominiotarifa->format_monthyeardateref_as_m_slash_y() }} </td>
+          <td data-th="tarifa"> {{ $condominiotarifa->tarifa_valor }} </td>
+        </tr>
+      @endforeach
+    </table>
+  @endif
+<br>
+<h6>Sistema de Locação</h6>
+@endsection

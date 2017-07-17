@@ -5,31 +5,8 @@ use App\Models\Billing\RefForBillingItem as Ref;
 
 class BillingItemObjToAssocArray {
 
-  private static function fill_in_ref_freq_used($ref_obj, $is_yearly=false) {
-    if ($is_yearly == true) {
-      $ref_obj->ref_freq_used = Ref::K_REF_IS_YEARLY;
-    } else {
-      $ref_obj->ref_freq_used = Ref::K_REF_IS_MONTHLY;
-    }
-    return $ref_obj;
-  }
-
-  public static function make_ref_obj_with_date($monthyeardateref, $is_yearly=false) {
-    $ref_obj = new Ref;
-    $ref_obj->ref_type = Ref::K_REFTYPE_DATE;
-    $ref_obj->date_ref = $monthyeardateref;
-    return self::fill_in_ref_freq_used($ref_obj, $is_yearly);
-  }
-
-  public static function make_ref_obj_with_parcels($n_cota_ref, $total_cotas_ref, $is_yearly=false) {
-    $ref_obj = new Ref;
-    $ref_obj->ref_type        = Ref::K_REFTYPE_PARCEL;
-    $ref_obj->n_cota_ref      = $n_cota_ref;
-    $ref_obj->total_cotas_ref = $total_cotas_ref;
-    return self::fill_in_ref_freq_used($ref_obj, $is_yearly);
-  }
-
   public $cobrancatipo_id;
+  public $brief_description;
   public $item_value;
   public $modified_value;
   public $value_modifier_brief_descriptor_if_any;
@@ -44,18 +21,20 @@ class BillingItemObjToAssocArray {
   }
 
   public function set_null_to_attributes() {
-    $this->cobrancatipo_id = null;
-    $this->item_value      = null;
-    $this->modified_value  = null;
+    $this->cobrancatipo_id   = null;
+    $this->brief_description = null;;
+    $this->item_value        = null;
+    $this->modified_value    = null;
     $this->value_modifier_brief_descriptor_if_any = null;
     $this->ref_obj = null;
   }
 
   public function generate_n_return_assoc_array() {
     $assoc_array = array();
-    $assoc_array['cobrancatipo_id'] = $this->cobrancatipo_id;
-    $assoc_array['item_value']      = $this->item_value;
-    $assoc_array['modified_value']  = $this->modified_value;
+    $assoc_array['cobrancatipo_id']   = $this->cobrancatipo_id;
+    $assoc_array['brief_description'] = $this->brief_description;
+    $assoc_array['item_value']        = $this->item_value;
+    $assoc_array['modified_value']    = $this->modified_value;
     $assoc_array['value_modifier_brief_descriptor_if_any'] = $this->value_modifier_brief_descriptor_if_any;
     // Item Ref
     // 1st case: ref type is K_REFTYPE_DATE
@@ -87,9 +66,10 @@ class BillingItemObjToAssocArray {
 
   public function set_attrs_from_assoc_array($assoc_array) {
     $this->set_null_to_attributes();
-    $this->cobrancatipo_id = $assoc_array['cobrancatipo_id'];
-    $this->item_value      = $assoc_array['item_value'];
-    $this->modified_value  = $assoc_array['modified_value'];
+    $this->cobrancatipo_id   = $assoc_array['cobrancatipo_id'];
+    $this->brief_description = $assoc_array['brief_description'];
+    $this->item_value        = $assoc_array['item_value'];
+    $this->modified_value    = $assoc_array['modified_value'];
     $this->value_modifier_brief_descriptor_if_any = $assoc_array['value_modifier_brief_descriptor_if_any'];
     $ref = new Ref;
     // 1st case: ref type is K_REFTYPE_DATE

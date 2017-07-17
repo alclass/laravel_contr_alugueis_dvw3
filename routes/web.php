@@ -10,10 +10,12 @@
 | contains the "web" middleware group. Now create something great!
 |
 */
-use App\Contract;
-use App\Imovel;
+use App\Models\Billing\Cobranca;
+use App\Models\Billing\Payment;
+use App\Models\Immeubles\CondominioTarifa;
+use App\Models\Immeubles\Contract;
+use App\Models\Immeubles\Imovel;
 use App\User;
-use App\Payment;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 // use App\Http\Controllers\PaymentController;
@@ -76,12 +78,33 @@ Route::post('/payments/toregister', 'PaymentController@store');
 	'uses' => 'PaymentController@store'
 ]);
 */
-Route::get('/cobranca/{id}/mostrar',
-  function($id) {
-    $contract = Contract::findOrFail($id);
-    return view('cobranca.mostrar', ['contract'=>$contract]);
-  }
-);
+Route::get('/cobranca/mostrar/{contract_id}/{year}/{month}',
+  function($contract_id, $year, $month) {
+    $monthyeardateref = Carbon::createFromDate($year, $month, 1);
+    $monthyeardateref->setTime(0,0,0);
+    $cobrancas = Cobranca
+      ::where('contract_id', $contract_id)
+      ->where('monthyeardateref', $monthyeardateref)
+      ->get();
+    // return var_dump($monthyeardateref->toDayDateTimeString());
+    return view('cobrancas.cobranca.mostrar', ['cobrancas'=>$cobrancas]);
+  } // ends closure function
+); // ends Route::get
+
+Route::get('/condominios/{imovel_id}',
+  function($imovel_id) {
+    $condominiotarifas = CondominioTarifa
+      ::where('imovel_id', $imovel_id)
+      ->get();
+    $imovel = Imovel::findOrFail($imovel_id);
+    // return var_dump($monthyeardateref->toDayDateTimeString());
+    return view('imoveis.condominiotarifas', [
+      'condominiotarifas'=>$condominiotarifas,
+      'imovel'=>$imovel
+    ]);
+  } // ends closure function
+); // ends Route::get
+
 
 Route::get('/cobrancas/abertas',     'CobrancaController@abertas');
 Route::get('/cobrancas/emmora',      'CobrancaController@emmora');

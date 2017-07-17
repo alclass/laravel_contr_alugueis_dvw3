@@ -86,7 +86,7 @@ class DateFunctions {
     }
     // pick up this month and return
     $monthyeardateref = $date->copy();
-    $monthyeardateref->day = 0;
+    $monthyeardateref->day = 1;
     return $monthyeardateref;
   } // ends find_rent_monthyeardateref_under_convention()
 
@@ -104,7 +104,30 @@ class DateFunctions {
     $duedate = $date->copy()->addMonth(1);
     $duedate->day = $pay_day_when_monthly;
     return $duedate;
-  } // ends with calculate_monthly_duedate_under_convention()
+  } // ends calculate_monthly_duedate_under_convention()
+
+  public static function format_monthyeardateref_as_m_slash_y($monthyeardateref) {
+    if ($monthyeardateref == null) {
+      return 'n/a';
+    }
+    /*  This was needed before using the accessors & mutators technique to force Carbon dates (see above protected $dates)
+    if (gettype($this->monthyeardateref)==gettype('s')) {
+      $this->monthyeardateref = Carbon::createFromFormat('Y-m-d', $this->monthyeardateref);
+    }
+    */
+    // toDayDateTimeString() => Thu, Dec 25, 1975 2:15 PM
+    $datestring = $monthyeardateref->toDayDateTimeString();
+    $pos_for_3letter_month = 5;
+    $month_str = substr($datestring, $pos_for_3letter_month, 3); // = "Dec" (December)
+    $pos_for_2digit_year = 15;
+    if ($monthyeardateref->day < 10) {
+      // if day >= 10, position is 15, else it's 14
+      $pos_for_2digit_year = 14;
+    }
+    $year_str  = substr($datestring, $pos_for_2digit_year, 2); // = "75" (of 1975)
+    $outstr    = $month_str . "/" . $year_str;
+    return $outstr;
+  } // ends format_monthyeardateref_as_m_slash_y()
 
 
 } // ends class DateFunctions

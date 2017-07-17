@@ -1,6 +1,7 @@
 <?php
 namespace App\Models\Immeubles;
 
+use App\Models\Utils\DateFunctions;
 use Illuminate\Database\Eloquent\Model;
 
 class CondominioTarifa extends Model {
@@ -15,13 +16,10 @@ class CondominioTarifa extends Model {
     if ($n_recs == 0) {
       return null;
     }
-    if ($n_ultimas == null) {
+    if ($n_ultimas == null || $n_ultimas > $n_recs) {
       $n_ultimas=$n_recs;
     }
-    if ($n_ultimas > $n_recs) {
-      $n_ultimas=$n_recs;
-    }
-    if ($n_ultimas > 12 && $max_1_year) {
+    if ($n_ultimas > 12 && $max_1_year == true) {
       $n_ultimas = 12;
     }
     $lasts = CondominioTarifa::last($n_ultimas);
@@ -36,6 +34,12 @@ class CondominioTarifa extends Model {
     return $average;
   } // ends static calcular_media_das_ultimas_tarifas()
 
+  protected $dates = [
+    'monthyeardateref',
+    //'created_at',
+    //'updated_at',
+  ];
+
   protected $table = 'condominiotarifas';
 
   /**
@@ -47,6 +51,10 @@ class CondominioTarifa extends Model {
     'tarifa_valor',
     'monthyeardateref',
   ];
+
+  public function format_monthyeardateref_as_m_slash_y() {
+    return DateFunctions::format_monthyeardateref_as_m_slash_y($this->monthyeardateref);
+  }
 
   public function imovel() {
     return $this->belongsTo('App\Models\Immeubles\Imovel');

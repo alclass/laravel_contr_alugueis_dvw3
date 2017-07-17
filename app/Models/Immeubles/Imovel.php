@@ -19,7 +19,7 @@ class Imovel extends Model {
 	 * @var array
 	 */
 	protected $fillable = [
-		'apelido',
+		'apelido', 'predio_nome', 
 		'logradouro', 'tipo_lograd', 'numero', 'complemento', 'cep',
 		'tipo_imov',
 		'is_rentable', 'area_edif_iptu_m2	', 'area_terr_iptu_m2',
@@ -30,6 +30,13 @@ class Imovel extends Model {
 	 *
 	 * @var array
 	 */
+
+	 public function get_address_without_complement() {
+		 $line = $this->tipo_lograd;
+		 $line = $line . ' ' . $this->logradouro;
+		 $line = $line . ', ' . $this->numero;
+		 return $line;
+	 }
 
 	 public function get_street_address( ) {
 		 $line = $this->tipo_lograd;
