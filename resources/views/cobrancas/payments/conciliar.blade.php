@@ -91,7 +91,7 @@
   Data Recebido: <input type="text"  name="data_recebido" value="0.00"></input> <br>
   <input type="radio" name="meio_de_pagto" value="conta-corrente" checked>Conta-corrente</input>
   <input type="radio" name="meio_de_pagto" value="dinheiro">Dinheiro</input> <br>
-  Dif. Créd.|Déb.: <input type="text" name="debito_ou_credito" value="0.00"></input> <br>
+  Dif. Créd.|Déb.: <input type="text" name="mora_ou_credito" value="0.00"></input> <br>
   <input type="submit" name="conciliate_button" value="conciliate_submit"></input> <br>
 </form>
 @endsection

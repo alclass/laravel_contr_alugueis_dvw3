@@ -34,18 +34,8 @@ class Cobranca extends Model {
     'has_been_paid',
 	];
 
-/*
-  public function set_billingitemsinjson($billingitemsinjson) {
-    $this->billingitemsinjson = billingitemsinjson;
-    $this->set_total_after_setting_billingitems();
-  }
+  // contract_id is in DB Schema, but connected below with a belongsTo() method
 
-  public function convert_from_json_n_set_billingitems() {
-    $this->billingitems = new BillingItemsForJson;
-    $this->billingitems->fill_in_billingitems_from_json($this->billingitemsinjson);
-  }
-
-*/
   public function is_iptu_ano_quitado() {
     if ($this->contract->imovel == null) {
       return false;
@@ -69,36 +59,39 @@ class Cobranca extends Model {
   public function contract() {
     return $this->belongsTo('App\Models\Immeubles\Contract');
   }
-  /*
-  public function user() {
-    return $this->belongsTo('App\User');
+
+  public function get_users() {
+    if ($this->contract != null) {
+      // the returning users()->get() is a Collection
+      return $this->contract->users()->get();
+    }
+    return null;
   }
-  */
 
   public function createOrFindNextMonthCobranca($n_seq_from_dateref=1) {
-    $next_monthyeardateref = $this->monthyeardateref->addMonths(1);
-    $cobranca = Cobranca
-      ::where('contract_id',        $this->contract->id)
-      ->where('monthyeardateref',   $next_monthyeardateref)
-      ->where('n_seq_from_dateref', $n_seq_from_dateref)
-      ->first();
-    if ($cobranca != null) {
-      return $cobranca;
+    $next_monthyeardateref = $this->monthyeardateref->copy()->addMonths(1);
+    if ($this->contract == null) {
+      if ($this->contract_id == null) {
+        throw new Exception("contract is null when calling createOrFindNextMonthCobranca())", 1);
+      }
+      // Try to fetch contract from contract_id
+      $this->contract = Contract::find($this->contract_id);
+      if ($this->contract == null) {
+        throw new Exception("contract_id was not db-found when calling createOrFindNextMonthCobranca())", 1);
+      }
     }
-    $cobranca = new Cobranca;
-    $cobranca->contract_id        = $this->contract->id;
-    $cobranca->monthyeardateref   = $next_monthyeardateref;
-    $cobranca->duedate            = $next_monthyeardateref->copy()->addMonths(1);
-    $cobranca->duedate->day       = $this->contract->pay_day_when_monthly;
-    $cobranca->n_seq_from_dateref = $n_seq_from_dateref;
-    $cobranca->save();
-    return $cobranca;
+    return CobrancaGerador
+      ::createOrRetrieveCobrancaWithTripleContractRefSeq(
+        $this->contract,
+        $next_monthyeardateref,
+        $n_seq_from_dateref
+      );
   }
 
-  public function createOneOrRetrieveAnyBilligItemsFor($cobrancatipo_id, $monthyeardateref_of_item, $value) {
+  public function createOrRetrieveAnyBilligItemsFor($cobrancatipo, $monthyeardateref_of_item, $value) {
     $monthyeardateref_of_item->setTime(0,0,0);
     $billingitems = $this->billingitems
-      ->where('cobrancatipo_id',  $cobrancatipo_id)
+      ->where('cobrancatipo_id',  $cobrancatipo->id)
       ->where('monthyeardateref', $monthyeardateref_of_item)
       ->where('charged_value',    $value)
       ->get();
@@ -107,41 +100,53 @@ class Cobranca extends Model {
     }
     // create one new
     $billingitem = new BillingItem;
-    $billingitem->cobranca_id      = $this->cobranca_id;
+    $billingitem->cobrancatipo_id  = $this->cobrancatipo->id;
     $billingitem->monthyeardateref = $monthyeardateref_of_item;
     $billingitem->charged_value    = $value;
     $billingitem->type_ref         = BillingItem::K_REF_TYPE_IS_DATE;
     $billingitem->freq_used_ref    = BillingItem::K_FREQ_USED_IS_MONTHLY;
-    $this->$billingitems->add(billingitem);
-    return $billingitem;
+    $this->$billingitems()->save(billingitem);
+    // Re-query it Collection
+    $billingitems = $this->billingitems
+      ->where('cobrancatipo_id',  $cobrancatipo->id)
+      ->where('monthyeardateref', $monthyeardateref_of_item)
+      ->where('charged_value',    $value)
+      ->get();
+    return $billingitems;
   }
 
-  public function createOneOrRetrieveAnyBilligItemsForCredito($monthyeardateref_of_item, $value) {
-    $cobrancatipo_id = CobrancaTipo
-      ::where('char_id', CobrancaTipo::K_CHARID_FOR_CRED)
+  public function createOrRetrieveAnyBillingItemsForCredito($monthyeardateref_of_item, $value) {
+    $cobrancatipo = CobrancaTipo
+      ::where('char_id', CobrancaTipo::K_4CHAR_CRED)
       ->first();
-    return createOneOrRetrieveAnyBilligItemsFor($cobrancatipo_id, $monthyeardateref_of_item, $value);
+    if ($cobrancatipo == null) {
+      throw new Exception("CobrancaTipo not found in db with corresponding K_CHAR_CRED (= 'CRED')", 1);
+    }
+    return $this->createOrRetrieveAnyBillingItemsFor($cobrancatipo, $monthyeardateref_of_item, $value);
   }
 
-  public function createOneOrRetrieveAnyBilligItemsForMora($monthyeardateref_of_item, $value) {
-    $cobrancatipo_id = CobrancaTipo
-      ::where('char_id', CobrancaTipo::K_4CHAR_FOR_MORA)
+  public function createOrRetrieveAnyBillingItemsForMora($monthyeardateref_of_item, $value) {
+    $cobrancatipo = CobrancaTipo
+      ::where('char_id', CobrancaTipo::K_4CHAR_MORA)
       ->first();
-    return createOneOrRetrieveAnyBilligItemsFor($cobrancatipo_id, $monthyeardateref_of_item, $value);
+    if ($cobrancatipo == null) {
+      throw new Exception("CobrancaTipo not found in db with corresponding K_CHAR_MORA (= 'MORA')", 1);
+    }
+    return $this->createOrRetrieveAnyBillingItemsFor($cobrancatipo, $monthyeardateref_of_item, $value);
   }
 
-  public function createOrFindBilligItemsForDebitoOrCredito($monthyeardateref_of_item, $value) {
+  public function createOrRetrieveAnyBillingItemsForMoraOrCredito($monthyeardateref_of_item, $value) {
     if ($value == 0) {
       return null;
-    } elif ($value < 0) {
+    } elseif ($value < 0) {
       $value *= -1;
-      return $this->createOneOrRetrieveAnyBilligItemsForMora($monthyeardateref_of_item, $value);
+      return $this->createOrRetrieveAnyBillingItemsForMora($monthyeardateref_of_item, $value);
     }
-    return $this->createOneOrRetrieveAnyBilligItemsForCredito($monthyeardateref_of_item, $value);
+    return $this->createOrRetrieveAnyBillingItemsForCredito($monthyeardateref_of_item, $value);
   }
 
   public function __toString() {
-    $outstr = 'Cobrança\n ';
+    $outstr = "Cobrança\n ";
     $apelido = '';
     if ($this->contract != null) {
       if ($this->contract->imovel != null) {
@@ -151,5 +156,6 @@ class Cobranca extends Model {
     $outstr .= 'Contract Imóvel ' . $apelido . '\n';
     // $outstr .= $this->billingitemsinjson;
     return $outstr;
-  }
+  } // public function __toString()
+
 } // ends class Cobranca extends Model

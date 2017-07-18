@@ -50,11 +50,11 @@ class PaymentController extends Controller {
 
 
 		$conciliar_aarray = array();
-		$conciliar_aarray['valor_recebido'] = $request->input('valor_recebido');
-		$conciliar_aarray['meio_de_pagto']  = $request->input('meio_de_pagto');
-		$cobranca_id = $request->input('cobranca_id');
-		$conciliar_aarray['data_recebido']  = $request->input('data_recebido');
-		$conciliar_aarray['debito_ou_credito'] = $request->input('debito_ou_credito');
+		$conciliar_aarray['valor_recebido']  = $request->input('valor_recebido');
+		$conciliar_aarray['meio_de_pagto']   = $request->input('meio_de_pagto');
+		$cobranca_id                         = $request->input('cobranca_id');
+		$conciliar_aarray['data_recebido']   = $request->input('data_recebido');
+		$conciliar_aarray['mora_ou_credito'] = $request->input('mora_ou_credito');
 
 		// return var_dump($conciliar_aarray);
 

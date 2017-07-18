@@ -5,9 +5,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class CobrancaTipo extends Model {
 
-  const K_TEXT_ID_ALUGUEL    = 'ALUG';
-  const K_TEXT_ID_CONDOMINIO = 'COND';
-  const K_TEXT_ID_IPTU       = 'IPTU';
+  const K_4CHAR_ALUG = 'ALUG';
+  const K_4CHAR_COND = 'COND';
+  const K_4CHAR_IPTU = 'IPTU';
+  const K_4CHAR_MORA = 'MORA';
+  const K_4CHAR_CRED = 'CRED';
 
   protected $table = 'cobrancatipos';
 
@@ -26,4 +28,4 @@ class CobrancaTipo extends Model {
     return $this->belongsTo('App\Models\Billing\Cobranca');
   }
 
-}
+} // class CobrancaTipo extends Model

@@ -17,95 +17,122 @@ use Carbon\Carbon;
 
 class CobrancaGerador {
 
-  private $cobranca         = null;
-  private $contract         = null;
-  private $monthyeardateref = null;
-  private $cobranca_gerada  = false;
-  private $cobranca_dbsaved = true;
-
-  public function __construct(
-                      $contract,
-                      $monthyeardateref = null,
-                      $create_new_if_exists=false ) {
-
+  public static function createOrRetrieveCobrancaWithTripleContractRefSeq(
+      $contract,
+      $monthyeardateref=null,
+      $n_seq_from_dateref=1
+    ) {
+    // [1] Treat $contract_id
     if ($contract == null) {
-      $error = 'Contract object is null when instanting a CobrancaGerador object.';
+      $error = 'Error: Contract is null when instanting a CobrancaGerador object.  Cannot create Cobranca, raise/throw exception.';
       throw new Exception($error);
     }
-    $this->contract = $contract;
-    // next method will also treat null $monthyeardateref
-    $this->set_cobranca_duedate_based_on_monthyeardateref();
-
-    // instantiate an emtpy Cobranca, if $create_new_if_exists=false, try to fetch an existing one
-    $this->cobranca = new Cobranca;
-    if ($create_new_if_exists=false) {
-      $this->db_fetch_cobranca_to_obj_if_exists();
+    // [2] Treat $monthyeardateref
+    if ($monthyeardateref==null) {
+      $monthyeardateref = DateFunctions
+        ::find_rent_monthyeardateref_under_convention(
+          Carbon::today(),
+          $this->contract->pay_day_when_monthly
+        );
     }
-    $this->cobranca_gerada  = false;
-    $this->cobranca_dbsaved = false;
+    $cobranca = Cobranca
+      ::where('contract_id',        $contract->id)
+      ->where('monthyeardateref',   $monthyeardateref)
+      ->where('n_seq_from_dateref', $n_seq_from_dateref)
+      ->first();
+    if ($cobranca != null) {
+      // ie, cobranca was found, it exists
+      return $cobranca;
+    }
+    // ie, cobranca wasn't found, create a new one
+    $cobranca = new Cobranca;
+    $cobranca->contract_id        = $contract->id;
+    $cobranca->contract()->associate($contract);
+    $cobranca->monthyeardateref   = $monthyeardateref;
+    $cobranca->duedate            = $monthyeardateref->copy()->addMonths(1);
+    $cobranca->duedate->day       = $contract->pay_day_when_monthly;
+    $cobranca->n_seq_from_dateref = $n_seq_from_dateref;
 
-  } // ends __construct()
+    $gerador = new CobrancaGerador($cobranca);
+    $gerador->gerar_itens_contratuais();
+    $cobranca->save();
+    return $cobranca;
+  } // ends [static] createOrRetrieveCobrancaWithTripleContractRefSeq()
+
+  private $cobranca         = null;
+  private function __construct($cobranca) {
+
+    $this->cobranca = $cobranca;
+    /*
+    // CobrancaGerador must have ONLY ONE attribute (perhaps another 2 related to db-saving to be established in the future)
+    $this->itens_contratuais_gerados = false;
+    $this->cobranca_resaved = false;
+    */
+
+  } // ends [private] __construct()
 
   public function get_cobranca() {
     return $this->cobranca;
   }
 
-  private function db_fetch_cobranca_to_obj_if_exists() {
-    $cobranca = Cobranca::where('contract_id', $contract->id)
-      ->where('monthyeardateref', $monthyeardateref)
-      ->first();
-    if ($cobranca != null) {
-      $this->cobranca = $cobranca;
-    }
-  }
-
   public function set_monthyeardateref_relative_to_today() {
-    $this->monthyeardateref = DateFunctions
+    // basically this function will never be called, due to the correction of dateref in the static instantiator function
+    $this->cobranca->monthyeardateref = DateFunctions
       ::find_rent_monthyeardateref_under_convention(
         Carbon::today(),
-        $this->contract->pay_day_when_monthly
+        $this->cobranca->contract->pay_day_when_monthly
       );
   }
 
   public function set_cobranca_duedate_based_on_monthyeardateref() {
-    if ($this->monthyeardateref==null) {
+    // basically this 'if' will never happed, due to the correction of dateref in the static instantiator function
+    if ($this->cobranca->monthyeardateref==null) {
       $this->set_monthyeardateref_relative_to_today();
     }
-    $this->cobranca_duedate      = $this->monthyeardateref->copy()->addMonths(1);
-    $this->cobranca_duedate->day = $this->contract->pay_day_when_monthly;
+    $this->cobranca->duedate      = $this->cobranca->monthyeardateref->copy()->addMonths(1);
+    $this->cobranca->duedate->day = $this->cobranca->contract->pay_day_when_monthly;
   }
 
   private function create_n_add_billingitem_aluguel() {
-    // check existing before instantiating a new object
-    $billingitem  = new BillingItem;
+    // Check existing before instantiating a new object
+
     $cobrancatipo = CobrancaTipo
-      ::where('char_id', CobrancaTipo::K_TEXT_ID_ALUGUEL)
+      ::where('char_id', CobrancaTipo::K_4CHAR_ALUG)
       ->first();
     if ($cobrancatipo == null) {
+      $error = 'cobrancatipo from CobrancaTipo::K_4CHAR_ALUG was not db-found, raise/throw exception.';
+      throw new Exception($error);
+    }
+    $does_billingitem_exist = $this->cobranca->billingitems()
+      ->where('cobrancatipo_id', $cobrancatipo->id)->exists();
+    if ($does_billingitem_exist == true) {
+      // billingitem exists, no need to recreate it, return
       return false;
     }
+
+    $billingitem  = new BillingItem;
+
     $billingitem->cobranca_id       = $this->cobranca->id;
     $billingitem->cobrancatipo_id   = $cobrancatipo->id;
     $billingitem->brief_description = $cobrancatipo->brief_description;
-    $billingitem->charged_value     = $this->contract->current_rent_value;
+    $billingitem->charged_value     = $this->cobranca->contract->current_rent_value;
     $billingitem->ref_type          = BillingItem::K_REF_TYPE_IS_DATE;
     $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_MONTHLY;
-    $billingitem->monthyeardateref  = $this->monthyeardateref;
-    // $billingitem->cobranca->attach($this->cobranca);
-    $billingitem->save();
-    // $this->cobranca->billingitems->add($billingitem);
+    $billingitem->monthyeardateref  = $this->cobranca->monthyeardateref;
+    //$billingitem->save();
+    $this->cobranca->billingitems()->save($billingitem);
     return true;
   }
 
   private function create_n_add_billingitem_iptu() {
 
-    if ($this->contract->repassar_iptu==false) {
+    if ($this->cobranca->contract->repassar_iptu==false) {
       return false;
     }
       // imovel is protected against null in Constructor (ie, $this->contract->imovel is not null at this point)
     $iptutabela = IPTUTabela
-      ::where('imovel_id', $this->contract->imovel->id)
-      ->where('ano', $this->monthyeardateref->year)
+      ::where('imovel_id', $this->cobranca->contract->imovel->id)
+      ->where('ano', $this->cobranca->monthyeardateref->year)
       ->first();
     if ($iptutabela == null) {
       return null;
@@ -115,15 +142,24 @@ class CobrancaGerador {
       return null;
     }
 
-    $billingitem  = new BillingItem;
     $cobrancatipo = CobrancaTipo
-      ::where('char_id', CobrancaTipo::K_TEXT_ID_IPTU)
+      ::where('char_id', CobrancaTipo::K_4CHAR_IPTU)
       ->first();
     if ($cobrancatipo == null) {
+      $error = 'cobrancatipo from CobrancaTipo::K_4CHAR_IPTU was not db-found, raise/throw exception.';
+      throw new Exception($error);
+    }
+
+    $does_billingitem_exist = $this->cobranca->billingitems()
+      ->where('cobrancatipo_id', $cobrancatipo->id)->exists();
+    if ($does_billingitem_exist == true) {
+      // billingitem exists, no need to recreate it, return
       return false;
     }
+
+    $billingitem  = new BillingItem;
     $billingitem->cobranca_id       = $this->cobranca->id;
-    $billingitem->cobrancatipo_id = $cobrancatipo->id;;
+    $billingitem->cobrancatipo_id   = $cobrancatipo->id;;
     $billingitem->brief_description = $cobrancatipo->brief_description;
     // 2nd case: cota-única anual a ser repassada em Fevereiro, ref. Janeiro
     if ($iptutabela->optado_por_cota_unica == true && $this->monthyeardateref->month == 1) {
@@ -132,12 +168,13 @@ class CobrancaGerador {
       $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_YEARLY;
       $billingitem->n_cota_ref        = 1;
       $billingitem->total_cotas_ref   = 1;
-      $billingitem->monthyeardateref  = $this->monthyeardateref;
-      $billingitem->save();
+      $billingitem->monthyeardateref  = $this->cobranca->monthyeardateref;
+      // $billingitem->save();
+      $this->cobranca->billingitems()->save($billingitem);
       return true;
     }
     // 3rd case: cota-única anual a ser repassada em Fevereiro, ref. Janeiro
-    if ($this->monthyeardateref->month == 1 || $this->monthyeardateref->month == 12) {
+    if ($this->cobranca->monthyeardateref->month == 1 || $this->cobranca->monthyeardateref->month == 12) {
       // this case is optado por 10x and the first one starts in March ref. February
       // Billing happens from March to December, ref. Feb to Nov
       return null;
@@ -145,36 +182,46 @@ class CobrancaGerador {
     $billingitem->charged_value     = $iptutabela->valor_parcela_10x;
     $billingitem->ref_type          = BillingItem::K_REF_TYPE_IS_BOTH_DATE_N_PARCEL;
     $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_MONTHLY;
-    $billingitem->n_cota_ref        = $this->monthyeardateref->month - 1;
+    $billingitem->n_cota_ref        = $this->cobranca->monthyeardateref->month - 1;
     $billingitem->total_cotas_ref   = 10;  // remove the hardcoded value replacing it with the rules table datum
-    $billingitem->monthyeardateref  = $this->monthyeardateref;
-    $billingitem->save();
+    $billingitem->monthyeardateref  = $this->cobranca->monthyeardateref;
+    // $billingitem->save();
+    $this->cobranca->billingitems()->save($billingitem);
     return true;
   }
 
   private function create_n_add_billingitem_condominio() {
 
-    if ($this->contract->repassar_condominio == false) {
+    if ($this->cobranca->contract->repassar_condominio == false) {
       return false;
     }
-    if ($this->contract->imovel == null) {
+    if ($this->cobranca->contract->imovel == null) {
       $error = '[In CobrancaGerador::create_billingitem_condominio()] Contract object does not have an imovel object attached to it.';
       throw new Exception($error);
     }
-    $billingitem  = new BillingItem;
     $cobrancatipo = CobrancaTipo
-      ::where('char_id', CobrancaTipo::K_TEXT_ID_CONDOMINIO)
+      ::where('char_id', CobrancaTipo::K_4CHAR_COND)
       ->first();
     if ($cobrancatipo == null) {
+      $error = 'cobrancatipo from CobrancaTipo::K_4CHAR_COND was not db-found, raise/throw exception.';
+      throw new Exception($error);
+    }
+
+    $does_billingitem_exist = $this->cobranca->billingitems()
+      ->where('cobrancatipo_id', $cobrancatipo->id)->exists();
+    if ($does_billingitem_exist == true) {
+      // billingitem exists, no need to recreate it, return
       return false;
     }
+
+    $billingitem  = new BillingItem;
     $billingitem->cobranca_id       = $this->cobranca->id;
     $billingitem->cobrancatipo_id   = $cobrancatipo->id;
     $billingitem->brief_description = $cobrancatipo->brief_description;
     // fetch value
     $condominio_tarifa = CondominioTarifa
-      ::where('imovel_id', $this->contract->imovel->id)
-      ->where('monthyeardateref', $this->monthyeardateref)
+      ::where('imovel_id',        $this->cobranca->contract->imovel->id)
+      ->where('monthyeardateref', $this->cobranca->monthyeardateref)
       ->first();
     $brief_info = null;
     if ($condominio_tarifa == null) {
@@ -183,66 +230,41 @@ class CobrancaGerador {
     } else {
       $condominio_valor = $condominio_tarifa->tarifa_valor;
     }
-    $billingitem->charged_value = $condominio_valor;
+    $billingitem->charged_value     = $condominio_valor;
     $billingitem->ref_type          = BillingItem::K_REF_TYPE_IS_DATE;
     $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_MONTHLY;
-    $billingitem->monthyeardateref  = $this->monthyeardateref;
+    $billingitem->monthyeardateref  = $this->cobranca->monthyeardateref;
     if ($brief_info != null) {
       $billingitem->obs = $brief_info;
     }
     $billingitem->save();
+    $this->cobranca->billingitems()->add($billingitem);
     return true;
   }
 
-  public function gerar_cobranca_based_on_today($regerar=false) {
-    if ($this->cobranca_gerada == true && $regerar==false) {
-      return;
-    };
-    $this->set_monthyeardateref_relative_to_today();
-    $this->set_cobranca_duedate_based_on_monthyeardateref();
-    return $this->gerar();
-  }
-
-  public function gerar_cobranca_based_on_especified_date($monthyeardateref, $regerar=false) {
-    if ($this->cobranca_gerada == true && $regerar==false) {
-      return;
-    };
-    $this->set_cobranca_duedate_based_on_monthyeardateref();
-    return $this->gerar();
-  }
-
-  private function gerar() {
+  private function gerar_itens_contratuais() {
     /*
     DO NOT run $this->set_obj_dates_based_on_today() in here!!!
+
+    // [1] Add Aluguel
+    // [2] Add IPTU if applicable
+    // [3] Add Condominio if applicable
+
+    TO-DO: implement the algorithm to use the billingitems_rules table
+           so that the item generation may become more dynamic and automatic
+           instead of pre-fixed here, each one in a corresponding method
+
     */
-    // check cobranca existence
-    // consider that two cobranca's with the same (contract_id, monthyeardateref & duedate) are the same
-    $this->cobranca = Cobranca
-      ::where('contract_id', $this->contract->id)
-      ->where('monthyeardateref', $this->monthyeardateref)
-      ->where('duedate', $this->cobranca_duedate)
-      ->first();
-    if ($this->cobranca != null) {
-      print ("Cobranca não gerada pois existe uma com os mesmos (contract_id, monthyeardateref & duedate)");
-      return false;
-    }
-    $this->cobranca = new Cobranca;
-    $this->cobranca->contract_id          = $this->contract->id;
-    $this->cobranca->bankaccount_id = $this->contract->bankaccount_id;
-    $this->cobranca->monthyeardateref     = $this->monthyeardateref;
-    $this->cobranca->duedate              = $this->cobranca_duedate;
-    $this->cobranca->total          = 0;
-    $this->cobranca->save();
 
     // [1] Add Aluguel
     $result = $this->create_n_add_billingitem_aluguel();
-    print ('create_n_add_billingitem_aluguel()s result is ' . $result);
+    print ('create_n_add_billingitem_aluguel()s result is ' . $result . "\n");
     // [2] Add IPTU if applicable
     $result = $this->create_n_add_billingitem_iptu();
-    print ('create_n_add_billingitem_iptu()s result is ' . $result);
+    print ('create_n_add_billingitem_iptu()s result is ' . $result . "\n");
     // [3] Add Condominio if applicable
     $result = $this->create_n_add_billingitem_condominio();
-    print ('create_n_add_billingitem_iptu()s result is ' . $result);
+    print ('create_n_add_billingitem_iptu()s result is ' . $result . "\n");
 
     $this->cobranca->load('billingitems');
     $this->cobranca->total = 0;
@@ -251,22 +273,23 @@ class CobrancaGerador {
       $this->cobranca->total += $billingitem->charged_value;
       $this->cobranca->n_items += 1;
     }
-    $this->cobranca->save();
-
+    // $this->cobranca->save();
     $this->cobranca_gerada = true;
-  } // ends gerar_cobranca()
+  } // ends gerar_itens_contratuais()
 
+  /*
   public function save_cobranca() {
     if ($this->cobranca_dbsaved == true) {
       return null;
     }
     if ($this->cobranca_gerada == true) {
       $this->cobranca->save();
-      $this->cobranca_dbsaved = true;
+      //$this->cobranca_dbsaved = true;
       return true;
     }
     return false;
   }
+  */
 
   public function __toString() {
     $outstr = 'Gerador\n ';
@@ -274,5 +297,4 @@ class CobrancaGerador {
     return $outstr;
   }
 
-
-}
+} // ends class CobrancaGerador
