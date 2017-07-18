@@ -52,7 +52,26 @@ class CondominioTarifa extends Model {
       return $triple_stats;
     }
     return self::calcular_media_min_max_das_tarifas($lasts);
-  } // ends static calcular_media_das_ultimas_tarifas()
+  } // ends [static] calcular_media_das_ultimas_tarifas()
+
+  public static function get_valor_tarifa_mesref_ou_alternativa_com_brief_info(
+      $imovel_id,
+      $monthyeardateref
+    ) {
+    $return_array = array();
+    $condominio_tarifa = self::where('imovel_id', $imovel_id)
+      ->where('monthyeardateref', $monthyeardateref)
+      ->first();
+    $brief_info = null;
+    if ($condominio_tarifa == null) {
+      $condominio_tarifa_valor = self::calcular_media_das_ultimas_tarifas();
+      $brief_info = 'Usada a média das últimas tarifas';
+    } else {
+      $condominio_tarifa_valor = $condominio_tarifa->tarifa_valor;
+    }
+    $return_array = ['condominio_tarifa_valor'=>$condominio_tarifa_valor, 'brief_info'=>$brief_info];
+    return $return_array;
+  } // ends [static] get_valor_tarifa_mesref_ou_alternativa()
 
   protected $dates = [
     'monthyeardateref',

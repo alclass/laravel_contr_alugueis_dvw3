@@ -21,8 +21,8 @@
     */
 
     $monthyeardateref_anterior = $cobranca->monthyeardateref;
-    $next_cobrancas = $cobranca->createOrFindNextMonthCobranca();
-    $next_cobranca = $next_cobrancas->first();
+    $next_cobranca = $cobranca->createOrFindNextMonthCobranca();
+    // $next_cobranca = $next_cobrancas->first();
     var_dump($next_cobranca);
     $billingitems = array();
     if ($value_mora_ou_credito != 0) {

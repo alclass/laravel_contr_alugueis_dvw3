@@ -76,7 +76,9 @@ class DateFunctions {
     $pay_day_when_monthly
   ) {
     /*
-
+    The convention is:
+    if day is within [1,10] monthref is the previous one
+    if day is 11 and above monthref is the current one
     */
     if ($date->day > 0 && $date->day < $pay_day_when_monthly + 1) {
       // pick up last month and return
@@ -86,7 +88,7 @@ class DateFunctions {
     }
     // pick up this month and return
     $monthyeardateref = $date->copy();
-    $monthyeardateref->day = 1;
+    $monthyeardateref->day(1);
     return $monthyeardateref;
   } // ends find_rent_monthyeardateref_under_convention()
 
@@ -97,7 +99,7 @@ class DateFunctions {
     if ($date->day > 0 && $date->day < $pay_day_when_monthly + 1) {
       // pick up same month and ajust day
       $duedate = $date->copy();
-      $duedate->day = $pay_day_when_monthly;
+      $duedate->day($pay_day_when_monthly);
       return $duedate;
     }
     // pick up next month and ajust day

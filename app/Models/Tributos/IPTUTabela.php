@@ -8,6 +8,11 @@ class IPTUTabela extends Model {
 
 
   const K_IPTU_TOTAL_COTAS = 10;
+
+  public static function get_IPTU_N_COTAS_ANO() {
+    return self::K_IPTU_TOTAL_COTAS;
+  }
+
   protected $table = 'iptutabelas';
 
   protected $fillable = [

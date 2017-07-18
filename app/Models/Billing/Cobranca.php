@@ -88,64 +88,134 @@ class Cobranca extends Model {
       );
   }
 
-  public function createOrRetrieveAnyBilligItemsFor($cobrancatipo, $monthyeardateref_of_item, $value) {
-    $monthyeardateref_of_item->setTime(0,0,0);
+  public function createIfNeededBillingItemFor(
+      $cobrancatipo,
+      $value,
+      $ref_type = null,
+      $freq_used_type = null,
+      $monthyeardateref=null,
+      $n_cota_ref = null,
+      $total_cotas_ref = null
+    ) {
+    $monthyeardateref->setTime(0,0,0);
     $billingitems = $this->billingitems
       ->where('cobrancatipo_id',  $cobrancatipo->id)
-      ->where('monthyeardateref', $monthyeardateref_of_item)
+      ->where('monthyeardateref', $monthyeardateref)
       ->where('charged_value',    $value)
       ->get();
     if ($billingitems->count()>0) {
+      /*
+          It already exists but TODO for need to correct charged_value or other attributes
+          TODO (see line above)
+      */
       return $billingitems;
     }
     // create one new
     $billingitem = new BillingItem;
     $billingitem->cobrancatipo_id  = $this->cobrancatipo->id;
-    $billingitem->monthyeardateref = $monthyeardateref_of_item;
+    $billingitem->monthyeardateref = $monthyeardateref;
     $billingitem->charged_value    = $value;
     $billingitem->type_ref         = BillingItem::K_REF_TYPE_IS_DATE;
     $billingitem->freq_used_ref    = BillingItem::K_FREQ_USED_IS_MONTHLY;
-    $this->$billingitems()->save(billingitem);
-    // Re-query it Collection
-    $billingitems = $this->billingitems
-      ->where('cobrancatipo_id',  $cobrancatipo->id)
-      ->where('monthyeardateref', $monthyeardateref_of_item)
-      ->where('charged_value',    $value)
-      ->get();
-    return $billingitems;
+    $this->$billingitems()->save($billingitem);
+    $billingitem->save()
+    return $billingitem;
   }
 
-  public function createOrRetrieveAnyBillingItemsForCredito($monthyeardateref_of_item, $value) {
+  public function createIfNeededBillingItemForCredito(
+      $value,
+      $ref_type = null,
+      $freq_used_type = null,
+      $monthyeardateref=null,
+      $n_cota_ref = null,
+      $total_cotas_ref = null
+    ) {
+
+
     $cobrancatipo = CobrancaTipo
       ::where('char_id', CobrancaTipo::K_4CHAR_CRED)
       ->first();
     if ($cobrancatipo == null) {
       throw new Exception("CobrancaTipo not found in db with corresponding K_CHAR_CRED (= 'CRED')", 1);
     }
-    return $this->createOrRetrieveAnyBillingItemsFor($cobrancatipo, $monthyeardateref_of_item, $value);
+
+
+    return $this->createIfNeededBillingItemFor(
+      $cobrancatipo,
+      $value,
+      $ref_type,
+      $freq_used_type,
+      $monthyeardateref,
+      $n_cota_ref,
+      $total_cotas_ref
+    );
   }
 
-  public function createOrRetrieveAnyBillingItemsForMora($monthyeardateref_of_item, $value) {
+  public function createIfNeededBillingItemForMora(
+      $value,
+      $ref_type = null,
+      $freq_used_type = null,
+      $monthyeardateref=null,
+      $n_cota_ref = null,
+      $total_cotas_ref = null
+      ) {
+
+
     $cobrancatipo = CobrancaTipo
       ::where('char_id', CobrancaTipo::K_4CHAR_MORA)
       ->first();
     if ($cobrancatipo == null) {
       throw new Exception("CobrancaTipo not found in db with corresponding K_CHAR_MORA (= 'MORA')", 1);
     }
-    return $this->createOrRetrieveAnyBillingItemsFor($cobrancatipo, $monthyeardateref_of_item, $value);
+
+
+    return $this->createIfNeededBillingItemFor(
+      $cobrancatipo,
+      $value,
+      $ref_type,
+      $freq_used_type,
+      $monthyeardateref,
+      $n_cota_ref,
+      $total_cotas_ref
+    );
   }
 
-  public function createOrRetrieveAnyBillingItemsForMoraOrCredito($monthyeardateref_of_item, $value) {
+  public function createIfNeededBillingItemForMoraOrCredito(
+      $value,
+      $ref_type = null,
+      $freq_used_type = null,
+      $monthyeardateref=null,
+      $n_cota_ref = null,
+      $total_cotas_ref = null
+    ) {
     if ($value == 0) {
       return null;
     } elseif ($value < 0) {
       $value *= -1;
-      return $this->createOrRetrieveAnyBillingItemsForMora($monthyeardateref_of_item, $value);
+      return $this->createIfNeededBillingItemForMora(
+        $value,
+        $ref_type,
+        $freq_used_type,
+        $monthyeardateref,
+        $n_cota_ref,
+        $total_cotas_ref
+      );
     }
-    return $this->createOrRetrieveAnyBillingItemsForCredito($monthyeardateref_of_item, $value);
+    return $this->createIfNeededBillingItemForCredito(
+      $cobrancatipo,
+      $value,
+      $ref_type,
+      $freq_used_type,
+      $monthyeardateref,
+      $n_cota_ref,
+      $total_cotas_ref
+    );
   }
 
   public function __toString() {
+    /*
+          TODO: improve this __toString()
+    */
     $outstr = "Cobrança\n ";
     $apelido = '';
     if ($this->contract != null) {

@@ -11,6 +11,16 @@ class CobrancaTipo extends Model {
   const K_4CHAR_MORA = 'MORA';
   const K_4CHAR_CRED = 'CRED';
 
+  public static function get_cobrancatipo_with_its_4char_repr($p_4char_repr, $raise_exception_if_null=false) {
+    $cobrancatipo = CobrancaTipo::where('char_id', $p_4char_repr)
+      ->first();
+    if ($cobrancatipo == null && $raise_exception_if_null=true) {
+      $error = 'cobrancatipo from CobrancaTipo::K_4CHAR_ALUG was not db-found, raise/throw exception.';
+      throw new Exception($error);
+    }
+    return $cobrancatipo;
+  } // ends [static] function get_cobrancatipo_with_its_4char_repr()
+
   protected $table = 'cobrancatipos';
 
 	/**
