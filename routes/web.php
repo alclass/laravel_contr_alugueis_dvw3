@@ -21,10 +21,25 @@ use Illuminate\Http\Request;
 // use App\Http\Controllers\PaymentController;
 
 // Route::get('/', 'WelcomeController@index');
+
 Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/login', function() {
+  return view('home');
+})->name('login');
+
+Route::get('/register', function() {
+  return view('home');
+})->name('register');
+/*
+Route::post('/login', [
+    'as'   => 'login',
+    'uses' => 'LoginController@doLogin',
+  ]
+);
+*/
 Route::get('home', 'HomeController@index');
 
 Route::get('/users', function () {
@@ -43,7 +58,7 @@ Route::get('/user/{id}', array(
 	  }
 	)
 );
-
+/*
 Route::get('/contracts', [
 	'as'   => 'contracts',
   'uses' =>
@@ -52,15 +67,24 @@ Route::get('/contracts', [
     return view('contracts.contracts', ['contracts' => $contracts]);
   }
 ]);
+*/
 
-Route::get('/contract/{id}', [
-	'as'   => 'contract',
-  'uses' =>
-  function ($id) {
-    $contract = Contract::findOrFail($id);
-    return view('contracts.contract', ['contract' => $contract]);
+Route::middleware(['auth'])->group(
+  function () {
+    Route::get('/contract/{id}', [
+    	'as'   => 'contract',
+      'uses' => 'ContractController@show'
+    ]);
+    Route::get('/contracts', [
+    	'as'   => 'contracts',
+      'uses' => 'ContractController@index'
+    ]);
+    Route::post('/contract/cadastrar', [
+      'as'   => 'contract.cadastrar',
+      'uses' => 'ContractController@store'
+    ]);
   }
-]);
+); //->prefix('sl');
 
 Route::get('/imoveis', [
 	'as'   => 'imoveis',
@@ -130,3 +154,7 @@ Route::get('/testCarbon', function() {
 	// return $deposited_on->toDateTimeString();
 	return $deposited_on;
 });
+
+//Auth::routes();
+
+Route::get('/home', 'HomeController@index')->name('home');

@@ -3,6 +3,11 @@ namespace App\Models\Immeubles;
 
 // use App\Models\Immeubles\Contract;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Collection;
+
+// 2 Collection classes
+// use Illuminate\Database\Eloquent\Collection;
+// [more generic] use Illuminate\Support\Collection;
 
 class Imovel extends Model {
 
@@ -66,6 +71,32 @@ class Imovel extends Model {
 		}
 		return null;
 	}
+
+	public function get_inquilinos_atuais() {
+		/*
+				TO REVISE!
+
+				Unfortunately, we haven't found a simple mechanism
+					to add/merge/combine a Collection.
+				Because of that we decided to loop thru all elements and
+				  push each to the collect-type.
+
+				The two collection types are:
+				+ Illuminate\Database\Eloquent\Collection => new Collection
+				+ Illuminate\Support\Collection => collect()
+
+		*/
+		$inquilinos_atuais = new Collection;
+		// The following where() is against a Collection, not against a QueryBuilder
+		$active_contracts = $this->contracts->where('is_active', true);
+		foreach ($active_contracts as $contract) {
+			foreach ($contract->users as $user) {
+				$inquilinos_atuais->add($user); // if collect-type (collect(), use push() instead of add())
+			} // ends inner foreach
+		} // ends outer foreach
+		// return is typed Collection
+		return $inquilinos_atuais;
+  } // ends get_inquilinos_atuais()
 
 	public function contracts() {
 		return $this->hasMany('App\Models\Immeubles\Contract');
