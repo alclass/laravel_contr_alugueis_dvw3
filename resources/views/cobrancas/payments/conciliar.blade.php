@@ -15,19 +15,28 @@
   @endif
 
   @if (!empty($cobranca))
-    <h2>Cobrança</h2>
-    <h1>Aluguel e Encargos</h1>
-    <br>
-    <h3>Mês Ref.: {{ $cobranca->monthyeardateref }} </h3>
-    <h3>Data de Vencimento: {{ $cobranca->duedate }}</h3>
     <?php
+      setlocale(LC_TIME, 'Brazil');
+      Carbon::setLocale('pt');
       $today = Carbon::today();
       $cobranca->load('billingitems');
+      $contract = $cobranca->contract;
+      if ($contract == null) {
+        throw Exception('contract is null inside conciliar.blade.php');
+      }
+      $imovel = $cobranca->get_imovel();
+      $street_address = 'n/a';
+      if ($imovel != null) {
+        $street_address = $imovel->get_street_address();
+      }
     ?>
-    <h3>Hoje: {{ $today }}</h3>
+    <h2>Pagamento com Depósito/Transferência</h2>
+    <h1>Conciliação</h1>
+    <h6>{{ $today->toFormattedDateString() }}</h6>
+    <h5>Contrato: <a href="{{ route('contract', $contract->id) }}">{{ $street_address }} </a></h5>
+    <h5>Pagto Ref.: <b>{{ $cobranca->monthyeardateref->format('F/Y') }}</b>
+    até {{ $cobranca->duedate->toFormattedDateString() }}</h5>
     <br>
-    <br>
-
     @if (empty($cobranca->billingitems()->get()))
       <h3>Não foram encontrados itens de cobrança.</h3>
       <h3>Por favor, se isto estiver incorreto, entrar em contato.</h3>
@@ -86,12 +95,20 @@
 
 <form name="conciliate_htmlform" class="" action="{{ route('cobranca.editargerar') }}" method="POST">
   {!! csrf_field() !!}
-  Valor Recebido: <input type="hidden"  name="cobranca_id" value="{{ $cobranca->id }}"></input> <br>
+  <input type="hidden"  name="cobranca_id" value="{{ $cobranca->id }}"></input> <br>
   Valor Recebido: <input type="text"  name="valor_recebido" value="0.00"></input> <br>
   Data Recebido: <input type="text"  name="data_recebido" value="0.00"></input> <br>
+  <br>
   <input type="radio" name="meio_de_pagto" value="conta-corrente" checked>Conta-corrente</input>
   <input type="radio" name="meio_de_pagto" value="dinheiro">Dinheiro</input> <br>
+  <br>
   Dif. Créd.|Déb.: <input type="text" name="mora_ou_credito" value="0.00"></input> <br>
   <input type="submit" name="conciliate_button" value="conciliate_submit"></input> <br>
 </form>
+
+<br>
+<br>
+<br>
+<br>
+
 @endsection

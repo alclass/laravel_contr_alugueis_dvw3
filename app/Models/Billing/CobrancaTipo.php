@@ -15,7 +15,7 @@ class CobrancaTipo extends Model {
     $cobrancatipo = CobrancaTipo::where('char_id', $p_4char_repr)
       ->first();
     if ($cobrancatipo == null && $raise_exception_if_null=true) {
-      $error = 'cobrancatipo from CobrancaTipo::K_4CHAR_ALUG was not db-found, raise/throw exception.';
+      $error = 'cobrancatipo from CobrancaTipo::'.$p_4char_repr.' was not db-found, raise/throw exception.';
       throw new Exception($error);
     }
     return $cobrancatipo;

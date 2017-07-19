@@ -72,7 +72,7 @@ class DateFunctions {
   } // ends find_next_anniversary_date_with_triple_start_inbetween_end()
 
   public static function find_rent_monthyeardateref_under_convention(
-    $date,
+    $date = null,
     $pay_day_when_monthly
   ) {
     /*
@@ -80,6 +80,9 @@ class DateFunctions {
     if day is within [1,10] monthref is the previous one
     if day is 11 and above monthref is the current one
     */
+    if ($date == null) {
+      $date = Carbon::today();
+    }
     if ($date->day > 0 && $date->day < $pay_day_when_monthly + 1) {
       // pick up last month and return
       $monthyeardateref = $date->copy()->addMonth(-1);

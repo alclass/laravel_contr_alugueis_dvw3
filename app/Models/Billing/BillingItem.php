@@ -46,4 +46,25 @@ class BillingItem extends Model {
     $this->belongsTo('App\Models\Billing\Cobranca');
   }
 
+  public function toString() {
+    /*
+        toString() for BillingItem
+    */
+
+    $outstr  = '[BillingItem object]' . "\n";
+    $outstr .= '====================' . "\n";
+    $outstr .= 'id                = ' . $this->id                . "\n";
+    $outstr .= 'brief_description = ' . $this->brief_description . "\n";
+    $outstr .= 'date ref          = ' . $this->monthyeardateref  . "\n";
+    $outstr .= 'charged_value     = ' . $this->charged_value     . "\n";
+    $outstr .= 'ref type          = ' . $this->ref_type          . "\n";
+    $outstr .= 'freq_used_type    = ' . $this->freq_used_type    . "\n";
+    $outstr .= '====================' . "\n";
+
+    return $outstr;
+
+  } // ends toString()
+
+
+
 } // ends class BillingItem extends Model
