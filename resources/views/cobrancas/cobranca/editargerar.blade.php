@@ -14,14 +14,17 @@
     $data_recebido   = $conciliar_aarray['data_recebido'];
     $mora_ou_credito = $conciliar_aarray['mora_ou_credito'];
 
-    $value_mora_ou_credito = (float) $mora_ou_credito;
+    $valor_negativo_mora_positivo_credito = (float) $mora_ou_credito;
 
     /* If there's $mora_ou_credito, ie, it's != 0
          it's necessary to create the new Cobranca or pick it up if exists
     */
 
     $monthyeardateref_anterior = $cobranca->monthyeardateref;
-    $next_cobranca = $cobranca->createOrFindNextMonthCobranca();
+    $next_cobranca = $cobranca->createIfNeededBillingItemForMoraOrCreditoMonthlyRef(
+      $valor_negativo_mora_positivo_credito,
+      $monthyeardateref
+    );
     // $next_cobranca = $next_cobrancas->first();
     var_dump($next_cobranca);
     $billingitems = array();

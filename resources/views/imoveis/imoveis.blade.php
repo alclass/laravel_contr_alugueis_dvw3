@@ -26,32 +26,45 @@
       {{-- @include('imovelpiecetemplate') --}}
       <?php
         $contract = $imovel->get_current_rent_contract_if_any();
-        if (!empty($contract) && $contract->users->isEmpty() ) {
-          // create dummy user row
-          $user = new \App\User;
-          $user->first_name = "Sem";
-          $user->last_name = "Ocupação";
-          $user->email = "---";
-          $contract->users->add($user);
-        }
-        $n_users = $contract->users->count();
-        $total_valor_alugueis += $contract->current_rent_value;
+      ?>
+      @if ($contract == null)
+        <h3>Não há contratos atuais para o imóvel.</h3>
+      @endif
+
+      <?php
+        $current_rent_value = 'n/a';
+        $n_users = 0;
+        if ($contract !=null) {
+          $current_rent_value = $contract->current_rent_value;
+          $total_valor_alugueis += $contract->current_rent_value;
+          if ($contract->users()->count()==0) {
+            // create a dummy user row
+            $user = new \App\User;
+            $user->first_name = "Sem";
+            $user->last_name = "Ocupação";
+            $user->email = "---";
+            $contract->users->add($user);
+          } // ends if ($contract->users()->count()==0)
+          $n_users = $contract->users->count();
+        } // ends if ($contract !=null)
       ?>
         <tr>
           <td data-th="imovel_apelido"> {{ $imovel->apelido }} </td>
           <td data-th="imovel_endereco"> {{ $imovel->get_street_address() }} </td>
 
-          <td data-th="valor_aluguel"> {{ $contract->current_rent_value }} </td>
+          <td data-th="valor_aluguel"> {{ $current_rent_value }} </td>
           <td data-th="is_pay_on_date"> * </td>
 
           <td colspan=" {{ $n_users }}">
             <table class="rwd-table">
-              @foreach ($contract->users as $user)
-                <tr>
-                  <td data-th="inquilino">{{ $user->name_first_last() }}</td>
-                  <td data-th="email"> {{ $user->email }} </td>
-                </tr>
-              @endforeach
+              @if ($contract != null)
+                @foreach ($contract->users as $user)
+                  <tr>
+                    <td data-th="inquilino">{{ $user->get_first_n_last_names() }}</td>
+                    <td data-th="email"> {{ $user->email }} </td>
+                  </tr>
+                @endforeach
+              @endif
             </table>
           </td>
         </tr>

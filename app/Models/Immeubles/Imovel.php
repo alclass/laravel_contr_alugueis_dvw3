@@ -72,6 +72,8 @@ class Imovel extends Model {
 		return null;
 	}
 
+/*
+
 	public function get_inquilinos_atuais() {
 		/*
 				TO REVISE!
@@ -86,6 +88,7 @@ class Imovel extends Model {
 				+ Illuminate\Support\Collection => collect()
 
 		*/
+		/*
 		$inquilinos_atuais = new Collection;
 		// The following where() is against a Collection, not against a QueryBuilder
 		$active_contracts = $this->contracts->where('is_active', true);
@@ -97,7 +100,7 @@ class Imovel extends Model {
 		// return is typed Collection
 		return $inquilinos_atuais;
   } // ends get_inquilinos_atuais()
-
+*/
 	public function contracts() {
 		return $this->hasMany('App\Models\Immeubles\Contract');
   }

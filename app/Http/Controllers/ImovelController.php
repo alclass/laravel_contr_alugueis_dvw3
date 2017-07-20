@@ -17,7 +17,6 @@ class ImovelController extends Controller {
 	public function index()
 	{
 		$imoveis = Imovel::where('is_rentable', 1)->get();
-		$imoveis->load('users');
 		return view('imoveis.imoveis', ['imoveis' => $imoveis]);
 	}
 

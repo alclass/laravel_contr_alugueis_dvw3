@@ -26,6 +26,28 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/signup', [
+  'as' => 'authusers.signup',
+  'uses' => 'UserController@getSignup',
+]);
+
+Route::post('/signup', [
+  'as' => 'authusers.signup',
+  'uses' => 'UserController@postSignup',
+]);
+
+Route::get('/signin', [
+  'as' => 'authusers.signin',
+  'uses' => 'UserController@getSignin',
+]);
+
+Route::post('/signin', [
+  'as' => 'authusers.signin',
+  'uses' => 'UserController@postSignin',
+]);
+
+
+/*
 Route::get('/login', function() {
   return view('home');
 })->name('login');
@@ -33,7 +55,7 @@ Route::get('/login', function() {
 Route::get('/register', function() {
   return view('home');
 })->name('register');
-/*
+
 Route::post('/login', [
     'as'   => 'login',
     'uses' => 'LoginController@doLogin',
