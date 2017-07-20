@@ -6,6 +6,8 @@ use App\Models\Finance\BankAccount;
 use App\Models\Finance\MercadoIndice;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
+use App\User;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 // use Carbon\Carbon;
@@ -122,5 +124,37 @@ class ContractController extends Controller {
 	{
 		//
 	}
+
+	private function dashboard_go($user)	{
+
+		// ATTENTION $contract may be null, don't issue a method without checking
+		$contract = $user->contracts->where('is_active', 1)->first();
+
+		// return 'hi';
+		// return var_dump([$user, $contract]);
+		return view('contracts.dashboard', [
+			'contract' => $contract,
+			'user'     => $user
+		]);
+	} // ends dashboard_go()
+
+	public function dashboard()	{
+
+		$user = Auth::getUser();
+		return $this->dashboard_go($user);
+
+	} // ends dashboard()
+
+	public function dashboard_w_userid($user_id)	{
+		/*
+			The route to this controller method must be removed
+			 	for production site (ie, it's only here for development)
+		*/
+
+		$user = User::findOrFail($user_id);
+		return $this->dashboard_go($user);
+
+	} // ends dashboard_w_userid()
+
 
 }

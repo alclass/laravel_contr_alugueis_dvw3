@@ -36,6 +36,11 @@ Route::post('/signup', [
   'uses' => 'UserController@postSignup',
 ]);
 
+Route::get('/login', [
+  'as' => 'login',
+  'uses' => 'UserController@getSignin',
+]);
+
 Route::get('/signin', [
   'as' => 'authusers.signin',
   'uses' => 'UserController@getSignin',
@@ -45,6 +50,29 @@ Route::post('/signin', [
   'as' => 'authusers.signin',
   'uses' => 'UserController@postSignin',
 ]);
+
+Route::get('/logout', [
+  'as' => 'authusers.logout',
+  'uses' => 'UserController@getLogout',
+]);
+
+Route::get('/logout', [
+  'as' => 'authusers.logout',
+  'uses' => 'UserController@postLogout',
+]);
+
+
+Route::get('/dashboard', [
+  'as' => 'dashboard',
+  'uses' => 'ContractController@dashboard',
+])->middleware('auth');
+
+Route::get('/dashboard/{user_id}', [
+  'as' => 'dashboard',
+  'uses' => 'ContractController@dashboard_w_userid',
+])->middleware('auth');
+
+
 
 
 /*

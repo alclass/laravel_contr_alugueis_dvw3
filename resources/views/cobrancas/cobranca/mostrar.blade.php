@@ -22,7 +22,7 @@
     <h3>Data de Vencimento: {{ $cobranca->duedate }}</h3>
     <?php
       $today = Carbon::today();
-      $cobranca->load('billingitems');
+      // $cobranca->load('billingitems');
     ?>
     <h3>Hoje: {{ $today }}</h3>
     <br>
@@ -42,22 +42,17 @@
           <th>Valor</th>
           <th> R </th>
         </tr>
-      @foreach ($cobranca->billingitems()->get() as $billingitem)
+      @foreach ($cobranca->billingitems() as $billingitem)
         <tr>
           <td data-th="item">  {{ $billingitem->brief_description }} </td>
-          <td data-th="ref">   {{ $billingitem->format_monthyeardateref_as_m_slash_y() }} </td>
+          <td data-th="ref">   {{-- $billingitem->format_monthyeardateref_as_m_slash_y() --}} </td>
           <td data-th="valor"> {{ $billingitem->charged_value }} </td>
           <td data-th="repasse"> * </td>
         </tr>
       @endforeach
       </table>
       <h3>Total: {{ $cobranca->total }}</h3>
-      @if ($cobranca->is_iptu_ano_quitado())
-        <h5>(*) IPTU {{ $cobranca->monthyeardateref->year }} quitado</h5>
-      @endif
-      @if ($cobranca->contract != null and $cobranca->contract->repassar_condominio == false)
-        <h5>(*) Condomínio sob pagamento direto, sem repasse acima.</h5>
-      @endif
+
       <br>
       <?php
         $bankaccount = null;

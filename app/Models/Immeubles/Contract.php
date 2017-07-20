@@ -47,6 +47,11 @@ class Contract extends Model {
     );
   }
 
+  public function get_ultimas_cobrancas($n_lasts) {
+    return $this->cobrancas()->orderBy('monthyeardateref', 'desc')->take($n_lasts)->get();
+  } // ends get_ultimas_cobrancas()
+
+
   public function imovel() {
     return $this->belongsTo('App\Models\Immeubles\Imovel');
   }

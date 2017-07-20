@@ -295,7 +295,7 @@ class Cobranca extends Model {
       );
     }
     return $monthyeardateref;
-  } // ends get_conventioned_monthyeardateref_if_it_is_null
+  } // ends get_conventioned_monthyeardateref_if_it_is_null()
 
   public function __toString() {
     /*
