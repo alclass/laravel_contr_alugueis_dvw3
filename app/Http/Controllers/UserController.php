@@ -63,14 +63,12 @@ class UserController extends Controller {
   }
 
   public function getLogout() {
-    Auth:logout();
-    return redirect()->route('authusers.signin');
+    Auth::logout();
+    return redirect('/');
   }
-
-  public function postLogout($request) {
-    Auth:logout();
-    return redirect()->route('authusers.signin');
+  public function postLogout(\Illuminate\Http\Request $request) {
+    Auth::logout();
+    return redirect('/');
   }
-
 
 } // ends class UserController extends Controller

@@ -1,9 +1,11 @@
 <?php namespace App\Http\Controllers;
 
+use App\Models\Billing\Cobranca;
 use App\Models\Immeubles\Contract;
 use App\Models\Immeubles\Imovel;
 use App\Models\Finance\BankAccount;
 use App\Models\Finance\MercadoIndice;
+use App\Models\Utils\DateFunctions;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\User;
@@ -130,9 +132,15 @@ class ContractController extends Controller {
 		// ATTENTION $contract may be null, don't issue a method without checking
 		$contract = $user->contracts->where('is_active', 1)->first();
 
-		// return 'hi';
-		// return var_dump([$user, $contract]);
+		$cobrancas_passadas = collect();
+		$cobrancas_passadas = $contract->get_ultimas_n_cobrancas_relative_to_ref(null, 4);
+		$cobranca_atual     = null;
+		$cobranca_atual     = $contract->get_cobranca_atual();
+			// $cobranca_proxima = CobrancaGerador::SimularProximaCobranca($cobranca_atual);
+
 		return view('contracts.dashboard', [
+			'cobrancas_passadas' => $cobrancas_passadas,
+			'cobranca_atual'     => $cobranca_atual,
 			'contract' => $contract,
 			'user'     => $user
 		]);

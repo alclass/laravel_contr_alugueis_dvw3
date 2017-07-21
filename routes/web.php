@@ -56,11 +56,10 @@ Route::get('/logout', [
   'uses' => 'UserController@getLogout',
 ]);
 
-Route::get('/logout', [
+Route::post('/logout', [
   'as' => 'authusers.logout',
   'uses' => 'UserController@postLogout',
 ]);
-
 
 Route::get('/dashboard', [
   'as' => 'dashboard',
@@ -68,7 +67,7 @@ Route::get('/dashboard', [
 ])->middleware('auth');
 
 Route::get('/dashboard/{user_id}', [
-  'as' => 'dashboard',
+  'as' => 'dashboard_w_userid',
   'uses' => 'ContractController@dashboard_w_userid',
 ])->middleware('auth');
 

@@ -1,7 +1,12 @@
 <?php
 namespace App\Models\Utils;
 
+use Carbon\Carbon;
+
 class DateFunctions {
+
+  const PAY_DAY_WHEN_MONTHLY_ENVFALLBACK = 10; // this will hold if env() does not have it
+
 
   public static function find_next_anniversary_date_with_triple_start_inbetween_end(
     $start_date,
@@ -73,7 +78,7 @@ class DateFunctions {
 
   public static function find_rent_monthyeardateref_under_convention(
     $date = null,
-    $pay_day_when_monthly
+    $pay_day_when_monthly = null
   ) {
     /*
     The convention is:
@@ -83,10 +88,13 @@ class DateFunctions {
     if ($date == null) {
       $date = Carbon::today();
     }
+    if ($pay_day_when_monthly == null) {
+      $pay_day_when_monthly = (int) env('PAY_DAY_WHEN_MONTHLY', self::PAY_DAY_WHEN_MONTHLY_ENVFALLBACK);
+    }
     if ($date->day > 0 && $date->day < $pay_day_when_monthly + 1) {
       // pick up last month and return
       $monthyeardateref = $date->copy()->addMonth(-1);
-      $monthyeardateref->day = 0;
+      $monthyeardateref->day(1);
       return $monthyeardateref;
     }
     // pick up this month and return
@@ -96,9 +104,15 @@ class DateFunctions {
   } // ends find_rent_monthyeardateref_under_convention()
 
   public static function calculate_monthly_duedate_under_convention(
-    $date,
-    $pay_day_when_monthly
+    $date = null,
+    $pay_day_when_monthly = null
   ) {
+    if ($date == null) {
+      $date = Carbon::today();
+    }
+    if ($pay_day_when_monthly == null) {
+      $pay_day_when_monthly = (int) env('PAY_DAY_WHEN_MONTHLY', self::PAY_DAY_WHEN_MONTHLY_ENVFALLBACK);
+    }
     if ($date->day > 0 && $date->day < $pay_day_when_monthly + 1) {
       // pick up same month and ajust day
       $duedate = $date->copy();
@@ -107,19 +121,25 @@ class DateFunctions {
     }
     // pick up next month and ajust day
     $duedate = $date->copy()->addMonth(1);
-    $duedate->day = $pay_day_when_monthly;
+    $duedate->day($pay_day_when_monthly);
     return $duedate;
   } // ends calculate_monthly_duedate_under_convention()
 
+/*
+  // Method DEACTIVATED
   public static function format_monthyeardateref_as_m_slash_y($monthyeardateref) {
     if ($monthyeardateref == null) {
       return 'n/a';
     }
-    /*  This was needed before using the accessors & mutators technique to force Carbon dates (see above protected $dates)
+    /*
+      This method is no longer needed, for Carbon can do that by:
+        $dt->format('m/Y');
+
+      This was needed before using the accessors & mutators technique to force Carbon dates (see above protected $dates)
     if (gettype($this->monthyeardateref)==gettype('s')) {
       $this->monthyeardateref = Carbon::createFromFormat('Y-m-d', $this->monthyeardateref);
     }
-    */
+    * /
     // toDayDateTimeString() => Thu, Dec 25, 1975 2:15 PM
     $datestring = $monthyeardateref->toDayDateTimeString();
     $pos_for_3letter_month = 5;
@@ -133,6 +153,6 @@ class DateFunctions {
     $outstr    = $month_str . "/" . $year_str;
     return $outstr;
   } // ends format_monthyeardateref_as_m_slash_y()
-
+*/
 
 } // ends class DateFunctions

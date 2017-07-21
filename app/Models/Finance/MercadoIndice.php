@@ -28,17 +28,17 @@ class MercadoIndice extends Model {
     if ($indice_obj != null) {
       return $indice_obj;
     }
-    $first_indice_obj = self::first();
+    $first_indice_obj = self::first(); // Notice that first() may return null
     return $first_indice_obj;
-  } // ends [static] get_default_4char()
+  } // ends [static] get_default_mercadoindice()
 
 	public static function get_default_4char() {
     /*
       This method intends to return the $indice4char default.
       See above the docstring for retrieve the default object.
     */
-    $default_mercadoindice = self:get_default_mercadoindice();
-    return ($default_mercadoindice != null? $default_mercadoindice->indice4char, null);
+    $default_mercadoindice = self::get_default_mercadoindice();
+    return ($default_mercadoindice != null ? $default_mercadoindice->indice4char : null);
   } // ends [static] get_default_4char()
 
 	public static function return_indice4char_if_exists_or_default_or_null($indice4char) {

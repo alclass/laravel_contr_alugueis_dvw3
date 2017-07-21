@@ -52,16 +52,17 @@ class BankAccount extends Model {
   public static function bankaccount_id_or_default_or_null($bankaccount_id) {
     /*
         Return the same $bankaccount_id if it exists.
-        If not, pick up the default.  See doctring for the default above, it may be null.
+        If not, pick up the default.  See doctring for the default above.
+          Notice that this method may return null.
+          (Two hypotheses for getting null is empty data or database connection failure.)
     */
-
 
     if (self::get($bankaccount_id)->exists()) {
       return $bankaccount_id;
     }
     $first_bankaccount_obj = self::get_bankaccount_default_or_first_or_null();
 
-    return ($first_bankaccount_obj != null? $first_bankaccount_obj->bankaccount_id, null);
+    return ($first_bankaccount_obj != null ? $first_bankaccount_obj->bankaccount_id : null);
 
   } // ends [static] bankaccount_id_or_default_or_null()
 
