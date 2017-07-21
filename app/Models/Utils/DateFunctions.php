@@ -1,17 +1,21 @@
 <?php
 namespace App\Models\Utils;
 
+// To import the DateFunctions class in the Laravel app Here
+// use App\Models\Utils\DateFunctions;
+
 use Carbon\Carbon;
 
 class DateFunctions {
 
   const PAY_DAY_WHEN_MONTHLY_ENVFALLBACK = 10; // this will hold if env() does not have it
-
+  const LOOP_ITERATION_PROTECTION_COUNTER_FOR_MONTHS_YEARS = 10000;
 
   public static function find_next_anniversary_date_with_triple_start_inbetween_end(
     $start_date,
-    $inbetween_date,
-    $end_date
+    $end_date,
+    $inbetween_date = null,
+    $cycle_time_in_years = 1
   ) {
     /*
     Explanation with an example:
@@ -23,25 +27,26 @@ class DateFunctions {
 
     Suppose:
       $start_date = 2015-01-01
+      $end_date = 2017-06-30 (a 30-month contract)
       $inbetween_date = 2015-10-01
-      $end_date = 2017-05-31 (a 30-month contract)
 
       One wants to know when the next price yearly reajust will happen from 2015-10-01
-        The answer is, in this simple, 2016-01-01 (the next anniversary from 2015-10-01)
+        The answer is, in this simple example, 2016-01-01
+          (ie, the next anniversary counting from 2015-10-01)
 
       *** This function does the calculation above exemplified. ***
 
     Another example:
       $start_date = 2014-04-04
+      $end_date   = 2016-10-03 (a 30-month contract)
       $inbetween_date = 2016-01-10
-      $end_date = 2016-10-03 (a 30-month contract)
         Answer should be 2016-04-04
 
       Examples with edge dates (out of contract date range):
       * Example 1 with edge dates
           $start_date = 2014-04-04
-          $inbetween_date = 2013-01-10  (NOTICE that this will not raise an exception)
           $end_date = 2016-10-03 (a 30-month contract)
+          $inbetween_date = 2013-01-10  (NOTICE that this will not raise an exception)
             Answer should be = 2015-04-04 (simple the first anniversary)
       * Example 2 with edge dates
           $since_date = 2014-04-04
@@ -49,32 +54,75 @@ class DateFunctions {
           $end_date = 2016-10-03 (a 30-month contract)
             Answer should be null
             (because the last reajust 2016-04-04 is before $inbetween_date, there will not be another one til the end of contract)
+
+      The programming plan was to device a recursive method, but later on
+        we decided for a while-loop version limiting it to 10000 (or other via config) iterations
+        (just for noticing, the runtime did not protect the infinite loop we have
+         when still developing the recursive version, crashing the machine...)
+
     */
-    // 1st logical case resulting in a right-away return
+    // First off, treat null case for both start and end dates,
+    // these two cannot be null, if they are, raise exception
+    $null_date_error_msg = "In DateFunctions::find_next_anniversary_date_with_triple_start_inbetween_end() -> null case for ";
+    if ($start_date==null) {
+      $null_date_error_msg .= "start date (=$start_date), it cannot be null";
+      throw new Exception($null_date_error_msg, 1);
+    }
+    if ($end_date==null) {
+      $null_date_error_msg .= "end date (=$start_date), it cannot be null";
+      throw new Exception($null_date_error_msg, 1);
+    }
+    // Second off, treat null case for $inbetween_date, if it is, default it to today()
+    if ($inbetween_date==null) {
+      $inbetween_date = Carbon::today();
+    }
+    // print ('$inbetween_date             = ' . $inbetween_date->format('Y-m-d') . "\n");
+    // 1st logical case resulting in an immediate return
+    if ($start_date > $end_date) {
+      // $start_date > $end_date, it's not logical, return null, no exception raised
+      return null;
+    }
+    // 2nd logical case resulting in an immediate return
     if ($inbetween_date > $end_date) {
       // $inbetween_date > $end_date, there will not be a next anniversary in this case
       return null;
     }
-    $next_yearly_pointdate = $start_date->copy()->addYears(1);
-    // 2nd logical case resulting in a right-away return
-    if ($next_yearly_pointdate > $end_date) {
-      // A supposedly next anniversary is beyond the end of contract
-      return null;
+    // 3rd logical case as seen in the examples in the docstring
+    // if $inbetween_date <= $start_date, let it simply equal $start_date,
+    // for we are simply interested finding the next anniversary
+    // use method copy(), DO NOT simply attribute it with "="...
+    if ($inbetween_date <= $start_date) {
+      /*
+       In this case, force $inbetween_date to be equal to $start_date
+       In this specific case, if there's a first anniversary, that will be the result
+      */
+      $inbetween_date = $start_date->copy();
     }
-    // 3rd logical case resulting in a right-away return
-    if ($inbetween_date <= $next_yearly_pointdate) {
-      // At this point, next anniversary is $next_yearly_pointdate which is before the end of contract
-      return $next_yearly_pointdate;
-    }
-    // 4th logical case resulting in recursion
-    // Here $inbetween_date > $next_yearly_pointdate
-    // So, let $start_date be $next_yearly_pointdate and recurse away
-    return self::find_next_anniversary_date_with_triple_start_inbetween_end(
-      $next_yearly_pointdate,
-      $inbetween_date,
-      $end_date
-    );
-  } // ends find_next_anniversary_date_with_triple_start_inbetween_end()
+    $next_yearly_pointdate = $start_date->copy()->addYears($cycle_time_in_years);
+    $loop_iteration_protection_counter = 0;
+    while (true) {
+      // print ('$loop_iteration_protection_counter = ' . $loop_iteration_protection_counter . "\n");
+      // print ('$next_yearly_pointdate             = ' . $next_yearly_pointdate->format('Y-m-d') . "\n");
+      if ($next_yearly_pointdate > $end_date) {
+        // In this case, there won't be a next anniversary, ie, anniversary is beyond end date
+        return null;
+      }
+      if ($inbetween_date <= $next_yearly_pointdate) {
+        // In this case, $next_yearly_pointdate is the searched next anniversary, that's the result
+        return $next_yearly_pointdate;
+      }
+      $loop_iteration_protection_counter += 1;
+      if ($loop_iteration_protection_counter > self::LOOP_ITERATION_PROTECTION_COUNTER_FOR_MONTHS_YEARS) {
+        return null;
+      };
+      // Cycle to next anniversary and loop on
+      $next_yearly_pointdate = $next_yearly_pointdate->addYears($cycle_time_in_years);
+    } // ends while ($loop_on)
+
+    $logical_error_msg = "The program should not logically have arrived at this point. Logical Exception in find_next_anniversary_date_with_triple_start_inbetween_end()";
+    throw new Exception($logical_error_msg, 1);
+
+  } // ends [static] find_next_anniversary_date_with_triple_start_inbetween_end()
 
   public static function find_rent_monthyeardateref_under_convention(
     $date = null,
@@ -123,7 +171,7 @@ class DateFunctions {
     $duedate = $date->copy()->addMonth(1);
     $duedate->day($pay_day_when_monthly);
     return $duedate;
-  } // ends calculate_monthly_duedate_under_convention()
+  } // ends [static] calculate_monthly_duedate_under_convention()
 
 /*
   // Method DEACTIVATED
@@ -152,7 +200,7 @@ class DateFunctions {
     $year_str  = substr($datestring, $pos_for_2digit_year, 2); // = "75" (of 1975)
     $outstr    = $month_str . "/" . $year_str;
     return $outstr;
-  } // ends format_monthyeardateref_as_m_slash_y()
+  } // ends [static] format_monthyeardateref_as_m_slash_y()
 */
 
 } // ends class DateFunctions

@@ -6,8 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class MercadoIndice extends Model {
 
-  const K_INDICE_4CHAR_IGPM = 'IGPM';
-  const K_INDICE_4CHAR_IPCA = 'IPCA';
+  const K_INDICE4CHAR_IGPM  = 'IGPM';
+  const K_INDICE4CHAR_IPCA  = 'IPCA';
+  const K_INDICE4CHAR_SELIC = 'SELI';
 
   public static function get_default_mercadoindice() {
     /*

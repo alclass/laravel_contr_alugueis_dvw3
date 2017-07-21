@@ -49,7 +49,18 @@ class ImovelController extends Controller {
 	public function show($id)
 	{
 		$imovel = Imovel::findOrFail($id);
-		return view('imoveis.imovel', ['imovel' => $imovel]);
+		// Notice $contract may be gotten as null here, it's not a problem for the receiving view
+    $contract = $imovel->get_current_rent_contract_if_any();
+		$next_reajust_date_formatted = 'n/a';
+		$next_reajust_date_carbon = $contract->find_rent_value_next_reajust_date();
+		if ($next_reajust_date_carbon!=null) {
+			$next_reajust_date_formatted = $next_reajust_date_carbon->format('d/M/Y');
+		}
+		return view('imoveis.imovel', [
+			'imovel' => $imovel,
+			'contract' => $contract,
+			'next_reajust_date_formatted' => $next_reajust_date_formatted,
+		]);
 	}
 
 	/**
