@@ -91,11 +91,15 @@ class CondominioTarifa extends Model {
     'monthyeardateref',
   ];
 
-  public function format_monthyeardateref_as_m_slash_y() {
-    return DateFunctions::format_monthyeardateref_as_m_slash_y($this->monthyeardateref);
-  }
-
   public function media_min_max_das_tarifas($condominiotarifas) {
+    /*
+      This method was a way to give access to the static method above
+      with needing to namespace this class in the blade template
+      However, the other solution is to call this in the controller.
+      To REVISE: when the above mentioned change occurs,
+          delete this instance method, leaving only the static one above
+
+    */
     return self::calcular_media_min_max_das_tarifas($condominiotarifas);
   }
 

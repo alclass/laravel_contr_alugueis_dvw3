@@ -2,7 +2,7 @@
 namespace App\Models\Billing;
 
 // use App\Models\Billing\Payment;
-use App\Models\Utils\DateFunctions;
+// use App\Models\Utils\DateFunctions;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
@@ -37,10 +37,6 @@ class BillingItem extends Model {
     'money_amount_in_modifying_if_any',
     'obs',
 	];
-
-  public function format_monthyeardateref_as_m_slash_y() {
-    return DateFunctions::format_monthyeardateref_as_m_slash_y($this->monthyeardateref);
-  }
 
   public function cobranca() {
     $this->belongsTo('App\Models\Billing\Cobranca');

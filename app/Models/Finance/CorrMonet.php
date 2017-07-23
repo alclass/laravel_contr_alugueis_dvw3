@@ -5,12 +5,51 @@ namespace App\Models\Finance;
 // use App\Models\Finance\CorrMonet;
 
 use App\Models\Finance\MercadoIndice;
+use App\Models\Utils\FinancialFunctions;
 use Illuminate\Database\Eloquent\Model;
 
 class CorrMonet extends Model {
 
+  /*
+    =================================
+      Beginning of Static Methods
+    =================================
+  */
 
-  public static function generate_monthly_interest_array_fetching_SELIC_indices(
+  public static function generate_monthly_interest_array_fetching_indices(
+      $reajuste_indice4char,
+      $monthly_interest_rate,
+      $monthyeardateref_ini,
+      $monthyeardateref_fim
+    ) {
+
+    $monthly_interest_array = array();
+
+    $diff_date_in_months = $monthyeardateref_ini->diffInMonths($monthyeardateref_fim);
+    // because they are ref-dates, ie conventioned to be day=1, 1 (one) must be added to the diff
+    $diff_date_in_months += 1;
+    $ongoing_month_ref = $monthyeardateref_ini->copy();
+    for ($i=0; $i < $diff_date_in_months; $i++) {
+      // if it (fraction_value) iss not found in database, it'll be zero
+      // if it's found and is negative, then let it be zero (see below)
+      $corr_monet_fraction = 0;
+      $corr_monet = self::where('monthyeardateref', $ongoing_month_ref)
+        ->where('indice4char', $reajuste_indice4char)
+        ->first();
+      if ($corr_monet!=null) {
+        $corr_monet_fraction = $corr_monet->fraction_value;
+        // if $corr_monet_fraction < 0, then let it be 0, ie, the later correction should not be negative
+        $corr_monet_fraction = ($corr_monet_fraction < 0 ? 0 : $corr_monet_fraction);
+      }
+      $monthly_interest_array[] = $monthly_interest_rate + $corr_monet_fraction;
+      $ongoing_month_ref->addMonths(1);
+    } // ends for ($i=0; $i < $diff_date_in_months; $i++)
+
+    return $monthly_interest_array;
+
+  } // ends [static] generate_monthly_interest_array_fetching_indices()
+
+  public static function generate_monthly_interest_array_from_SELIC_indices(
     $monthly_interest_rate,
     $monthyeardateref_ini,
     $monthyeardateref_fim
@@ -20,7 +59,8 @@ class CorrMonet extends Model {
     $mercadoindice_obj = MercadoIndice::where('indice4char', $key_selic_indice4char);
     if ($mercadoindice_obj == null) {
       // Before returning null, try secondly table corrmonets
-      $does_indice4char_for_selic_exist = MercadoIndice::where('indice4char',$key_selic_indice4char)->exists();
+      $does_indice4char_for_selic_exist = MercadoIndice
+        ::where('indice4char',$key_selic_indice4char)->exists();
       if ($does_indice4char_for_selic_exist == false) {
         return null;
       }
@@ -36,41 +76,8 @@ class CorrMonet extends Model {
 
   } // ends [static] generate_monthly_interest_array_fetching_SELIC_indices()
 
-  public static function generate_monthly_interest_array_fetching_indices(
-      $indice_reajuste_4char,
-      $monthly_interest_rate,
-      $monthyeardateref_ini,
-      $monthyeardateref_fim
-    ) {
-
-    $monthly_interest_array = array();
-
-    $diff_date_in_months = $monthyeardateref_ini->diffInMonths($monthyeardateref_fim);
-    // because they are ref-dates, ie conventioned to be day=1, 1 (one) must be added to the diff
-    $diff_date_in_months += 1;
-    $ongoing_month_ref = $monthyeardateref_ini->copy();
-    for ($i=0; $i < $diff_date_in_months; $i++) {
-      // if it's not found in database, it'll be zero
-      // if it's found and is negative, let it be zero (see below)
-      $corr_monet_fraction = 0;
-      $corr_monet = self::where('monthyeardateref', $ongoing_month_ref)
-        ->where('indice4char', $indice_reajuste_4char)
-        ->first();
-      if ($corr_monet!=null) {
-        $corr_monet_fraction = $corr_monet->fraction_value;
-        // if $corr_monet_fraction < 0, then let it be 0, not negative
-        $corr_monet_fraction = ($corr_monet_fraction < 0 ? 0 : $corr_monet_fraction);
-      }
-      $monthly_interest_array[] = $monthly_interest_rate + $corr_monet_fraction;
-      $ongoing_month_ref->addMonths(1);
-    } // ends for ($i=0; $i < $diff_date_in_months; $i++)
-
-    return $monthly_interest_array;
-
-  } // ends [static] generate_monthly_interest_array_fetching_indices()
-
-  public static function calculate_final_montant_with_initial_montant_within_date_range(
-      $indice_reajuste_4char,
+  public static function calc_fmontant_from_imontant_daterange_n_interest_per_month(
+      $indice4char,
       $monthly_interest_rate,
       $initial_montant,
       $monthyeardateref_ini,
@@ -80,35 +87,35 @@ class CorrMonet extends Model {
     ) {
 
     /*
-        docstring
+        This method is a wrapper to
+          FinancialFunctions::calc_fmontant_from_imontant_n_monthly_interest_array()
+        In the process-chain, this method will transform the month-ref dates and
+          the financial correction indices into the interest array for the latter.
     */
 
     $monthly_interest_array = self
       ::generate_monthly_interest_array_fetching_indices(
-        $indice_reajuste_4char,
+        $indice4char,
         $monthly_interest_rate,
         $monthyeardateref_ini,
         $monthyeardateref_fim
     );
 
-    $first_month_as_partial_interest_fraction = null;
-    if ($first_month_n_days != null) {
-      $first_month_as_partial_interest_fraction = $first_month_n_days / 30;
-    }
 
-    $last_month_as_partial_interest_fraction = null;
-    if ($last_month_n_days != null) {
-      $last_month_as_partial_interest_fraction = $last_month_n_days / 30;
-    }
 
-    return FinantialFunctions::calculate_final_montant_with_monthly_interest_array(
+    return FinancialFunctions::calc_fmontant_from_imontant_n_monthly_interest_array(
       $initial_montant,
       $monthly_interest_array, // eg. [[0]=>0.04, [1]=>0.015, ...]
       $first_month_as_partial_interest_fraction, // eg. 14 days / 31 days = 0.45161290322581
       $last_month_as_partial_interest_fraction // eg. 15 days / 30 days = 0.5
     );
-  } // ends [static] calculate_final_montant_with_monthly_interest_array()
+  } // ends [static] calc_fmontant_from_imontant_n_monthly_interest_array()
 
+  /*
+    =================================
+      End of Static Methods
+    =================================
+  */
 
   protected $table = 'corrmonets';
 

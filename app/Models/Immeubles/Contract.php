@@ -27,9 +27,9 @@ class Contract extends Model {
   // private $cobranca_to_save = null;
 
   protected $fillable = [
-		'initial_rent_value', 'current_rent_value', 'indice_reajuste_4char',
+		'initial_rent_value', 'current_rent_value', 'reajuste_indice4char',
     'pay_day_when_monthly',
-    'percentual_multa', 'percentual_juros', 'aplicar_corr_monet',
+    'percentual_multa_na_mora', 'percentual_juros_fixos_ao_mes', 'aplicar_corr_monet',
     'signing_date', 'start_date', 'duration_in_months', 'n_days_aditional',
     'repassar_condominio', 'repassar_iptu',
     'is_active',
@@ -43,49 +43,30 @@ class Contract extends Model {
     // Now take off 1 day to ajust the new contract to the same yearly anniversary date
     $end_date->addDays(-1);
     return $end_date;
-  }
+  } // ends get_end_date()
 
   public function find_rent_value_next_reajust_date($from_date = null) {
     /*
       $from_date = null is a convention (in the class) for it to be today's date
     */
-    $today = Carbon::today();
-    $from_date = ($from_date == null ? $today : $from_date);
-    return DateFunctions::find_next_anniversary_date_with_triple_start_inbetween_end(
-      $this->start_date,
-      $this->get_end_date(),
-      $from_date //$inbetween_date
-    );
-  }
-
-  public function calculate_final_montant_with_initial_montant_within_date_range(
-      $monthly_interest_rate,
-      $initial_montant,
-      $monthyeardateref_ini,
-      $monthyeardateref_fim,
-      $first_month_n_days = null,
-      $last_month_n_days = null
-    ) {
-      /*
-        This instance method just wraps up $this->indice_reajuste_4char
-          into the parameters and then issues static method:
-          => CorrMonet::calculate_final_montant_with_initial_montant_within_date_range()
-      */
-
-    return CorrMonet::calculate_final_montant_with_initial_montant_within_date_range(
-      $this->indice_reajuste_4char, // $indice_reajuste_4char,
-      $monthly_interest_rate,
-      $initial_montant,
-      $monthyeardateref_ini,
-      $monthyeardateref_fim,
-      $first_month_n_days = null,
-      $last_month_n_days = null
+    $from_date = ($from_date != null ? $from_date : Carbon::today());
+    return DateFunctions
+      ::find_next_anniversary_date_with_triple_start_end_n_from(
+        $this->start_date,
+        $this->get_end_date(),
+        $from_date //$inbetween_date
     );
   }
 
   public function todays_diff_to_rent_value_next_reajust_date($from_date = null) {
     /*
-      $from_date = null is a convention (in the class) for it to be today's date
+      $from_date = null means a convention (in the class) for it to be today's date
+
+      This method is intended to be called from blade.php templates
+      It returns "<m> meses e <d> dias",
+        where m and d are quantities of months and days respectively
+      It still lacks i18n (internationalization), for mês/meses//dia/dias is Portuguese
+
     */
     $today = Carbon::today();
     $from_date = ($from_date == null ? $today : $from_date);
@@ -124,37 +105,63 @@ class Contract extends Model {
     return $ultimas_n_cobrancas_pagas;
   }
 
-  public function get_ultimas_n_cobrancas_relative_to_ref($p_monthyeardateref=null, $n_lasts=null) {
+  public function get_ultimas_n_cobrancas_relative_to_ref(
+      $monthyeardateref=null,
+      $n_lasts=null
+    ) {
 
     // return $this->cobrancas()->orderBy('monthyeardateref', 'desc')->take($n_lasts)->get();
 
-    if ($p_monthyeardateref == null) {
-      $p_monthyeardateref = DateFunctions::find_rent_monthyeardateref_under_convention();
+    if ($monthyeardateref == null) {
+      $monthyeardateref = DateFunctions
+        ::find_conventional_monthyeardateref_with_date_n_dueday(
+          null, // $p_monthyeardateref
+          $this->pay_day_when_monthly
+        );
     }
     if ($n_lasts == null) {
       $n_lasts = self::K_DEFAULT_N_ULTIMAS_COBRANCAS;
     }
     $cobrancas_passadas = Cobranca
       ::where('contract_id', $this->id)
-      ->where('monthyeardateref', '<',  $p_monthyeardateref)
+      ->where('monthyeardateref', '<',  $monthyeardateref)
       ->orderBy('monthyeardateref', 'desc')
       ->take($n_lasts)->get();
 
     return $cobrancas_passadas;
   } // ends get_ultimas_n_cobrancas()
 
-  public function get_cobranca_by_monthyeardateref($p_monthyeardateref=null) {
+  public function get_cobranca_by_monthyeardateref($monthyeardateref=null) {
 
-    if ($p_monthyeardateref == null) {
-      $p_monthyeardateref = DateFunctions::find_rent_monthyeardateref_under_convention();
+    if ($monthyeardateref == null) {
+      $monthyeardateref = DateFunctions
+        ::find_conventional_monthyeardateref_with_date_n_dueday(
+          null, // $p_monthyeardateref
+          $this->pay_day_when_monthly
+        );
     }
     $cobranca = Cobranca
       ::where('contract_id', $this->id)
-      ->where('monthyeardateref', '=',  $p_monthyeardateref)
+      ->where('monthyeardateref', $monthyeardateref)
       ->first();
 
     return $cobranca;
   } // ends get_ultimas_n_cobrancas()
+
+  public function calc_fmontant_from_imontant_monthdaterange_under_contract_mora() {
+    /*
+        Conveyor method to same named method in class ContractMora
+    */
+    $contract_mora = new ContractMora($this);
+    return $contract_mora
+      ->calc_fmontant_from_imontant_monthdaterange_under_contract_mora(
+        $initial_montant,
+        $monthyeardateref_ini,
+        $monthyeardateref_fim,
+        $first_month_took_n_days = null,
+        $last_month_took_n_days  = null
+      );
+  }
 
   public function get_cobranca_atual() {
     return $this->get_cobranca_by_monthyeardateref();

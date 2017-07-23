@@ -49,11 +49,11 @@ class CobrancaGerador {
     // [2] Treat $monthyeardateref
     if ($monthyeardateref==null) {
       // The convention is:
-      // if day is within [1,10] monthref is the previous one
-      // if day is 11 and above monthref is the current one
+      // if day is within [1,duedate] monthref is the previous one
+      // if day is duedate+1 and above monthref is the current one
       $monthyeardateref = DateFunctions
-        ::find_rent_monthyeardateref_under_convention(
-          Carbon::today(),
+        ::find_conventional_monthyeardateref_with_date_n_dueday(
+          null, // $p_monthyeardateref
           $contract->pay_day_when_monthly
         );
     }
@@ -164,8 +164,8 @@ class CobrancaGerador {
       return;
     }
     $this->cobranca->monthyeardateref = DateFunctions
-      ::find_rent_monthyeardateref_under_convention(
-        Carbon::today(),
+      ::find_conventional_monthyeardateref_with_date_n_dueday(
+        null, // $p_monthyeardateref
         $this->cobranca->contract->pay_day_when_monthly
       );
   }

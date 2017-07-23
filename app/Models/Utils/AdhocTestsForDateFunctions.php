@@ -12,7 +12,7 @@ class TestDateFunctions {
     $inbetween_date = Carbon::createFromFormat('Y-m-d', $inbetween_date_str);
     $end_date       = Carbon::createFromFormat('Y-m-d', '2017-05-31');
 
-    $result = DateFunctions::find_next_anniversary_date_with_triple_start_inbetween_end(
+    $result = DateFunctions::find_next_anniversary_date_with_triple_start_end_n_from(
       $start_date,
       $inbetween_date,
       $end_date

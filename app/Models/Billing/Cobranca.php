@@ -285,12 +285,12 @@ class Cobranca extends Model {
     );
   }
 
-  public function get_conventioned_monthyeardateref_if_it_is_null(
+  public function monthyeardateref_or_its_convention_if_it_is_null(
       $monthyeardateref
     ) {
     if ($monthyeardateref == null) {
-      return DateFunctions::find_rent_monthyeardateref_under_convention(
-        null,
+      return DateFunctions::find_conventional_monthyeardateref_with_date_n_dueday(
+        null, // $p_monthyeardateref
         $this->contract->pay_day_when_monthly
       );
     }
