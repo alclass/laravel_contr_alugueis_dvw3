@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class Contract extends Model {
 
+  const K_PERC_MULTA_INCID_MORA       = 10;
+  const K_PERC_JUROS_FIXOS_AM         = 1;
   const K_DEFAULT_N_ULTIMAS_COBRANCAS = 3;
 
   protected $table = 'contracts';
@@ -27,9 +29,11 @@ class Contract extends Model {
   // private $cobranca_to_save = null;
 
   protected $fillable = [
-		'initial_rent_value', 'current_rent_value', 'reajuste_indice4char',
+		'initial_rent_value', 'current_rent_value',
+    'reajuste_indice4char', 'mora_indice4char',
     'pay_day_when_monthly',
-    'percentual_multa_na_mora', 'percentual_juros_fixos_ao_mes', 'aplicar_corr_monet',
+    'apply_multa_incid_mora', 'perc_multa_incid_mora',
+    'apply_juros_fixos_am',   'perc_juros_fixos_am',   'apply_corrmonet_am',
     'signing_date', 'start_date', 'duration_in_months', 'n_days_aditional',
     'repassar_condominio', 'repassar_iptu',
     'is_active',
@@ -44,6 +48,28 @@ class Contract extends Model {
     $end_date->addDays(-1);
     return $end_date;
   } // ends get_end_date()
+
+  public function get_multa_incid_mora_in_fraction() {
+    if ($this->perc_multa_incid_mora == null) {
+      if ($this->apply_multa_incid_mora == true) {
+        return env('PERC_MULTA_INCID_MORA', self::K_PERC_MULTA_INCID_MORA);
+      } else {
+        return null;
+      } // ends inner if
+    } // ends outer if
+    return $this->perc_multa_incid_mora / 100;
+  } // ends get_multa_incid_mora_in_fraction()
+
+  public function get_juros_fixos_am_in_fraction() {
+    if ($this->perc_juros_fixos_am == null) {
+      if ($this->apply_juros_fixos_am == true) {
+        return env('PERC_JUROS_FIXOS_AM', self::K_PERC_JUROS_FIXOS_AM);
+      } else {
+        return null;
+      } // ends inner if
+    } // ends outer if
+    return $this->perc_juros_fixos_am / 100;
+  } // ends get_juros_fixos_am_in_fraction()
 
   public function find_rent_value_next_reajust_date($from_date = null) {
     /*

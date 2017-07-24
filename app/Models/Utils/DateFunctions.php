@@ -5,32 +5,55 @@ namespace App\Models\Utils;
 // use App\Models\Utils\DateFunctions;
 
 use Carbon\Carbon;
-use App\Models\Utils\FinancialFunctions;
+// use App\Models\Utils\FinancialFunctions;
 
 /*
 
 Summary of [static] methods in here:
 
-calc_fraction_of_n_days_in_a_specified_month()
+[1]
+calc_fraction_of_n_days_in_specified_month()
 [has unittest]
 
+[2]
 find_conventional_cutdate_from_monthyeardateref
 [has unittest]
 
+[2 (same as above, just treating null cutday to default)]
 find_conventional_duedate_from_monthyeardateref
 [wrapper of the one above]
 
+[3]
 find_conventional_monthyeardateref_with_date_n_cutday()
 [has unittest]
 
+[3 (same as above, just treating null cutday to default)]
 find_conventional_monthyeardateref_with_date_n_dueday()
 [wrapper of the one above]
 
+[4]
 find_next_anniversary_date_with_triple_start_end_n_from()
 [has unittest]
 
+[5]
 get_default_cutdate_in_month()
 [no need for a direct unittest, it fetches the default by env or by const]
+
+[6]
+get_ini_fim_months_list()
+[has unittest]
+
+[7]
+get_ini_fim_monthyeardaterefs_list()
+[has unittest]
+
+[8]
+get_month_n_monthdays_fraction_tuple_list()
+[has unittest]
+
+[9]
+get_month_n_monthdays_fraction_tuplelist_borders_can_fraction()
+[has unittest]
 
 */
 
@@ -50,7 +73,13 @@ class DateFunctions {
     return $cut_day_in_month;
   }
 
-  public static function calc_fraction_of_n_days_in_a_specified_month(
+  public static function get_total_days_in_specified_month($date) {
+    $month = $date->month;
+    $year  = $date->year;
+    return cal_days_in_month(CAL_GREGORIAN, $month, $year);
+  } // ends [static] get_total_days_in_specified_month()
+
+  public static function calc_fraction_of_n_days_in_specified_month(
       $n_days_considered = null,
       $monthyeardateref  = null
     ) {
@@ -63,15 +92,13 @@ class DateFunctions {
     if ($n_days_considered < 1) {
       return 0;
     }
-    $month = $monthyeardateref->month;
-    $year  = $monthyeardateref->year;
-    $total_days_in_specified_month = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+    $total_days_in_specified_month = self::get_total_days_in_specified_month($monthyeardateref);
     if ($n_days_considered >= $total_days_in_specified_month) {
       return 1;
     }
     $n_days_as_month_fraction = $n_days_considered / $total_days_in_specified_month;
     return $n_days_as_month_fraction;
-  } // ends [static] calc_fraction_of_n_days_in_a_specified_month()
+  } // ends [static] calc_fraction_of_n_days_in_specified_month()
 
   public static function find_next_anniversary_date_with_triple_start_end_n_from(
     $start_date,
@@ -231,7 +258,7 @@ class DateFunctions {
 
   public static function find_conventional_monthyeardateref_with_date_n_dueday(
     $date = null,
-    $pay_day_when_monthly = null
+    $dueday_in_month = null
   ) {
     /*
         Explanation is in the docstring for method
@@ -243,12 +270,12 @@ class DateFunctions {
           null $cut_day_in_month
 
     */
-    if ($cut_day_in_month == null) {
-      $cut_day_in_month = self::get_default_cutdate_in_month();
+    if ($dueday_in_month == null) {
+      $dueday_in_month = self::get_default_cutdate_in_month();
     }
     return self::find_conventional_monthyeardateref_with_date_n_cutday(
       $date,
-      $cut_day_in_month
+      $dueday_in_month
     );
   } // ends find_rent_monthyeardateref_under_convention()
 
@@ -291,5 +318,160 @@ class DateFunctions {
       $pay_day_when_monthly
     );
   } // ends [static] calculate_monthly_duedate_under_convention()
+
+
+  public static function get_ini_fim_months_list(
+      $date_ini = null,
+      $date_fim = null
+    ) {
+    /*
+    */
+    if ($date_ini == null) {
+        throw new Exception(
+          "Error: date_ini $date_ini is null in DateFunctions::get_ini_fim_months_list()", 1
+        );
+    }
+    $date_fim = ($date_fim != null ? $date_fim : Carbon::today());
+    // If months are the same, set greater date to the 1-element array and return right away
+    if ($date_ini->month == $date_fim->month) {
+      $month_list = [ $date_ini ];
+      if ($date_ini < $date_fim) {
+        $month_list = [ $date_fim ];
+      }
+      return $month_list;
+    } // The next if excludes mere month equality, so if it's true, $date_ini has a later month than $date_fim
+    if ($date_ini > $date_fim) {
+        throw new Exception(
+          "Error: date_ini ($date_ini) > date_fim ($date_fim) [in month criterium] is in DateFunctions::get_ini_fim_months_list()", 1
+        );
+    }
+    $month_list = array();
+    $n_months = $date_ini->diffInMonths($date_fim);
+    $ongoing_month_ref = $date_ini; // this first doesn't need ->copy()
+
+    for ($i=0; $i < $n_months; $i++) {
+      $month_list[] = $ongoing_month_ref;
+      $ongoing_month_ref = $ongoing_month_ref->copy()->addMonths(1);
+    }
+    // Now add $date_fim itself
+    $month_list[] = $date_fim;
+    return $month_list;
+
+  } // ends [static] get_ini_fim_monthrefs_list()
+
+  public static function get_ini_fim_monthyeardaterefs_list(
+    $p_monthyeardateref_ini = null,
+    $p_monthyeardateref_fim = null
+  ) {
+  /*
+
+  */
+  if ($p_monthyeardateref_ini == null) {
+    $p_monthyeardateref_ini = self::find_conventional_monthyeardateref_with_date_n_dueday();
+  }
+  if ($p_monthyeardateref_fim == null) {
+    $p_monthyeardateref_fim = self::find_conventional_monthyeardateref_with_date_n_dueday();
+  }
+  // Force convention of day=1 and time(0,0,0)
+  // This will guarantee middle months will also have that convention
+  $monthyeardateref_ini = $p_monthyeardateref_ini->copy()->day(1);
+  $monthyeardateref_ini->setTime(0,0,0);
+  $monthyeardateref_fim = $p_monthyeardateref_fim->copy()->day(1);
+  $monthyeardateref_fim->setTime(0,0,0);
+  $ini_fim_monthyeardaterefs_list = self::get_ini_fim_months_list(
+    $monthyeardateref_ini,
+    $monthyeardateref_fim
+  );
+  return $ini_fim_monthyeardaterefs_list;
+
+  } // ends [static] get_ini_fim_monthyeardaterefs_list()
+
+  public static function get_month_n_monthdays_fraction_tuple_list(
+    $months_list = null
+  ) {
+  /*
+
+  */
+  if ($months_list == null) {
+    return null;
+  }
+  $month_n_days_in_month_fraction_tuple_list = array();
+  foreach ($months_list as $monthdate) {
+    $total_days_in_month = self::get_total_days_in_specified_month($monthdate);
+    $n_days = $monthdate->day;
+    $days_in_month_fraction = $n_days / $total_days_in_month;
+    $tuple = [$monthdate, $days_in_month_fraction];
+    $month_n_days_in_month_fraction_tuple_list[] = $tuple;
+  } // ends foreach
+  return $month_n_days_in_month_fraction_tuple_list;
+
+  } // ends [static] get_month_n_monthdays_fraction_tuple_list()
+
+  public static function get_month_n_monthdays_fraction_tuplelist_borders_can_fraction(
+      $months_list = null
+    ) {
+    /*
+
+      Example of a month_n_monthdays_fraction_tuplelist_borders_can_fraction:
+
+    [
+      [Carbon('2017-04-10'), 21/30], // 21 days from day 10 (inclusive) to day 30
+      [Carbon('2017-05-dd'), 1],
+      [Carbon('2017-06-dd'), 1],
+      [Carbon('2017-07-dd'), 1],
+      [Carbon('2017-08-dd'), 1],
+      [Carbon('2017-09-10'), 10/30], // 10 days from day 1 to day 10 (inclusive)
+    ]
+
+        IMPORTANT:
+        There is a difference between this method and the one above (or below)
+          self::get_month_n_monthdays_fraction_tuple_list()
+        This difference, besides the fact that middle months all 100% (ie, 1 complete),
+         considers the interpretation that the first month fraction is the days
+         existing until the end of month, not the number of days elapsed.
+        This is seen in the example above:
+        ie =>  [Carbon('2017-04-10'), 21/30], // 21 days from day 10 (inclusive) to day 30
+
+        To illustrate this differente, consider the case of:
+        1st month is 2017-06-10.
+        In the other method, fraction is 10/30 = 1/3 = 0.333...
+        In this method, fraction is (30-10+1)/30 = 21/30
+
+    */
+
+    if (empty($months_list)) {
+      return null;
+    }
+    $month_n_days_in_month_fraction_tuple_list = array();
+    // Fill up the tuplelist with 1's for the monthdays fraction
+    foreach ($months_list as $monthdate) {
+      $tuple = [$monthdate, 1];
+      $month_n_days_in_month_fraction_tuple_list[] = $tuple;
+    } // ends foreach
+
+    $n_months = count($months_list);
+    // Adjust the first tuplelist element
+    if ($n_months>0) {
+      $monthdate = $months_list[0];
+      $total_days_in_month = self::get_total_days_in_specified_month($monthdate);
+      $n_days = $monthdate->day;
+      $fraction_monthdays = ($total_days_in_month - $n_days + 1) / $total_days_in_month;
+      $tuple = [$monthdate, $fraction_monthdays];
+      $month_n_days_in_month_fraction_tuple_list[0] = $tuple;
+    }
+    // Adjust the last tuplelist element if any
+    if ($n_months>1) {
+      $last_element = $n_months-1;
+      $monthdate = $months_list[$last_element];
+      $total_days_in_month = self::get_total_days_in_specified_month($monthdate);
+      $n_days = $monthdate->day;
+      $fraction_monthdays = $n_days / $total_days_in_month;
+      $tuple = [$monthdate, $fraction_monthdays];
+      $month_n_days_in_month_fraction_tuple_list[$last_element] = $tuple;
+    }
+
+    return $month_n_days_in_month_fraction_tuple_list;
+
+  } // ends [static] get_month_n_monthdays_fraction_tuplelist_borders_can_fraction()
 
 } // ends class DateFunctions

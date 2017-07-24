@@ -18,12 +18,12 @@ class DateFunctionsTest extends TestCase {
        $this->assertTrue(true);
   }
 
-  public function testcalc_fraction_of_n_days_in_a_specified_month() {
+  public function testcalc_fraction_of_n_days_in_specified_month() {
     $n_days_considered = 15;
     $monthyeardateref  = new Carbon('2017-04-01'); // April has 30 days
     $expected_answer   = 15/30;
     $n_days_as_month_fraction = DateFunctions
-      ::calc_fraction_of_n_days_in_a_specified_month(
+      ::calc_fraction_of_n_days_in_specified_month(
         $n_days_considered,
         $monthyeardateref
       );
@@ -34,13 +34,13 @@ class DateFunctionsTest extends TestCase {
     $monthyeardateref  = new Carbon('2017-05-01'); // May has 31 days
     $expected_answer   = 7/31;
     $n_days_as_month_fraction = DateFunctions
-      ::calc_fraction_of_n_days_in_a_specified_month(
+      ::calc_fraction_of_n_days_in_specified_month(
         $n_days_considered,
         $monthyeardateref
       );
     $this->assertEquals($n_days_as_month_fraction, $expected_answer);
 
-  }  // ends testcalc_fraction_of_n_days_in_a_specified_month()
+  }  // ends testcalc_fraction_of_n_days_in_specified_month()
 
   public function testfind_next_anniversary_date_with_triple_start_end_n_from() {
 
@@ -426,6 +426,161 @@ class DateFunctionsTest extends TestCase {
     );
 
   }  // ends testfind_conventional_cutdate_from_monthyeardateref()
+
+  public function testget_ini_fim_months_list() {
+
+    // Inner test 1
+    $d1 = new Carbon('2017-01-05');
+    $d2 = new Carbon('2017-02-05');
+    $d3 = new Carbon('2017-03-05');
+    $d4 = new Carbon('2017-04-05');
+    $d5 = new Carbon('2017-05-15');
+    $expected_ini_fim_months_list = [$d1,$d2,$d3,$d4,$d5];
+    $returned_ini_fim_months_list = DateFunctions
+      ::get_ini_fim_months_list(
+        $d1,
+        $d5
+      );
+    $this->assertEquals(
+      $expected_ini_fim_months_list,
+      $expected_ini_fim_months_list
+    );
+
+  }  // ends testget_ini_fim_months_list()
+
+
+  public function testget_ini_fim_monthyeardaterefs_list() {
+
+    // Inner test 1
+    $d1 = new Carbon('2017-01-01');
+    $d2 = new Carbon('2017-02-01');
+    $d3 = new Carbon('2017-03-01');
+    $d4 = new Carbon('2017-04-01');
+    $d5 = new Carbon('2017-05-01');
+    $expected_ini_fim_months_list = [$d1,$d2,$d3,$d4,$d5];
+    $returned_ini_fim_months_list = DateFunctions
+      ::get_ini_fim_monthyeardaterefs_list(
+        $d1,
+        $d5
+      );
+    $this->assertEquals(
+      $returned_ini_fim_months_list,
+      $expected_ini_fim_months_list
+    );
+
+    // Inner test 2
+    $d1 = new Carbon('2017-01-01');
+    $d2 = $d1->copy();
+    $expected_ini_fim_months_list = [$d1];
+    $returned_ini_fim_months_list = DateFunctions
+      ::get_ini_fim_monthyeardaterefs_list(
+        $d1,
+        $d2
+      );
+    $this->assertEquals(
+      $returned_ini_fim_months_list,
+      $expected_ini_fim_months_list
+    );
+
+    // Inner test 3
+    $d1 = null;
+    $d2 = null;
+    $conventional_monthyeardateref = DateFunctions
+      ::find_conventional_monthyeardateref_with_date_n_dueday();
+    $expected_ini_fim_months_list = [$conventional_monthyeardateref];
+    $returned_ini_fim_months_list = DateFunctions
+      ::get_ini_fim_monthyeardaterefs_list(
+        $d1,
+        $d2
+      );
+    $this->assertEquals(
+      $returned_ini_fim_months_list,
+      $expected_ini_fim_months_list
+    );
+
+  }  // ends testget_ini_fim_monthyeardaterefs_list()
+
+  public function testget_month_n_monthdays_fraction_tuple_list() {
+
+    // Inner test 1
+    $months_list = array();
+    $expected_month_n_monthdays_fraction_tuple_list = array();
+    $date = new Carbon('2017-01-10');
+    $months_list[]=$date;
+    $days_in_month_fraction = 10/31;
+    $tuple = [$date, $days_in_month_fraction];
+    $expected_month_n_monthdays_fraction_tuple_list[] = $tuple;
+    $date = new Carbon('2017-02-17');
+    $months_list[]=$date;
+    $days_in_month_fraction = 17/28;
+    $tuple = [$date, $days_in_month_fraction];
+    $expected_month_n_monthdays_fraction_tuple_list[] = $tuple;
+    $date = new Carbon('2017-03-08');
+    $months_list[]=$date;
+    $days_in_month_fraction = 8/31;
+    $tuple = [$date, $days_in_month_fraction];
+    $expected_month_n_monthdays_fraction_tuple_list[] = $tuple;
+    $date = new Carbon('2017-04-01');
+    $months_list[]=$date;
+    $days_in_month_fraction = 1/30;
+    $tuple = [$date, $days_in_month_fraction];
+    $expected_month_n_monthdays_fraction_tuple_list[] = $tuple;
+    $date = new Carbon('2017-05-05');
+    $months_list[]=$date;
+    $days_in_month_fraction = 5/31;
+    $tuple = [$date, $days_in_month_fraction];
+    $expected_month_n_monthdays_fraction_tuple_list[] = $tuple;
+
+    $returned_month_n_monthdays_fraction_tuple_list = DateFunctions
+      ::get_month_n_monthdays_fraction_tuple_list(
+        $months_list
+      );
+    $this->assertEquals(
+      $returned_month_n_monthdays_fraction_tuple_list,
+      $returned_month_n_monthdays_fraction_tuple_list
+    );
+
+  } // ends testget_month_n_monthdays_fraction_tuple_list()
+
+
+  public function testget_month_n_monthdays_fraction_tuplelist_borders_can_fraction() {
+
+    // Inner test 1
+    $months_list = array();
+    $expected_month_n_monthdays_fraction_tuple_list = array();
+    $date = new Carbon('2017-01-10');
+    $months_list[]=$date;
+    $days_in_month_fraction = (31-10+1)/31;
+    $tuple = [$date, $days_in_month_fraction];
+    $expected_month_n_monthdays_fraction_tuple_list[] = $tuple;
+    $date = new Carbon('2017-02-17');
+    $months_list[]=$date;
+    $tuple = [$date, 1];
+    $expected_month_n_monthdays_fraction_tuple_list[] = $tuple;
+    $date = new Carbon('2017-03-08');
+    $months_list[]=$date;
+    $tuple = [$date, 1];
+    $expected_month_n_monthdays_fraction_tuple_list[] = $tuple;
+    $date = new Carbon('2017-04-01');
+    $months_list[]=$date;
+    $tuple = [$date, 1];
+    $expected_month_n_monthdays_fraction_tuple_list[] = $tuple;
+    $date = new Carbon('2017-05-05');
+    $months_list[]=$date;
+    $days_in_month_fraction = 5/31;
+    $tuple = [$date, $days_in_month_fraction];
+    $expected_month_n_monthdays_fraction_tuple_list[] = $tuple;
+
+    $returned_month_n_monthdays_fraction_tuple_list = DateFunctions
+      ::get_month_n_monthdays_fraction_tuplelist_borders_can_fraction(
+        $months_list
+      );
+    $this->assertEquals(
+      $returned_month_n_monthdays_fraction_tuple_list,
+      $expected_month_n_monthdays_fraction_tuple_list
+    );
+
+  } // ends testget_month_n_monthdays_fraction_tuplelist_borders_can_fraction()
 
 
 } // ends class DateFunctionsTest extends TestCase

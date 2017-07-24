@@ -16,38 +16,39 @@ class CorrMonet extends Model {
     =================================
   */
 
-  public static function generate_monthly_interest_array_fetching_indices(
-      $reajuste_indice4char,
-      $monthly_interest_rate,
+  public static function fetch_monthly_corrmonet_fraction_index_array(
+      $corrmonet_indice4char,
       $monthyeardateref_ini,
       $monthyeardateref_fim
     ) {
 
-    $monthly_interest_array = array();
+    $monthly_corrmonet_fraction_index_array = array();
 
     $diff_date_in_months = $monthyeardateref_ini->diffInMonths($monthyeardateref_fim);
+
     // because they are ref-dates, ie conventioned to be day=1, 1 (one) must be added to the diff
     $diff_date_in_months += 1;
     $ongoing_month_ref = $monthyeardateref_ini->copy();
     for ($i=0; $i < $diff_date_in_months; $i++) {
-      // if it (fraction_value) iss not found in database, it'll be zero
+      // if it (fraction_value) is not found in database, it'll be zero
       // if it's found and is negative, then let it be zero (see below)
       $corr_monet_fraction = 0;
       $corr_monet = self::where('monthyeardateref', $ongoing_month_ref)
-        ->where('indice4char', $reajuste_indice4char)
+        ->where('indice4char', $corrmonet_indice4char)
         ->first();
       if ($corr_monet!=null) {
         $corr_monet_fraction = $corr_monet->fraction_value;
         // if $corr_monet_fraction < 0, then let it be 0, ie, the later correction should not be negative
         $corr_monet_fraction = ($corr_monet_fraction < 0 ? 0 : $corr_monet_fraction);
       }
-      $monthly_interest_array[] = $monthly_interest_rate + $corr_monet_fraction;
+      $monthly_corrmonet_fraction_index_array[] = $corr_monet_fraction;
       $ongoing_month_ref->addMonths(1);
+
     } // ends for ($i=0; $i < $diff_date_in_months; $i++)
 
-    return $monthly_interest_array;
+    return $monthly_corrmonet_fraction_index_array;
 
-  } // ends [static] generate_monthly_interest_array_fetching_indices()
+  } // ends [static] fetch_monthly_corrmonet_fraction_index_array()
 
   public static function generate_monthly_interest_array_from_SELIC_indices(
     $monthly_interest_rate,

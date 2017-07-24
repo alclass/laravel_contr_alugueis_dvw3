@@ -359,6 +359,41 @@ class CobrancaGerador {
   } // ends result_true_false_null_to_str()
 
 
+  public function create_billingitem_for_mora($moradebito) {
+
+    $billingitem  = new BillingItem;
+    // ->save() will be used below at method's end
+    // $billingitem->cobranca_id       = $this->cobranca->id;
+    $cobrancatipo = $this->cobrancatipo_objs_array[CobrancaTipo::K_4CHAR_MORA];
+    $billingitem->cobrancatipo_id   = $cobrancatipo->id;
+    $billingitem->brief_description = $cobrancatipo->brief_description;
+    $billingitem->charged_value     = $moradebito->update_charged_value();
+    $billingitem->ref_type          = BillingItem::K_REF_TYPE_IS_DATE;
+    $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_MONTHLY;
+    $billingitem->monthyeardateref  = $moradebito->monthyeardateref;
+    $brief_info = $moradebito->lineinfo;
+    if ($brief_info != null) {
+      $billingitem->obs = $brief_info;
+    }
+    $this->cobranca->billingitems()->save($billingitem);
+    $billingitem->save();
+
+  } // ends create_billingitem_for_mora()
+
+  private function fetch_if_any_mora_items() {
+
+    $contract_id = $this->cobranca->contract->id;
+    $moradebitos = MoraDebito
+      ::where('contract_id', $contract_id)
+      ->where('is_open', true)
+      ->get();
+
+    foreach ($moradebitos as $moradebito) {
+      $this->create_billingitem_for_mora($moradebito);
+    }
+
+  } // ends fetch_if_any_mora_items()
+
   private function gerar_itens_contratuais() {
     /*
 
@@ -397,6 +432,10 @@ class CobrancaGerador {
     $call_recalculate_total_and_n_items = $call_recalculate_total_and_n_items || $result_true_false_null;
     $call_recalculate_total_and_n_items_str = $this->true_false_null_to_str($call_recalculate_total_and_n_items);
     print ('[+] call_recalculate_total_and_n_items = [[' . $call_recalculate_total_and_n_items_str . "]]\n");
+
+    $result_true_false_null = $this->fetch_if_any_mora_items();
+    $result_true_false_null_str = $this->true_false_null_to_str($result_true_false_null);
+    print ('[3] Condomínio result = [[' . $result_true_false_null_str . "]]\n");
 
     if ($call_recalculate_total_and_n_items==true) {
       $this->recalculate_total_and_n_items_and_resave();

@@ -204,6 +204,12 @@ Route::get('/testCarbon', function() {
 	return $deposited_on;
 });
 
+Route::get('/cobrancas/emmora', [
+	'as'   => 'cobrancas.emora.listar',
+  'uses' => 'CobrancaController@listarmoras'
+]);
+
+
 //Auth::routes();
 
 Route::get('/home', 'HomeController@index')->name('home');

@@ -3,6 +3,7 @@
 use App\Cobranca;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
+use App\Models\Billing\MoraDebito;
 use Carbon\Carbon;
 
 use Illuminate\Http\Request;
@@ -114,5 +115,15 @@ class CobrancaController extends Controller {
 	{
 		//
 	}
+
+	public function listarmoras() {
+
+		$moradebitos = MoraDebito::all();
+
+		return view('cobrancas/emmora/listarmoras', ['moradebitos'=>$moradebitos, 'category_msg'=>'Abertas']);
+
+	} // ends moras()
+
+
 
 }
