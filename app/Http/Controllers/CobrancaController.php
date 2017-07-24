@@ -48,6 +48,15 @@ class CobrancaController extends Controller {
 		return view('cobrancas/lista', ['cobrancas'=>$cobrancas, 'category_msg'=>'Abertas']);
 	}
 
+	public function listarmorasporcontrato($contract_id)	{
+		$today = Carbon::today();
+		MoraDebitoCalculator
+		find_debitomoras
+		$cobrancas = Cobranca::where('has_been_paid', 0)
+			->where('duedate', '<', $today);
+		return view('cobrancas/lista', ['cobrancas'=>$cobrancas, 'category_msg'=>'Abertas']);
+	}
+
 	public function abrir()	{
 		//
 	}

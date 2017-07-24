@@ -29,42 +29,6 @@ class MoraDebito extends Model {
     'lineinfo', 'history',
   ];
 
-  public $copy_monthly_mora_fraction_index_array = null;
-
-  private $updated_debt_value = null;
-  public function get_updated_debt_value(){
-    return $this->updated_debt_value;
-  }
-
-  public function update_debt_value(
-      $initial_montant      = null,
-      $monthyeardateref_ini = null,
-      $monthyeardateref_fim = null,
-      $n_days_in_monthyeardateref_ini = null,
-      $n_days_in_monthyeardateref_fim = null
-    ) {
-    if ($initial_montant == null) {
-      $initial_montant = $this->ini_debt_value;
-    }
-    if ($monthyeardateref_ini == null) {
-      $monthyeardateref_ini = $this->monthyeardateref;
-    }
-    if ($monthyeardateref_fim == null) {
-      $monthyeardateref_fim = DateFunctions
-        ::find_conventional_monthyeardateref_with_date_n_dueday();
-    }
-
-    $contract_mora = new ContractMora($this->contract);
-
-    $mora_details_assoc_array = $contract_mora->generate_mora_details();
-
-    $corrmonet_indice4char = $this->contract->mora_indice4char;
-
-
-    return number_format($this->updated_debt_value, 2);
-
-  } // calculate_mora_updated_value_within_daterange
-
   public function contract() {
     return $this->belongsTo('App\Models\Immeubles\Contract');
   }

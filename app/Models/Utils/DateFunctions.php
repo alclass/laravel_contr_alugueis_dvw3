@@ -15,6 +15,10 @@ Summary of [static] methods in here:
 calc_fraction_of_n_days_in_specified_month()
 [has unittest]
 
+[1]
+is_date_on_last_day_of_month()
+[doesn't have unittest]
+
 [2]
 find_conventional_cutdate_from_monthyeardateref
 [has unittest]
@@ -78,6 +82,18 @@ class DateFunctions {
     $year  = $date->year;
     return cal_days_in_month(CAL_GREGORIAN, $month, $year);
   } // ends [static] get_total_days_in_specified_month()
+
+  public static function is_date_on_last_day_of_month($date) {
+    if ($date==null) {
+      return false;
+    }
+    $n_days_in_month = $date->day;
+    $total_days_in_month = DateFunctions::get_total_days_in_specified_month($date);
+    if ($n_days_in_month == $total_days_in_month) {
+      return true;
+    }
+    return false;
+  } // ends [static] is_date_on_last_day_of_month()
 
   public static function calc_fraction_of_n_days_in_specified_month(
       $n_days_considered = null,

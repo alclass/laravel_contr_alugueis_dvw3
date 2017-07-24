@@ -16,101 +16,17 @@ class CorrMonet extends Model {
     =================================
   */
 
-  public static function fetch_monthly_corrmonet_fraction_index_array(
-      $corrmonet_indice4char,
-      $monthyeardateref_ini,
-      $monthyeardateref_fim
+  public static function try_to_find_conventional_average_corrmonet(
+    $corrmonet_indice4char
     ) {
+    /*
 
-    $monthly_corrmonet_fraction_index_array = array();
+    *** TO YET IMPLEMENT ***
 
-    $diff_date_in_months = $monthyeardateref_ini->diffInMonths($monthyeardateref_fim);
-
-    // because they are ref-dates, ie conventioned to be day=1, 1 (one) must be added to the diff
-    $diff_date_in_months += 1;
-    $ongoing_month_ref = $monthyeardateref_ini->copy();
-    for ($i=0; $i < $diff_date_in_months; $i++) {
-      // if it (fraction_value) is not found in database, it'll be zero
-      // if it's found and is negative, then let it be zero (see below)
-      $corr_monet_fraction = 0;
-      $corr_monet = self::where('monthyeardateref', $ongoing_month_ref)
-        ->where('indice4char', $corrmonet_indice4char)
-        ->first();
-      if ($corr_monet!=null) {
-        $corr_monet_fraction = $corr_monet->fraction_value;
-        // if $corr_monet_fraction < 0, then let it be 0, ie, the later correction should not be negative
-        $corr_monet_fraction = ($corr_monet_fraction < 0 ? 0 : $corr_monet_fraction);
-      }
-      $monthly_corrmonet_fraction_index_array[] = $corr_monet_fraction;
-      $ongoing_month_ref->addMonths(1);
-
-    } // ends for ($i=0; $i < $diff_date_in_months; $i++)
-
-    return $monthly_corrmonet_fraction_index_array;
+    */
+    return 0.005;
 
   } // ends [static] fetch_monthly_corrmonet_fraction_index_array()
-
-  public static function generate_monthly_interest_array_from_SELIC_indices(
-    $monthly_interest_rate,
-    $monthyeardateref_ini,
-    $monthyeardateref_fim
-  ){
-
-    $key_selic_indice4char = env('SELIC_INDICE4CHAR', MercadoIndice::K_INDICE4CHAR_SELIC);
-    $mercadoindice_obj = MercadoIndice::where('indice4char', $key_selic_indice4char);
-    if ($mercadoindice_obj == null) {
-      // Before returning null, try secondly table corrmonets
-      $does_indice4char_for_selic_exist = MercadoIndice
-        ::where('indice4char',$key_selic_indice4char)->exists();
-      if ($does_indice4char_for_selic_exist == false) {
-        return null;
-      }
-    }
-    $selic_indice4char = $mercadoindice_obj->indice4char;
-
-    return generate_monthly_interest_array_fetching_indices(
-      $selic_indice4char,
-      $monthly_interest_rate,
-      $monthyeardateref_ini,
-      $monthyeardateref_fim
-    );
-
-  } // ends [static] generate_monthly_interest_array_fetching_SELIC_indices()
-
-  public static function calc_fmontant_from_imontant_daterange_n_interest_per_month(
-      $indice4char,
-      $monthly_interest_rate,
-      $initial_montant,
-      $monthyeardateref_ini,
-      $monthyeardateref_fim,
-      $first_month_n_days = null,
-      $last_month_n_days = null
-    ) {
-
-    /*
-        This method is a wrapper to
-          FinancialFunctions::calc_fmontant_from_imontant_n_monthly_interest_array()
-        In the process-chain, this method will transform the month-ref dates and
-          the financial correction indices into the interest array for the latter.
-    */
-
-    $monthly_interest_array = self
-      ::generate_monthly_interest_array_fetching_indices(
-        $indice4char,
-        $monthly_interest_rate,
-        $monthyeardateref_ini,
-        $monthyeardateref_fim
-    );
-
-
-
-    return FinancialFunctions::calc_fmontant_from_imontant_n_monthly_interest_array(
-      $initial_montant,
-      $monthly_interest_array, // eg. [[0]=>0.04, [1]=>0.015, ...]
-      $first_month_as_partial_interest_fraction, // eg. 14 days / 31 days = 0.45161290322581
-      $last_month_as_partial_interest_fraction // eg. 15 days / 30 days = 0.5
-    );
-  } // ends [static] calc_fmontant_from_imontant_n_monthly_interest_array()
 
   /*
     =================================
@@ -132,9 +48,10 @@ class CorrMonet extends Model {
    protected $fillable = [
      'mercado_indicador_id',
      'indice4char',
-     'tarifa_valor',
+     'fraction_value',
      'monthyeardateref',
    ];
+
 
    public function mercadoindice() {
      return $this->belongsTo('App\Models\Finance\MercadoIndice');

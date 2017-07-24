@@ -193,7 +193,7 @@ Route::get('/condominios/{imovel_id}',
 
 
 Route::get('/cobrancas/abertas',     'CobrancaController@abertas');
-Route::get('/cobrancas/emmora',      'CobrancaController@emmora');
+// Route::get('/cobrancas/emmora',      'CobrancaController@emmora');
 Route::get('/cobrancas/consiliadas', 'CobrancaController@conciliadas');
 // Route::resource('/cobrancas/abrir',  'CobrancaController@store');
 
@@ -209,6 +209,10 @@ Route::get('/cobrancas/emmora', [
   'uses' => 'CobrancaController@listarmoras'
 ]);
 
+Route::get('/cobrancas/emmora/{$contract_id}', [
+	'as'   => 'cobrancas.emora.listarporcontrato',
+  'uses' => 'CobrancaController@listarmorasporcontrato'
+]);
 
 //Auth::routes();
 
