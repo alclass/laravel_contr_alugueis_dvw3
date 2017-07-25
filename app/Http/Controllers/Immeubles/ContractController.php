@@ -1,4 +1,4 @@
-<?php namespace App\Http\Controllers;
+<?php namespace App\Http\Controllers\Immeubles;
 
 use App\Models\Billing\Cobranca;
 use App\Models\Immeubles\Contract;

@@ -31,7 +31,8 @@ class Cobranca extends Model {
  ];
 
 	protected $fillable = [
-		'monthyeardateref', 'duedate', 'n_seq_from_dateref','total', 'n_items',
+		'monthyeardateref', 'duedate', 'n_seq_from_dateref',
+    'total_value',  'n_items',
     'n_parcelas', 'are_parcels_monthly', 'parcel_n_days_interval',
     'has_been_paid',
 	];

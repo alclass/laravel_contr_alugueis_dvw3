@@ -188,6 +188,14 @@ class Contract extends Model {
         $last_month_took_n_days  = null
       );
   }
+  public function strlist_all_contractors() {
+    $strlist_contractors ='';
+    foreach ($this->users as $user) {
+      $strlist_contractors .= $user->get_first_n_last_names();
+      $strlist_contractors .= ' | ';
+    }
+    return $strlist_contractors;
+  }
 
   public function get_cobranca_atual() {
     return $this->get_cobranca_by_monthyeardateref();

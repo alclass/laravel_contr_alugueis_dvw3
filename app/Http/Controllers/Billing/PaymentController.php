@@ -1,4 +1,4 @@
-<?php namespace App\Http\Controllers;
+<?php namespace App\Http\Controllers\Billing;
 
 use App\Models\Immeubles\Imovel;
 use App\Models\Billing\Payment;
@@ -23,6 +23,13 @@ class PaymentController extends Controller {
 		return 'hi';
 		//
 	}
+
+	public function history()
+	{
+		return 'hi';
+		//
+	}
+
 
 	/**
 	 * Show the form for creating a new resource.

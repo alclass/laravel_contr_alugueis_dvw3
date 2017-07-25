@@ -1,4 +1,4 @@
-<?php namespace App\Http\Controllers;
+<?php namespace App\Http\Controllers\Billing;
 
 use App\Cobranca;
 use App\Http\Requests;
@@ -8,7 +8,7 @@ use Carbon\Carbon;
 
 use Illuminate\Http\Request;
 
-class CobrancaController extends Controller {
+class MoraDebitoController extends Controller {
 
 	/**
 	 * Display a listing of the resource.
@@ -49,12 +49,16 @@ class CobrancaController extends Controller {
 	}
 
 	public function listarmorasporcontrato($contract_id)	{
+		return 'hi contract_id' . $contract_id;
 		$today = Carbon::today();
-		MoraDebitoCalculator
-		find_debitomoras
+		$mora_calc = MoraDebitoCalculator($contract_id);
+		$debitomoras = $mora_calc->find_debitomoras()
 		$cobrancas = Cobranca::where('has_been_paid', 0)
 			->where('duedate', '<', $today);
-		return view('cobrancas/lista', ['cobrancas'=>$cobrancas, 'category_msg'=>'Abertas']);
+		return view('cobrancas/emmora/listarmoras', [
+			'cobrancas'    => $cobrancas,
+			'debitomoras'  => $debitomoras,
+			'category_msg' => 'Abertas']);
 	}
 
 	public function abrir()	{

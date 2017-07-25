@@ -30,14 +30,14 @@
             $n_seq += 1;
           ?>
           <td data-th="n"> {{ $n_seq }} </td>
-          <td data-th="ref"> {{ $condominiotarifa->format_monthyeardateref_as_m_slash_y() }} </td>
+          <td data-th="ref"> {{ $condominiotarifa->monthyeardateref->format('M-Y') }} </td>
           <td data-th="tarifa"> {{ $condominiotarifa->tarifa_valor }} </td>
         </tr>
       @endforeach
     </table>
     <?php
       $triple_stats = $condominiotarifa->media_min_max_das_tarifas($condominiotarifas);
-      $media = $triple_stats['media'];
+      $media = number_format($triple_stats['media'], 2);
       $min   = $triple_stats['min'];
       $max   = $triple_stats['max'];
     ?>

@@ -28,6 +28,10 @@ find_conventional_duedate_from_monthyeardateref
 [wrapper of the one above]
 
 [3]
+make_n_get_monthyeardateref_with_year_n_month()
+[doesn't have unittest]
+
+[3]
 find_conventional_monthyeardateref_with_date_n_cutday()
 [has unittest]
 
@@ -228,6 +232,19 @@ class DateFunctions {
     throw new Exception($logical_error_msg, 1);
 
   } // ends [static] find_next_anniversary_date_with_triple_start_end_n_from()
+
+  public static function make_n_get_monthyeardateref_with_year_n_month(
+      $year = null,
+      $month = null
+    ) {
+    $today = Carbon::today();
+		if ($year  == null) { $year  = $today->year;  }
+		if ($month == null) { $month = $today->month; }
+    $day = 1;
+    $monthyeardateref = Carbon::createFromDate($year, $month, $day);
+		$monthyeardateref->setTime(0,0,0);
+    return $monthyeardateref;
+  } // ends [static] make_n_get_monthyeardateref_with_year_n_month()
 
   public static function find_conventional_monthyeardateref_with_date_n_cutday(
     $date = null,

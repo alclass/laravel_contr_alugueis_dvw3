@@ -1,0 +1,154 @@
+<?php
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+This Laravel routing file has been registered in
+  ------------------------------------
+  RouteServiceProvider::mapWebRoutes()
+  ------------------------------------
+  in app\Providers\RouteServiceProvider.php
+
+Here we dedicate to routes below
+  ---------------
+  /estate/billing
+  ---------------
+  /estate/billings
+    /estate/billings/ouverts
+    /estate/billings/reconciled
+  /estate/billing
+    /estate/billing/show/{contract_id}/{year}/{month}
+    /estate/billing/edit/{contract_id}/{year}/{month}
+    /estate/billing/edit
+  /estate/billing/payments
+    /estate/billing/payments/{contract_id}
+    /estate/billing/payments/ouverts
+  /estate/billing/payment
+  /estate/billing/payment/{contract_id}/{year}/{month}
+  /estate/billing/payment/reconcile
+    /estate/billing/payment/reconcile/history
+    /estate/billing/payment/reconcile/{contract_id}/{year}/{month}
+    /estate/billing/payment/reconcile
+  /estate/billing/late
+  /estate/billing/late/all
+    /estate/billing/late/{contract_id}
+  ------------
+*/
+Route::prefix('/estate')->group( function() {
+
+  // -----------------------
+  // === At /estate/billings
+  // -----------------------
+  Route::prefix('/billings')->group( function() {
+
+    //===>>> estate/billings/ouverts
+    Route::get('/ouverts', [
+      'as'   => 'cobrancas.abertas',
+      'uses' => 'Billing\CobrancaController@abertas'
+    ]);
+    //===>>> estate/billings/onref/{year?}/{month?}
+    Route::get('/onref/{year?}/{month?}', [
+      'as'   => 'cobrancas.onref',
+      'uses' => 'Billing\CobrancaController@onref'
+    ]);
+    //===>>> estate/billings/reconciled
+    Route::get('reconciled', [
+      'as'   => 'cobrancas.conciliadas',
+      'uses' => 'Billing\CobrancaController@conciliadas'
+    ]);
+  }); // ends Route::prefix('/billings') //===>>> estate/billings
+
+  // ----------------------
+  // === At /estate/billing
+  // ----------------------
+  Route::prefix('/billing')->group( function() {
+
+    //===>>> estate/billing/show/{contract_id}/{year}/{month}
+    Route::get('show/{contract_id}/{year}/{month}', [
+      'as'   => 'cobranca.mostrar',
+      'uses' => 'Billing\CobrancaController@show'
+    ]);
+    //===>>> estate/billing/edit/{contract_id}/{year}/{month} GET
+    Route::get('edit/{contract_id}/{year}/{month}', [
+      'as'=>'cobranca.mensal.editar',
+      'uses'=>'Billing\PaymentController@edit'
+    ]);
+    //===>>> estate/billing/edit POST
+    Route::post('/edit', [
+      'as'=>'cobranca.mensal.editar',
+      'uses'=>'Billing\PaymentController@edit'
+    ]);
+
+    // -------------------------------
+    // === At /estate/billing/payments
+    // -------------------------------
+    Route::prefix('/payments')->group( function() {
+      //===>>> estate/billing/payments
+      Route::get('/', [
+        'as'   => 'pagtos.contrato.historico',
+        'uses' => 'Billing\PaymentController@history',
+      ]);
+      //===>>> estate/billing/payments/{contract_id}
+      Route::get('/payments/{contract_id}', [
+        'as'   => 'pagtos.contrato.historico',
+        'uses' => 'Billing\PaymentController@list_per_contract',
+      ]);
+      //===>>> estate/billing/payments/ouverts
+      Route::get('/ouverts', [
+        'as'   => 'pagtos.abertos',
+        'uses' => 'Billing\PaymentController@abertos',
+      ]);
+    }); // ends Route::prefix('/payments') //===>>> estate/billing/payments
+
+    // ------------------------------
+    // === At /estate/billing/payment
+    // ------------------------------
+    Route::prefix('/payment')->group( function() {
+
+      //===>>> estate/billing/payment/{contract_id}/{year}/{month}
+      Route::get('/{contract_id}/{year}/{month}', [
+        'as'   => 'pagto',
+        'uses' => 'Billing\PaymentController@listar_aberto'
+      ]);
+
+      // ----------------------------------------
+      // === At /estate/billing/payment/reconcile
+      // ----------------------------------------
+      Route::prefix('/reconcile')->group( function() {
+
+        //===>>> estate/billing/payment/reconcile/history
+        Route::get('/history', [
+          'as'   => 'conciliacao.historico',
+          'uses' => 'Billing\PaymentController@reconcilehistory'
+        ]);
+        //===>>> estate/billing/payment/reconcile/{contract_id}/{year}/{month} GET
+        Route::get('/{contract_id}/{year}/{month}', [
+          'as'   => 'pagto.conciliar',
+          'uses' => 'Billing\PaymentController@reconcile'
+        ]);
+        //===>>> estate/billing/payment/reconcile/{contract_id}/{year}/{month} POST
+        Route::post('/reconcile', [     //{contract_id}/{year}/{month}
+          'as'   => 'pagto.conciliar',
+          'uses' => 'Billing\PaymentController@reconcile'
+        ]);
+      }); // ends Route::prefix('/reconcile') //===>>> estate/billing/payment/reconcile
+    }); // ends Route::prefix('/payment') //===>>> estate/billing/payment
+
+    // ---------------------------
+    // === At /estate/billing/late
+    // ---------------------------
+    Route::prefix('/late')->group( function() {
+
+      //===>>> estate/billing/late/all
+      Route::get('/all', [
+        'as'   => 'cobrancas.emmora',
+        'uses' => 'Billing\MoraDebitoController@listall'
+      ]);
+      //===>>> estate/billing/late/{$contract_id}
+      Route::get('/{contract_id}', [
+      	'as'   => 'cobrancas.emmora.contrato',
+        'uses' => 'Billing\MoraDebitoController@list'
+      ]);
+    }); // ends Route::prefix('/late')     //===>>> /estate/billing/late
+  }); // ends Route::prefix('/billing') //===>>> /estate/billing
+}); // ends Route::prefix('/estate') //===>>> /estate

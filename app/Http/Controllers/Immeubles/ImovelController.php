@@ -1,6 +1,7 @@
-<?php namespace App\Http\Controllers;
+<?php namespace App\Http\Controllers\Immeubles;
 
 use App\Models\Immeubles\Imovel;
+use App\Models\Immeubles\CondominioTarifa;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 // use Carbon\Carbon;
@@ -29,6 +30,26 @@ class ImovelController extends Controller {
 	{
 		//
 	}
+
+
+	public function show_condominium($imovel_id) {
+
+		$condominiotarifas = CondominioTarifa
+      ::where('imovel_id', $imovel_id)
+      ->get();
+    $imovel = Imovel::findOrFail($imovel_id);
+    // return var_dump($monthyeardateref->toDayDateTimeString());
+    return view('imoveis.condominiotarifas', [
+      'condominiotarifas'=>$condominiotarifas,
+      'imovel'=>$imovel
+    ]);
+
+	}
+
+
+
+
+
 
 	/**
 	 * Store a newly created resource in storage.
