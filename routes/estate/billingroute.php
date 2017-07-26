@@ -17,9 +17,18 @@ Here we dedicate to routes below
     /estate/billings/ouverts
     /estate/billings/reconciled
   /estate/billing
-    /estate/billing/show/{contract_id}/{year}/{month}
+  /estate/billing/show/{cobranca_id}
+    /estate/billing/showbyref/{contract_id}/{year}/{month}
     /estate/billing/edit/{contract_id}/{year}/{month}
     /estate/billing/edit
+
+    /estate/billing/verify/{contract_id}/{year}/{month}
+    /estate/billing/createdynamic/{contract_id}/{year}/{month}
+
+  /estate/billing/items
+    /estate/billing/items/maintain/{contract_id}/{year}/{month}
+
+
   /estate/billing/payments
     /estate/billing/payments/{contract_id}
     /estate/billing/payments/ouverts
@@ -63,21 +72,47 @@ Route::prefix('/estate')->group( function() {
   // ----------------------
   Route::prefix('/billing')->group( function() {
 
-    //===>>> estate/billing/show/{contract_id}/{year}/{month}
-    Route::get('show/{contract_id}/{year}/{month}', [
+    //===>>> estate/billing/show/{cobranca_id}
+    Route::get('show/{cobranca_id}', [
       'as'   => 'cobranca.mostrar',
       'uses' => 'Billing\CobrancaController@show'
     ]);
+
+    //===>>> estate/billing/showviaref/{contract_id}/{year}/{month}
+    Route::get('showviaref/{contract_id}/{year}/{month}', [
+      'as'   => 'cobranca.mostrarviaref',
+      'uses' => 'Billing\CobrancaController@showviaref'
+    ]);
+
     //===>>> estate/billing/edit/{contract_id}/{year}/{month} GET
     Route::get('edit/{contract_id}/{year}/{month}', [
       'as'=>'cobranca.mensal.editar',
-      'uses'=>'Billing\PaymentController@edit'
+      'uses'=>'Billing\CobrancaController@edit'
     ]);
     //===>>> estate/billing/edit POST
     Route::post('/edit', [
       'as'=>'cobranca.mensal.editar',
-      'uses'=>'Billing\PaymentController@edit'
+      'uses'=>'Billing\CobrancaController@edit'
     ]);
+
+    //===>>> estate/billing/analyzeverify/{contract_id}/{year}/{month} GET
+    Route::get('analyzeverify/{cobranca_id}', [
+      'as'=>'cobranca.mensal.analisarverificar',
+      'uses'=>'Billing\CobrancaController@analyzeverify'
+    ]);
+
+
+    //===>>> estate/billing/createdynamic/{contract_id}/{year}/{month} GET
+    Route::get('createdynamic/{contract_id}/{year}/{month}', [
+      'as'=>'cobranca.mensal.criardinamicamente',
+      'uses'=>'Billing\CobrancaController@createdynamic'
+    ]);
+    //===>>> estate/billing/createdynamic POST
+    Route::post('/createdynamic', [
+      'as'=>'cobranca.mensal.criardinamicamente',
+      'uses'=>'Billing\CobrancaController@createdynamic'
+    ]);
+
 
     // -------------------------------
     // === At /estate/billing/payments

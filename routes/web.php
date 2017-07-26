@@ -61,16 +61,6 @@ Route::post('/logout', [
   'uses' => 'UserController@postLogout',
 ]);
 
-Route::get('/dashboard', [
-  'as' => 'dashboard',
-  'uses' => 'ContractController@dashboard',
-])->middleware('auth');
-
-Route::get('/dashboard/{user_id}', [
-  'as' => 'dashboard_w_userid',
-  'uses' => 'ContractController@dashboard_w_userid',
-])->middleware('auth');
-
 /*
 Route::get('/login', function() {
   return view('home');

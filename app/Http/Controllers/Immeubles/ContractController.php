@@ -153,7 +153,7 @@ class ContractController extends Controller {
 
 	} // ends dashboard()
 
-	public function dashboard_w_userid($user_id)	{
+	public function userdashboard($user_id)	{
 		/*
 			The route to this controller method must be removed
 			 	for production site (ie, it's only here for development)

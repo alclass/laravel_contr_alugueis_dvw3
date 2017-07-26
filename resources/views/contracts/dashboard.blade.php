@@ -26,11 +26,19 @@
 							$contract_imovel_endereco = 'Não há.';
 							if ($contract->imovel!=null) {
 								$contract_imovel_endereco = $contract->imovel->get_street_address();
-							} // ends inner if
+							}
+							$cobranca_atual_strmonthref = 'n/a';
+							if ($cobranca_atual!=null) {
+								$cobranca_atual_strmonthref = $cobranca_atual->monthyeardateref->format('M-Y');
+							}
 						?>
 						@include('contracts.dashboard_contract')
 
+						<h6>Cobrança atual Ref. {{ $cobranca_atual_strmonthref }}</h6>
+
 					@endif  {{-- @if($contract!=null) --}}
+
+
 
 				</div>
 			</div>

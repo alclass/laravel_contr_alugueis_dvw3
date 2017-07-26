@@ -20,6 +20,16 @@ class CobrancaController extends Controller {
 		//
 	}
 
+	public function analyzeverify($cobranca_id)	{
+
+	}
+
+
+	public function createdynamic($contract=null, $year=null, $month=null)	{
+
+	}
+
+
 	/**
 	 * Show the form for creating a new resource.
 	 *
@@ -111,17 +121,29 @@ class CobrancaController extends Controller {
 	/**
 	 * Display the specified resource.
 	 *
-	 * @param  int  $id
+	 * @param  int  $cobranca_id
 	 * @return Response
 	 */
-	public function show($contract_id, $year, $month)	{
+	public function show($cobranca_id)	{
+		$cobranca = Cobranca::findOrFail($cobranca_id);
+		return view('cobrancas.cobranca.mostrarcobranca', ['cobranca'=>$cobranca]);
+	}
+
+	/**
+	 * Display the specified resource.
+	 *
+	 * @param  int  $contract_id
+	 * @param  int  $year
+	 * @param  int  $month
+	 * @return Response
+	 */
+	public function showviaref($contract_id, $year, $month)	{
 		$monthyeardateref = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($year, $month);
 		$cobranca = Cobranca
 			::where('contract_id', $contract_id)
 			->where('monthyeardateref', $monthyeardateref)
 			->first();
 		return view('cobrancas.cobranca.mostrarcobranca', ['cobranca'=>$cobranca]);
-
 	}
 
 	/**

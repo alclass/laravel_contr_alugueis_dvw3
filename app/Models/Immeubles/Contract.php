@@ -172,7 +172,7 @@ class Contract extends Model {
       ->first();
 
     return $cobranca;
-  } // ends get_ultimas_n_cobrancas()
+  } // ends get_cobranca_by_monthyeardateref()
 
   public function calc_fmontant_from_imontant_monthdaterange_under_contract_mora() {
     /*
