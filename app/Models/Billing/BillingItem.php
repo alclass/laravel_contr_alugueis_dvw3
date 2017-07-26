@@ -38,9 +38,32 @@ class BillingItem extends Model {
     'obs',
 	];
 
-  public function cobranca() {
-    $this->belongsTo('App\Models\Billing\Cobranca');
-  }
+  public function copy() {
+    /*
+    'brief_description', 'charged_value', 'ref_type', 'freq_used_ref',
+    'monthyeardateref', 'n_cota_ref', 'total_cotas_ref',
+    'was_original_value_modified', 'brief_description_for_modifier_if_any',
+    'original_value_if_needed', 'percent_in_modifying_if_any',
+    'money_amount_in_modifying_if_any',
+    'obs',
+    */
+    $bi = new BillingItem;
+    $bi->brief_description = $this->brief_description;
+    $bi->charged_value = $this->charged_value;
+    $bi->ref_type = $this->ref_type;
+    $bi->freq_used_ref = $this->freq_used_ref;
+    if ($this->monthyeardateref != null) {
+      $bi->monthyeardateref = $this->monthyeardateref->copy();
+    }
+    $bi->n_cota_ref = $this->n_cota_ref;
+    $bi->total_cotas_ref = $this->total_cotas_ref;
+    $bi->was_original_value_modified = $this->was_original_value_modified;
+    $bi->brief_description_for_modifier_if_any = $this->brief_description_for_modifier_if_any;
+    $bi->original_value_if_needed = $this->original_value_if_needed;
+    $bi->percent_in_modifying_if_any = $this->percent_in_modifying_if_any;
+    $bi->money_amount_in_modifying_if_any = $this->money_amount_in_modifying_if_any;
+
+  } // ends copy()
 
   public function toString() {
     /*
@@ -61,6 +84,9 @@ class BillingItem extends Model {
 
   } // ends toString()
 
+  public function cobranca() {
+    $this->belongsTo('App\Models\Billing\Cobranca');
+  }
 
 
 } // ends class BillingItem extends Model

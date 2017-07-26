@@ -60,6 +60,11 @@ Route::prefix('/estate')->group( function() {
       'as'   => 'cobrancas.onref',
       'uses' => 'Billing\CobrancaController@onref'
     ]);
+    //===>>> estate/billings/onref/{year?}/{month?}
+    Route::get('/onlyrent/onref/{year?}/{month?}', [
+      'as'   => 'cobrancas.onlyrent.onref',
+      'uses' => 'Billing\CobrancaController@onlyrent_onref'
+    ]);
     //===>>> estate/billings/reconciled
     Route::get('reconciled', [
       'as'   => 'cobrancas.conciliadas',

@@ -1,6 +1,7 @@
 <?php namespace App\Http\Controllers\Billing;
 
 use App\Models\Billing\Cobranca;
+use App\Models\Billing\CobrancaTipo;
 use App\Models\Billing\MoraDebito;
 use App\Models\Utils\DateFunctions;
 use App\Http\Requests;
@@ -81,6 +82,37 @@ class CobrancaController extends Controller {
 			->get();
 		$cobrancas->load('contract');
 		return view('cobrancas/listarcobrancas', ['cobrancas'=>$cobrancas, 'category_msg'=>'On Ref.']);
+	}
+
+	public function onlyrent_onref($year=null, $month=null)	{
+		//return 'hi';
+		$monthyeardateref = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($year, $month);
+		$cobrancas = Cobranca
+			::where('monthyeardateref', $monthyeardateref)
+			->get();
+		$cobrancas->load('contract');
+		$cobrancatipo = CobrancaTipo
+			::where('char4id', CobrancaTipo::K_4CHAR_ALUG)->first();
+		$onlyrent_cobrancas = collect();
+		$cobrancas_found = collect();
+		$n_entered_if = 0;
+		foreach ($cobrancas as $cobranca) {
+			foreach ($cobranca->billingitems()->get() as $billingitem) {
+				if ($billingitem->cobrancatipo_id == $cobrancatipo->id) {
+					$n_entered_if += 1;
+					$cobrancas_found->push($cobranca);
+					$cobranca_for_display = $cobranca->copy_without_billingitems();
+					$cobranca_for_display->billingitems()->save($billingitem->copy());
+					$onlyrent_cobrancas->push($cobranca_for_display);
+					// there's only one 'rent' item
+					break; // out of inner loop
+				}
+			}
+		}
+		return view('cobrancas.listarcobrancas', [
+			'cobrancas'=>$cobrancas_found,
+			'category_msg'=>var_dump([$n_entered_if,$cobrancatipo->id,$cobrancatipo->char4id]) // var_dump($cobrancas) //'On Ref. Only Rents'
+		]);
 	}
 
 	public function abertas()	{

@@ -34,8 +34,6 @@
         $value_mora_ou_credito
       );
     }
-
-
   ?>
   <h4>Valor_recebido: {{ $valor_recebido }}</h4>
   <h4>meio_de_pagto: {{ $meio_de_pagto }}</h4>

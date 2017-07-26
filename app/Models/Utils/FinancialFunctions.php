@@ -14,6 +14,9 @@ calc_fmontant_from_imontant_n_interest_array()
 calc_fmontant_from_imontant_plus_interest_array_plus_border_proportions()
 [has unittest]
 
+  The method below was refactored to class CorrMonet, it's no longer here
+    calc_latervalue_from_inivalue_w_ini_end_dates_n_corrmonet4charid()
+    [does not have unittest for the time being (this method gets db info)]
 */
 
 class FinancialFunctions {
@@ -114,6 +117,5 @@ class FinancialFunctions {
       $interest_array
     );
   } // ends [static] function calc_fmontant_from_imontant_plus_interest_array_plus_border_proportions()
-
 
 } // ends class FinancialFunctions

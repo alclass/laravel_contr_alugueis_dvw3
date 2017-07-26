@@ -583,4 +583,58 @@ class DateFunctionsTest extends TestCase {
   } // ends testget_month_n_monthdays_fraction_tuplelist_borders_can_fraction()
 
 
+  public function testcorrect_for_proportional_first_n_last_months_n_return_fractionarray() {
+
+    // Inner test 1
+    $months_list = array();
+    $corrmonet_month_n_index_tuplelist = array();
+    $corrmonet_month_n_index_tuplelist[] = [new Carbon('2017-04-01'), 0.0023];
+    $corrmonet_month_n_index_tuplelist[] = [new Carbon('2017-05-01'), 0.0031];
+    $corrmonet_month_n_index_tuplelist[] = [new Carbon('2017-06-01'), 0.0017];
+    $ini_date = new Carbon('2017-04-10'); // monthdays fraction = 21/30
+    $end_date = new Carbon('2017-06-10'); // monthdays fraction = 10/30
+
+    $expected_fractionindices_array = [0.0023*(21/30), 0.0031, 0.0017*(10/30)];
+    $returned_fractionindices_array = DateFunctions
+      ::correct_for_proportional_first_n_last_months_n_return_fractionarray(
+        $corrmonet_month_n_index_tuplelist,
+        $ini_date,
+        $end_date
+      );
+
+    $this->assertEquals(
+      $returned_fractionindices_array,
+      $expected_fractionindices_array
+    );
+
+    // Inner test 2
+    $months_list = array();
+    $corrmonet_month_n_index_tuplelist = array();
+    $corrmonet_month_n_index_tuplelist[] = [new Carbon('2017-04-17'), 0.0023];
+    $corrmonet_month_n_index_tuplelist[] = [new Carbon('2017-05-01'), 0.0031];
+    $corrmonet_month_n_index_tuplelist[] = [new Carbon('2017-06-23'), 0.0017];
+    $corrmonet_month_n_index_tuplelist[] = [new Carbon('2017-07-31'), 0.0024];
+    $ini_date = new Carbon('2017-04-05'); $ini_monthdays_fraction = (30-5+1)/30;
+    $end_date = new Carbon('2017-07-17'); $end_monthdays_fraction = 17/31;
+
+    $expected_fractionindices_array = [
+      0.0023 * $ini_monthdays_fraction,
+      0.0031,
+      0.0017,
+      0.0024 * $end_monthdays_fraction,
+    ];
+    $returned_fractionindices_array = DateFunctions
+      ::correct_for_proportional_first_n_last_months_n_return_fractionarray(
+        $corrmonet_month_n_index_tuplelist,
+        $ini_date,
+        $end_date
+      );
+
+    $this->assertEquals(
+      $returned_fractionindices_array,
+      $expected_fractionindices_array
+    );
+
+  } // ends correct_for_proportional_first_n_last_months_n_return_fractionarray()
+
 } // ends class DateFunctionsTest extends TestCase

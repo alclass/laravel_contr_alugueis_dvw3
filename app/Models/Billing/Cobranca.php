@@ -30,9 +30,17 @@ class Cobranca extends Model {
    //'updated_at',
  ];
 
+/*
+  discount 	                       decimal(9,2)
+  price_increase_if_any 	         decimal(9,2)
+  lineinfo_discount_or_increase 	 varchar(144)
+  tot_adic_em_tribs 	             decimal(9,2)
+*/
+
 	protected $fillable = [
 		'monthyeardateref', 'duedate', 'n_seq_from_dateref',
-    'total_value',  'n_items',
+    'discount',  'price_increase_if_any',
+    'lineinfo_discount_or_increase', 'tot_adic_em_tribs',
     'n_parcelas', 'are_parcels_monthly', 'parcel_n_days_interval',
     'has_been_paid',
 	];
@@ -53,6 +61,49 @@ class Cobranca extends Model {
     return false;
   } // ends is_iptu_ano_quitado()
 
+  public function get_total_value() {
+    $total_value = 0;
+    foreach ($this->billingitems()->get() as $billingitem) {
+      $total_value += $billingitem->charged_value;
+    }
+    return $total_value;
+  }
+
+  public function copy_without_billingitems() {
+    /*
+      This method copies an instance partially.
+      Basically, the id will not be copied, for it belongs to the instance in place, used as mold
+      The billing items, if any, will not be copied, for it's the purpose of the method here.
+    */
+    $copied_cobranca = new Cobranca;
+    // ->id stays empty, for it's established by the Eloquent engine so to say
+    if ($this->monthyeardateref != null) {
+      $copied_cobranca->monthyeardateref = $this->monthyeardateref->copy();
+    }
+    $copied_cobranca->n_seq_from_dateref = $this->n_seq_from_dateref;
+    if ($this->duedate != null) {
+      $copied_cobranca->duedate = $this->duedate->copy();
+    }
+    $copied_cobranca->discount = $this->discount;
+
+    $copied_cobranca->price_increase_if_any = $this->price_increase_if_any;
+    $copied_cobranca->lineinfo_discount_or_increase = $this->lineinfo_discount_or_increase;
+ 	  $copied_cobranca->tot_adic_em_tribs = $this->tot_adic_em_tribs;
+
+    $copied_cobranca->contract_id = $this->contract_id;
+    $copied_cobranca->bankaccount_id = $this->bankaccount_id;
+    $copied_cobranca->n_parcelas = $this->n_parcelas;
+    $copied_cobranca->are_parcels_monthly = $this->are_parcels_monthly;
+    $copied_cobranca->parcel_n_days_interval = $this->parcel_n_days_interval;
+    $copied_cobranca->has_been_paid  = $this->has_been_paid;
+
+    return $copied_cobranca;
+
+  }
+
+  public function get_total_items() {
+    return count($this->billingitems);
+  }
   public function billingitems() {
     return $this->hasMany('App\Models\Billing\BillingItem');
   }

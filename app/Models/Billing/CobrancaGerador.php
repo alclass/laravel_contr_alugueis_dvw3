@@ -96,7 +96,7 @@ class CobrancaGerador {
   } // ends [static] createAndReturnNewCobrancaWithTripleContractRefSeq()
 
   /*--------------------------------------------
-    End of AREA for the class' attributes:
+    Beginning of AREA for the class' attributes:
     --------------------------------------------*/
 
   private $cobranca                = null;
@@ -266,7 +266,7 @@ class CobrancaGerador {
 
     // 1st create case: cota-única anual foi escolhida a ser repassada em Fevereiro, ref. Janeiro
     if ($iptutabela->optado_por_cota_unica == true && $this->monthyeardateref->month == 1) {
-      $billingitem->charged_value = $iptutabela->valor_parcela_unica;
+      $billingitem->charged_value     = $iptutabela->valor_parcela_unica;
       $billingitem->ref_type          = BillingItem::K_REF_TYPE_IS_BOTH_DATE_N_PARCEL;
       $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_YEARLY;
       $billingitem->n_cota_ref        = 1;
@@ -299,7 +299,7 @@ class CobrancaGerador {
       return null; // [1] condominio billing item is not applicable
     }
 
-    // Revise this 'if' below!
+    // REVISE this 'if' below!
     if ($this->cobranca->contract->imovel == null) {
       $error = '[In CobrancaGerador::create_billingitem_condominio()] Contract object does not have an imovel object attached to it.';
       throw new Exception($error);
@@ -367,11 +367,12 @@ class CobrancaGerador {
     $cobrancatipo = $this->cobrancatipo_objs_array[CobrancaTipo::K_4CHAR_MORA];
     $billingitem->cobrancatipo_id   = $cobrancatipo->id;
     $billingitem->brief_description = $cobrancatipo->brief_description;
-    $billingitem->charged_value     = $moradebito->update_charged_value();
+    $moradebito->run_time_correction_of_ini_debt_value();
+    $billingitem->charged_value     = $moradebito->changed_debt_value;
     $billingitem->ref_type          = BillingItem::K_REF_TYPE_IS_DATE;
     $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_MONTHLY;
     $billingitem->monthyeardateref  = $moradebito->monthyeardateref;
-    $brief_info = $moradebito->lineinfo;
+    $brief_info = $moradebito->get_lineinfo_n_time_correction_lineinfo();
     if ($brief_info != null) {
       $billingitem->obs = $brief_info;
     }

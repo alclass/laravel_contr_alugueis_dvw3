@@ -12,7 +12,7 @@ class CobrancaTipo extends Model {
   const K_4CHAR_CRED = 'CRED';
 
   public static function get_cobrancatipo_with_its_4char_repr($p_4char_repr, $raise_exception_if_null=false) {
-    $cobrancatipo = CobrancaTipo::where('char_id', $p_4char_repr)
+    $cobrancatipo = CobrancaTipo::where('char4id', $p_4char_repr)
       ->first();
     if ($cobrancatipo == null && $raise_exception_if_null=true) {
       $error = 'cobrancatipo from CobrancaTipo::'.$p_4char_repr.' was not db-found, raise/throw exception.';
@@ -29,7 +29,7 @@ class CobrancaTipo extends Model {
 	 * @var array
 	 */
 	protected $fillable = [
-		'char_id', 'brief_description', 'is_repasse ',
+		'char4id', 'brief_description', 'is_repasse ',
     'aplicar_percentual ', 'percentual_a_aplicar ', 'percentual_a_aplicar_descricao',
     'long_description ',
   ];

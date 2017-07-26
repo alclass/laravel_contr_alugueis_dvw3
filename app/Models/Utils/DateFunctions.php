@@ -63,6 +63,10 @@ get_month_n_monthdays_fraction_tuple_list()
 get_month_n_monthdays_fraction_tuplelist_borders_can_fraction()
 [has unittest]
 
+[10]
+correct_for_proportional_first_n_last_months_n_return_fractionarray()
+[no unittest yet]
+
 */
 
 class DateFunctions {
@@ -506,5 +510,104 @@ class DateFunctions {
     return $month_n_days_in_month_fraction_tuple_list;
 
   } // ends [static] get_month_n_monthdays_fraction_tuplelist_borders_can_fraction()
+
+
+  public static function correct_for_proportional_first_n_last_months_n_return_fractionarray(
+      $corrmonet_month_n_index_tuplelist,
+      $ini_date,
+      $end_date
+    ) {
+    /*
+
+      This method is covered by UNIT TEST
+      This method depends on:
+          self::month_n_monthdays_fraction_tuplelist_borders_can_fraction()
+      This method needs to check for consistency in $ini_date & $end_date
+        inside $corrmonet_month_n_index_tuplelist
+      Once they're checked, the corrmonet indices are "fused" (ie, multiplied)
+        with the month fraction indices.
+
+      Eg.
+      This method receives as $corrmonet_month_n_index_tuplelist:
+
+      [
+        [new Carbon('2017-04-dd'), 0.0023], // 21 days from day 10 (inclusive) to day 30
+        [new Carbon('2017-05-dd'), 0.0031],
+                   (...)
+        [new Carbon('2017-09-dd'), 0.0017], // 10 days from day 1 to day 10 (inclusive)
+      ]
+
+      $ini_date & $end_date then generates:
+      [
+        [new Carbon('2017-04-10'), 21/30], // 21 days from day 10 (inclusive) to day 30
+        [new Carbon('2017-05-dd'), 1],
+                   (...)
+        [new Carbon('2017-09-10'), 10/30], // 10 days from day 1 to day 10 (inclusive)
+      ]
+
+      The two are to be fused (ie, multipled), resulting:
+      ------------------------------------------------------
+      [0.0023 * 21/30, 0.0031 * 1, (...) , 0.0017 * 10/30]
+      ie,
+      [0.00161, 0.0031, (...) , 0.000566..]
+      ------------------------------------------------------
+      Notice that thw only important "days" are those in $ini_date & $end_date,
+        all others are unimportant and don't take part in the algorithm here.
+
+    */
+
+    $first_date = null;
+    $last_date = null;
+    $n_elems = count($corrmonet_month_n_index_tuplelist);
+    if ( count($corrmonet_month_n_index_tuplelist) > 0 ) {
+      $corrmonet_month_n_index_tuple = $corrmonet_month_n_index_tuplelist[0];
+      if (count($corrmonet_month_n_index_tuple) > 1 ) {
+        // picking up $first_date
+        $first_date = $corrmonet_month_n_index_tuple[0];
+      }
+      $corrmonet_month_n_index_tuple = $corrmonet_month_n_index_tuplelist[$n_elems-1];
+      if (count($corrmonet_month_n_index_tuple) > 1 ) {
+        // picking up $last_date
+        $last_date = $corrmonet_month_n_index_tuple[0];
+      }
+    }
+    if ($first_date == null || $last_date == null) {
+      return null;
+    }
+    // check first month in array consistency
+    $diff_months = $ini_date->diffInMonths($first_date);
+    if ($diff_months > 0 ) {
+      return null;
+    }
+    if ($ini_date->month != $first_date->month) {
+      return null;
+    }
+    // check last month in array consistency
+    $diff_months = $end_date->diffInMonths($last_date);
+    if ($diff_months > 0 ) {
+      return null;
+    }
+    if ($end_date->month != $last_date->month) {
+      return null;
+    }
+    $months_list = self::get_ini_fim_months_list($ini_date, $end_date);
+    $month_n_monthdays_fraction_tuplelist = self
+      ::get_month_n_monthdays_fraction_tuplelist_borders_can_fraction($months_list);
+    // extract $fractions_list
+    $result_fractionindices_array = array();
+    foreach ($month_n_monthdays_fraction_tuplelist as $i=>$month_n_monthdays_fraction_tuple) {
+      // picking up $monthfraction ie the month's proportion
+      $monthfraction           = $month_n_monthdays_fraction_tuple[1];
+      // picking up $corrmonet_fractionindex ie the month's monetary correction index
+      $corrmonet_fractionindex = $corrmonet_month_n_index_tuplelist[$i][1];
+      // fusing (ie, multiplying) the two, to get the $result_month_factor
+      $result_month_factor = $monthfraction * $corrmonet_fractionindex;
+      // "pack" $result_month_factor into the result fractions array
+      $result_fractionindices_array[] = $result_month_factor;
+    }
+
+    return $result_fractionindices_array;
+  } // ends [static] correct_for_proportional_first_n_last_months_n_return_fractionarray(()
+
 
 } // ends class DateFunctions
