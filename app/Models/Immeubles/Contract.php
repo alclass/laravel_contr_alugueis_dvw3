@@ -63,7 +63,8 @@ class Contract extends Model {
   public function get_juros_fixos_am_in_fraction() {
     if ($this->perc_juros_fixos_am == null) {
       if ($this->apply_juros_fixos_am == true) {
-        return env('PERC_JUROS_FIXOS_AM', self::K_PERC_JUROS_FIXOS_AM);
+        $juros_fixos_am_in_perc = (int) env('PERC_JUROS_FIXOS_AM', self::K_PERC_JUROS_FIXOS_AM);
+        return $juros_fixos_am_in_perc/100;
       } else {
         return null;
       } // ends inner if

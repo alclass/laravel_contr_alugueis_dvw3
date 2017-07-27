@@ -10,6 +10,10 @@ use App\Models\Utils\FinancialFunctions;
 
 class MoraDebito extends Model {
     //
+
+  public $month_n_fractionindex_tuplelist;
+  public $fractionindex_list;
+
   protected $table = 'moradebitos';
 
   protected $dates = [
@@ -29,6 +33,10 @@ class MoraDebito extends Model {
     'lineinfo', 'history',
   ];
 
+  public function set_month_n_fractionindex_tuplelist($month_n_fractionindex_tuplelist) {
+    $this->month_n_fractionindex_tuplelist = $month_n_fractionindex_tuplelist;
+  }
+
   public function run_time_correction_of_ini_debt_value(
       $end_date = null,
       $corrmonet4charid = null
@@ -43,26 +51,35 @@ class MoraDebito extends Model {
     $this->changed_debt_value = $this->ini_debt_value;
     $this->changed_debt_date  = $end_date;
     //-----------------------------------------------
-    $interest_fraction_array = CorrMonet
+    $month_n_fractionindex_tuplelist = CorrMonet
       ::get_month_n_fractionindex_tuplelist_w_char4indic_n_daterange(
         $corrmonet4charid,
         $this->ini_debt_date,
         $end_date
       );
-    if ($this->contratct->apply_juros_fixos_am) {
-      foreach ($interest_fraction_array as $i=>$value) {
-        $added_fraction = $interest_fraction_array[$i] + $this->contratct->get_juros_fixos_am_in_fraction();
-        $interest_fraction_array[$i] = $added_fraction;
+
+    $this->set_month_n_fractionindex_tuplelist($month_n_fractionindex_tuplelist);
+
+    $fractionindex_list = array();
+    // Extract the fractions from the tuples
+    foreach ($month_n_fractionindex_tuplelist as $month_n_fractionindex_tuple) {
+      $fractionindex_list[] = $month_n_fractionindex_tuple[1];
+    }
+    if ($this->contract->apply_juros_fixos_am) {
+      foreach ($fractionindex_list as $i=>$value) {
+        $added_fraction = $fractionindex_list[$i] + $this->contract->get_juros_fixos_am_in_fraction();
+        $fractionindex_list[$i] = $added_fraction;
       }
     }
-    if ($this->contratct->apply_multa_incid_mora) {
-      $added_fraction = $interest_fraction_array[0] + $this->contratct->get_apply_multa_incid_mora_in_fraction();
-      $interest_fraction_array[0] = $added_fraction;
+    if ($this->contract->apply_multa_incid_mora) {
+      $added_fraction = $fractionindex_list[0] + $this->contract->get_multa_incid_mora_in_fraction();
+      $fractionindex_list[0] = $added_fraction;
     }
+    $this->fractionindex_list = $fractionindex_list;
     $corrected_debt_value = FinancialFunctions
       ::calc_fmontant_from_imontant_n_interest_array(
         $this->ini_debt_value,
-        $interest_fraction_array
+        $fractionindex_list
       );
     if ($corrected_debt_value > $this->ini_debt_value) {
       $this->changed_debt_value = $corrected_debt_value;
@@ -81,6 +98,23 @@ class MoraDebito extends Model {
   }
   public function get_lineinfo_n_time_correction_lineinfo() {
     return $this->lineinfo . '::' . $this->get_time_correction_lineinfo();
+  }
+
+  public function get_explanation_lines() {
+    $lines = [];
+    $line = '';
+    $value = $this->ini_debt_value;
+    //$line = "$formatstrdate : $value inc. $factor res. $newvalue";
+    $lines[] = $line;
+    foreach ($this->month_n_fractionindex_tuplelist as $i=>$month_n_fractionindex_tuple) {
+      $factor = $this->fractionindex_list[$i];
+      $formatstrdate = $month_n_fractionindex_tuple[0]->format('M/Y');
+      $newvalue = $value * (1 + $factor);
+      $line = "Ref. $formatstrdate: $value ajuste-índice $factor resultando em $newvalue";
+      $lines[] = $line;
+      $value = $newvalue;
+    }
+    return $lines;
   }
 
   public function contract() {

@@ -41,6 +41,17 @@ class MoraDebitoController extends Controller {
 	}
 
 
+	public function showcalcfinanctimecorrection()
+	{
+		$moradebitos = MoraDebito::all();
+		foreach ($moradebitos as $moradebito) {
+			$moradebito->run_time_correction_of_ini_debt_value();
+		}
+		return view('cobrancas/emmora/exibirmoradebitos', ['moradebitos'=>$moradebitos, 'category_msg'=>'Abertas']);
+		//
+	} // ends showcalcfinanctimecorrection()
+
+
 	public function emmora()	{
 		$today = Carbon::today();
 		$cobrancas = Cobranca::where('has_been_paid', 0)
@@ -52,7 +63,7 @@ class MoraDebitoController extends Controller {
 		return 'hi contract_id' . $contract_id;
 		$today = Carbon::today();
 		$mora_calc = MoraDebitoCalculator($contract_id);
-		$debitomoras = $mora_calc->find_debitomoras()
+		$debitomoras = $mora_calc->find_debitomoras();
 		$cobrancas = Cobranca::where('has_been_paid', 0)
 			->where('duedate', '<', $today);
 		return view('cobrancas/emmora/listarmoras', [

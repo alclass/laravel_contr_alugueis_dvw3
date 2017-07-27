@@ -191,7 +191,7 @@ Route::prefix('/estate')->group( function() {
         'uses' => 'Billing\MoraDebitoController@list'
       ]);
       //===>>> /estate/billing/late/{contract_id}/calcfinanctimecorrection
-      Route::get('/{contract_id}', [
+      Route::get('/{contract_id}/calcfinanctimecorrection', [
       	'as'   => 'cobrancas.emmora.exibirmoradebito',
         'uses' => 'Billing\MoraDebitoController@showcalcfinanctimecorrection'
       ]);
