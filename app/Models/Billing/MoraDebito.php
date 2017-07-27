@@ -37,33 +37,37 @@ class MoraDebito extends Model {
       return null;
     }
     $end_date = ( $end_date != null ? $end_date : Carbon::today() );
+    //-----------------------------------------------
     // Update right here both ->changed_debt_value & ->changed_debt_date
+    // If context is right, these will change ahead to an updated value and date
     $this->changed_debt_value = $this->ini_debt_value;
     $this->changed_debt_date  = $end_date;
-    $corrmonet_array = CorrMonet
-      //::calc_latervalue_from_inivalue_w_ini_end_dates_n_corrmonet4charid(
-      //::calc_latervalue_from_inivalue_w_ini_end_dates_n_corrmonet4charid(
+    //-----------------------------------------------
+    $interest_fraction_array = CorrMonet
+      ::get_month_n_fractionindex_tuplelist_w_char4indic_n_daterange(
+        $corrmonet4charid,
         $this->ini_debt_date,
-        $end_date,
-        $corrmonet4charid
+        $end_date
       );
     if ($this->contratct->apply_juros_fixos_am) {
-      foreach ($corrmonet_array as $i=>$value) {
-        $added_fraction = $corrmonet_array[$i] + $this->contratct->get_juros_fixos_am_in_fraction();
-        $corrmonet_array[$i] = $added_fraction;
+      foreach ($interest_fraction_array as $i=>$value) {
+        $added_fraction = $interest_fraction_array[$i] + $this->contratct->get_juros_fixos_am_in_fraction();
+        $interest_fraction_array[$i] = $added_fraction;
       }
     }
     if ($this->contratct->apply_multa_incid_mora) {
-      $added_fraction = $corrmonet_array[0] + $this->contratct->get_apply_multa_incid_mora_in_fraction();
-      $corrmonet_array[0] = $added_fraction;
+      $added_fraction = $interest_fraction_array[0] + $this->contratct->get_apply_multa_incid_mora_in_fraction();
+      $interest_fraction_array[0] = $added_fraction;
     }
     $corrected_debt_value = FinancialFunctions
-      ::calc_fmontant_from_imontantnnnnnnnnnnnnnnnnn();
-    //         $this->ini_debt_value,
-
+      ::calc_fmontant_from_imontant_n_interest_array(
+        $this->ini_debt_value,
+        $interest_fraction_array
+      );
     if ($corrected_debt_value > $this->ini_debt_value) {
       $this->changed_debt_value = $corrected_debt_value;
-    } // if not, the assigning above would have equalled the two
+      $this->changed_debt_date  = $end_date;
+    } // if not, the assigning above would have equalled the two to the ini value & date
   } // ends run_time_correction_of_ini_debt_value()
 
   public function get_time_correction_lineinfo() {

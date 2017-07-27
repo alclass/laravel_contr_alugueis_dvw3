@@ -30,15 +30,8 @@ class Cobranca extends Model {
    //'updated_at',
  ];
 
-/*
-  discount 	                       decimal(9,2)
-  price_increase_if_any 	         decimal(9,2)
-  lineinfo_discount_or_increase 	 varchar(144)
-  tot_adic_em_tribs 	             decimal(9,2)
-*/
-
 	protected $fillable = [
-		'monthyeardateref', 'duedate', 'n_seq_from_dateref',
+		'monthyeardateref', 'n_seq_from_dateref', 'duedate',
     'discount',  'price_increase_if_any',
     'lineinfo_discount_or_increase', 'tot_adic_em_tribs',
     'n_parcelas', 'are_parcels_monthly', 'parcel_n_days_interval',

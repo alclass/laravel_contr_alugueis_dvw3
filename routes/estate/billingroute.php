@@ -39,8 +39,9 @@ Here we dedicate to routes below
     /estate/billing/payment/reconcile/{contract_id}/{year}/{month}
     /estate/billing/payment/reconcile
   /estate/billing/late
-  /estate/billing/late/all
+    /estate/billing/late/all
     /estate/billing/late/{contract_id}
+    /estate/billing/late/{contract_id}/calcfinanctimecorrection
   ------------
 */
 Route::prefix('/estate')->group( function() {
@@ -179,15 +180,20 @@ Route::prefix('/estate')->group( function() {
     // ---------------------------
     Route::prefix('/late')->group( function() {
 
-      //===>>> estate/billing/late/all
+      //===>>> /estate/billing/late/all
       Route::get('/all', [
         'as'   => 'cobrancas.emmora',
         'uses' => 'Billing\MoraDebitoController@listall'
       ]);
-      //===>>> estate/billing/late/{$contract_id}
+      //===>>> /estate/billing/late/{$contract_id}
       Route::get('/{contract_id}', [
       	'as'   => 'cobrancas.emmora.contrato',
         'uses' => 'Billing\MoraDebitoController@list'
+      ]);
+      //===>>> /estate/billing/late/{contract_id}/calcfinanctimecorrection
+      Route::get('/{contract_id}', [
+      	'as'   => 'cobrancas.emmora.exibirmoradebito',
+        'uses' => 'Billing\MoraDebitoController@showcalcfinanctimecorrection'
       ]);
     }); // ends Route::prefix('/late')     //===>>> /estate/billing/late
   }); // ends Route::prefix('/billing') //===>>> /estate/billing

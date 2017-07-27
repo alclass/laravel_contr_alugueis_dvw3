@@ -10,51 +10,56 @@ class MercadoIndice extends Model {
   const K_INDICE4CHAR_IPCA  = 'IPCA';
   const K_INDICE4CHAR_SELIC = 'SELI';
 
-  public static function get_default_mercadoindice() {
+  public static function get_default_char4indicator_for_reajuste_imob() {
     /*
-      This method intends to return the $mercadoindice_obj default.
+      This method searches the default in the following manner:
+        1) first, look up the .env config file
+        2) second, if it's not there in .env, pick up the one in here
+            ie, self::K_INDICE4CHAR_IGPM
+    */
+    $char4indicator = env('K_INDICE4CHAR_IGPM', self::K_INDICE4CHAR_IGPM);
+    return $first_indice_obj;
 
-      [TODO] In the future, this default should be taken from a config file.
-        Today it's merely a const in here.
+  } // ends [static] get_default_char4indicator_for_reajuste_imob()
 
-      However, if the default const in here (see it above) is not in the database,
-        an attempt will be made to retrieve the first object in database.
-
+  public static function get_default_financ_indicator_for_reajuste_imob() {
+    /*
+      The default first is the char4indicator, eg, IGPM IPCA SELI etc.
+      The object however must be fetched in the database.
       If somehow database is empty, null will be returned.
     */
-    $indice_obj = self
-      ::where('indice4char', self::K_INDICE_4CHAR_IGPM)
-      ->where('is_active', true)
-      ->first();
-    if ($indice_obj != null) {
-      return $indice_obj;
-    }
-    $first_indice_obj = self::first(); // Notice that first() may return null
-    return $first_indice_obj;
-  } // ends [static] get_default_mercadoindice()
+    $char4indicator = self::get_default_char4indicator_for_reajuste_imob();
+    return self
+     ::where('indice4char', $char4indicator)
+     ->where('is_active', true)
+     ->first();
+  } // ends [static] get_default_financ_indicator_for_reajuste_imob()
 
-	public static function get_default_4char() {
+	public static function get_default_char4indicator_for_corrmonet() {
     /*
-      This method intends to return the $indice4char default.
-      See above the docstring for retrieve the default object.
-    */
-    $default_mercadoindice = self::get_default_mercadoindice();
-    return ($default_mercadoindice != null ? $default_mercadoindice->indice4char : null);
-  } // ends [static] get_default_4char()
-
-	public static function return_indice4char_if_exists_or_default_or_null($indice4char) {
     /*
-      return uses a ternary operator, ie, if $indice4char is not in database,
-        try to default it.  In the default method (self::get_default_4char()),
-        an expection may be raised.
+      This method searches the default in the following manner:
+        1) first, look up the .env config file
+        2) second, if it's not there in .env, pick up the one in here
+            ie, self::K_INDICE4CHAR_SELIC
     */
-    return
-      self::where('indice4char', $indice4char)->exists() ?
-        $indice4char,
-        self::get_default_4char();
+    $char4indicator = env('K_INDICE4CHAR_SELIC', self::K_INDICE4CHAR_SELIC);
+    return $char4indicator;
 
-  } // ends [static] return_indice4char_if_exists_or_default_or_null()
+  } // ends [static] get_default_char4indicator_for_corrmonet()
 
+  public static function get_default_financ_indicator_for_corrmonet() {
+    /*
+      The default first is the char4indicator, eg, IGPM IPCA SELI etc.
+      The object however must be fetched in the database.
+      If somehow database is empty, null will be returned.
+    */
+    $char4indicator = self::get_default_char4indicator_for_corrmonet();
+    return self
+     ::where('indice4char', $char4indicator)
+     ->where('is_active', true)
+     ->first();
+   } // ends [static] get_default_financ_indicator_for_corrmonet()
 
 
   protected $table = ['mercadoindices'];

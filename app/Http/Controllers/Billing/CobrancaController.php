@@ -41,6 +41,18 @@ class CobrancaController extends Controller {
 		//
 	}
 
+	public function showcalcfinanctimecorrection() {
+		$moradebitos = MoraDebito::all();
+		foreach ($moradebitos as $moradebito) {
+			$moradebito->run_time_correction_of_ini_debt_value();
+		}
+		return view('cobrancas/emmora/exibirmoradebito', [
+			'moradebitos'=>$moradebitos, 'category_msg'=>'Atualização Monetária'
+		]);
+
+	} // ends showcalcfinanctimecorrection()
+
+
 	/**
 	 * Store a newly created resource in storage.
 	 *

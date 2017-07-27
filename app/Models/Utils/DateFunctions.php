@@ -48,11 +48,11 @@ get_default_cutdate_in_month()
 [no need for a direct unittest, it fetches the default by env or by const]
 
 [6]
-get_ini_fim_months_list()
+get_ini_end_months_list()
 [has unittest]
 
 [7]
-get_ini_fim_monthyeardaterefs_list()
+get_ini_end_monthyeardaterefs_list()
 [has unittest]
 
 [8]
@@ -357,7 +357,7 @@ class DateFunctions {
   } // ends [static] calculate_monthly_duedate_under_convention()
 
 
-  public static function get_ini_fim_months_list(
+  public static function get_ini_end_months_list(
       $date_ini = null,
       $date_fim = null
     ) {
@@ -365,7 +365,7 @@ class DateFunctions {
     */
     if ($date_ini == null) {
         throw new Exception(
-          "Error: date_ini $date_ini is null in DateFunctions::get_ini_fim_months_list()", 1
+          "Error: date_ini $date_ini is null in DateFunctions::get_ini_end_months_list()", 1
         );
     }
     $date_fim = ($date_fim != null ? $date_fim : Carbon::today());
@@ -379,7 +379,7 @@ class DateFunctions {
     } // The next if excludes mere month equality, so if it's true, $date_ini has a later month than $date_fim
     if ($date_ini > $date_fim) {
         throw new Exception(
-          "Error: date_ini ($date_ini) > date_fim ($date_fim) [in month criterium] is in DateFunctions::get_ini_fim_months_list()", 1
+          "Error: date_ini ($date_ini) > date_fim ($date_fim) [in month criterium] is in DateFunctions::get_ini_end_months_list()", 1
         );
     }
     $month_list = array();
@@ -396,7 +396,7 @@ class DateFunctions {
 
   } // ends [static] get_ini_fim_monthrefs_list()
 
-  public static function get_ini_fim_monthyeardaterefs_list(
+  public static function get_ini_end_monthyeardaterefs_list(
     $p_monthyeardateref_ini = null,
     $p_monthyeardateref_fim = null
   ) {
@@ -415,13 +415,13 @@ class DateFunctions {
   $monthyeardateref_ini->setTime(0,0,0);
   $monthyeardateref_fim = $p_monthyeardateref_fim->copy()->day(1);
   $monthyeardateref_fim->setTime(0,0,0);
-  $ini_fim_monthyeardaterefs_list = self::get_ini_fim_months_list(
+  $ini_fim_monthyeardaterefs_list = self::get_ini_end_months_list(
     $monthyeardateref_ini,
     $monthyeardateref_fim
   );
   return $ini_fim_monthyeardaterefs_list;
 
-  } // ends [static] get_ini_fim_monthyeardaterefs_list()
+  } // ends [static] get_ini_end_monthyeardaterefs_list()
 
   public static function get_month_n_monthdays_fraction_tuple_list(
     $months_list = null
@@ -513,7 +513,7 @@ class DateFunctions {
 
 
   public static function correct_for_proportional_first_n_last_months_n_return_fractionarray(
-      $corrmonet_month_n_index_tuplelist,
+      $month_n_fractionindex_tuplelist,
       $ini_date,
       $end_date
     ) {
@@ -523,19 +523,20 @@ class DateFunctions {
       This method depends on:
           self::month_n_monthdays_fraction_tuplelist_borders_can_fraction()
       This method needs to check for consistency in $ini_date & $end_date
-        inside $corrmonet_month_n_index_tuplelist
+        inside $month_n_fractionindex_tuplelist
       Once they're checked, the corrmonet indices are "fused" (ie, multiplied)
         with the month fraction indices.
 
       Eg.
-      This method receives as $corrmonet_month_n_index_tuplelist:
+      This method receives as $month_n_fractionindex_tuplelist:
 
       [
-        [new Carbon('2017-04-dd'), 0.0023], // 21 days from day 10 (inclusive) to day 30
+        [new Carbon('2017-04-dd'), 0.0023],
         [new Carbon('2017-05-dd'), 0.0031],
                    (...)
-        [new Carbon('2017-09-dd'), 0.0017], // 10 days from day 1 to day 10 (inclusive)
+        [new Carbon('2017-09-dd'), 0.0017],
       ]
+      Obs.: dd above means that <day>, ie the date's day, is not considered.
 
       $ini_date & $end_date then generates:
       [
@@ -555,53 +556,66 @@ class DateFunctions {
         all others are unimportant and don't take part in the algorithm here.
 
     */
-
+    // $ini_date must exist or return null
+    if ($ini_date == null) {
+      return null;
+    }
+    $end_date = ( $end_date != null ? $end_date : Carbon::today() );
+    // $ini_date must be less than $end_date otherwise return null
+    if ($ini_date >= $end_date) {
+      return null;
+    }
     $first_date = null;
     $last_date = null;
-    $n_elems = count($corrmonet_month_n_index_tuplelist);
-    if ( count($corrmonet_month_n_index_tuplelist) > 0 ) {
-      $corrmonet_month_n_index_tuple = $corrmonet_month_n_index_tuplelist[0];
-      if (count($corrmonet_month_n_index_tuple) > 1 ) {
+    $n_elems = count($month_n_fractionindex_tuplelist);
+    if ( count($month_n_fractionindex_tuplelist) > 0 ) {
+      $month_n_fractionindex_tuple = $month_n_fractionindex_tuplelist[0];
+      if (count($month_n_fractionindex_tuple) > 1 ) {
         // picking up $first_date
-        $first_date = $corrmonet_month_n_index_tuple[0];
+        $first_date = $month_n_fractionindex_tuple[0];
       }
-      $corrmonet_month_n_index_tuple = $corrmonet_month_n_index_tuplelist[$n_elems-1];
-      if (count($corrmonet_month_n_index_tuple) > 1 ) {
+      $month_n_fractionindex_tuple = $month_n_fractionindex_tuplelist[$n_elems-1];
+      if (count($month_n_fractionindex_tuple) > 1 ) {
         // picking up $last_date
-        $last_date = $corrmonet_month_n_index_tuple[0];
+        $last_date = $month_n_fractionindex_tuple[0];
       }
     }
+    // $first_date and $last_date must exist contrarywise return null
     if ($first_date == null || $last_date == null) {
       return null;
     }
     // check first month in array consistency
     $diff_months = $ini_date->diffInMonths($first_date);
+    // different in months (ini & first) must not amount to 1 or more, if not return null
     if ($diff_months > 0 ) {
       return null;
     }
+    // months of $ini_date & $first_date must be the same, if not return null
     if ($ini_date->month != $first_date->month) {
       return null;
     }
     // check last month in array consistency
     $diff_months = $end_date->diffInMonths($last_date);
+    // different in months (end & last) must not amount to 1 or more, if not return null
     if ($diff_months > 0 ) {
       return null;
     }
+    // months of $end_date & $last_date must be the same, if not return null
     if ($end_date->month != $last_date->month) {
       return null;
     }
-    $months_list = self::get_ini_fim_months_list($ini_date, $end_date);
-    $month_n_monthdays_fraction_tuplelist = self
+    $months_list = self::get_ini_end_months_list($ini_date, $end_date);
+    $month_n_monthproportionindays_tuplelist = self
       ::get_month_n_monthdays_fraction_tuplelist_borders_can_fraction($months_list);
     // extract $fractions_list
     $result_fractionindices_array = array();
-    foreach ($month_n_monthdays_fraction_tuplelist as $i=>$month_n_monthdays_fraction_tuple) {
+    foreach ($month_n_monthproportionindays_tuplelist as $i=>$month_n_monthproportionindays_tuple) {
       // picking up $monthfraction ie the month's proportion
-      $monthfraction           = $month_n_monthdays_fraction_tuple[1];
-      // picking up $corrmonet_fractionindex ie the month's monetary correction index
-      $corrmonet_fractionindex = $corrmonet_month_n_index_tuplelist[$i][1];
+      $monthproportionfraction = $month_n_monthproportionindays_tuple[1];
+      // picking up $indexfraction ie the month's factor index (factor might be, eg., a monetary correction fraction index)
+      $indexfraction = $month_n_fractionindex_tuplelist[$i][1];
       // fusing (ie, multiplying) the two, to get the $result_month_factor
-      $result_month_factor = $monthfraction * $corrmonet_fractionindex;
+      $result_month_factor = $monthproportionfraction * $indexfraction;
       // "pack" $result_month_factor into the result fractions array
       $result_fractionindices_array[] = $result_month_factor;
     }

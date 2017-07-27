@@ -427,7 +427,7 @@ class DateFunctionsTest extends TestCase {
 
   }  // ends testfind_conventional_cutdate_from_monthyeardateref()
 
-  public function testget_ini_fim_months_list() {
+  public function testget_ini_end_months_list() {
 
     // Inner test 1
     $d1 = new Carbon('2017-01-05');
@@ -437,7 +437,7 @@ class DateFunctionsTest extends TestCase {
     $d5 = new Carbon('2017-05-15');
     $expected_ini_fim_months_list = [$d1,$d2,$d3,$d4,$d5];
     $returned_ini_fim_months_list = DateFunctions
-      ::get_ini_fim_months_list(
+      ::get_ini_end_months_list(
         $d1,
         $d5
       );
@@ -446,10 +446,10 @@ class DateFunctionsTest extends TestCase {
       $expected_ini_fim_months_list
     );
 
-  }  // ends testget_ini_fim_months_list()
+  }  // ends testget_ini_end_months_list()
 
 
-  public function testget_ini_fim_monthyeardaterefs_list() {
+  public function testget_ini_end_monthyeardaterefs_list() {
 
     // Inner test 1
     $d1 = new Carbon('2017-01-01');
@@ -459,7 +459,7 @@ class DateFunctionsTest extends TestCase {
     $d5 = new Carbon('2017-05-01');
     $expected_ini_fim_months_list = [$d1,$d2,$d3,$d4,$d5];
     $returned_ini_fim_months_list = DateFunctions
-      ::get_ini_fim_monthyeardaterefs_list(
+      ::get_ini_end_monthyeardaterefs_list(
         $d1,
         $d5
       );
@@ -473,7 +473,7 @@ class DateFunctionsTest extends TestCase {
     $d2 = $d1->copy();
     $expected_ini_fim_months_list = [$d1];
     $returned_ini_fim_months_list = DateFunctions
-      ::get_ini_fim_monthyeardaterefs_list(
+      ::get_ini_end_monthyeardaterefs_list(
         $d1,
         $d2
       );
@@ -489,7 +489,7 @@ class DateFunctionsTest extends TestCase {
       ::find_conventional_monthyeardateref_with_date_n_dueday();
     $expected_ini_fim_months_list = [$conventional_monthyeardateref];
     $returned_ini_fim_months_list = DateFunctions
-      ::get_ini_fim_monthyeardaterefs_list(
+      ::get_ini_end_monthyeardaterefs_list(
         $d1,
         $d2
       );
@@ -498,7 +498,7 @@ class DateFunctionsTest extends TestCase {
       $expected_ini_fim_months_list
     );
 
-  }  // ends testget_ini_fim_monthyeardaterefs_list()
+  }  // ends testget_ini_end_monthyeardaterefs_list()
 
   public function testget_month_n_monthdays_fraction_tuple_list() {
 

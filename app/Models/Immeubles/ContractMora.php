@@ -165,7 +165,7 @@ class ContractMora  {
   }
 
   public function generate_once_monthyeardaterefs_list() {
-    $this->monthyeardaterefs_list = DateFunctions::get_ini_fim_monthyeardaterefs_list(
+    $this->monthyeardaterefs_list = DateFunctions::get_ini_end_monthyeardaterefs_list(
         $this->monthyeardateref_ini,
         $this->monthyeardateref_fim
       );
