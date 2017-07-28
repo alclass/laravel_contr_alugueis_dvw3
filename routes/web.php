@@ -101,6 +101,9 @@ Route::get('/user/{id}', array(
 
 Route::get('/home', 'HomeController@index')->name('home');
 
+// Luiz Madeira financ
+Route::get('/lmadeira', 'Finance\LMadeiraController@index')->name('lmadeira');
+
 // simple test
 Route::get('/testCarbon', function() {
 	//return 'hi';

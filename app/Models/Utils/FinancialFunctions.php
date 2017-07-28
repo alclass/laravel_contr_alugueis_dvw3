@@ -6,6 +6,9 @@ namespace App\Models\Utils;
 
 /*
 
+  The following ref-site has a listing of financial formulas.
+    [link] www.math4finance.com/financial-formulas.php
+
 Summary of [static] methods in here:
 
 calc_fmontant_from_imontant_n_interest_array()
@@ -13,6 +16,9 @@ calc_fmontant_from_imontant_n_interest_array()
 
 calc_fmontant_from_imontant_plus_interest_array_plus_border_proportions()
 [has unittest]
+
+calc_monthly_payment_pmt()
+[no unittest yet]
 
   The method below was refactored to class CorrMonet, it's no longer here
     calc_latervalue_from_inivalue_w_ini_end_dates_n_corrmonet4charid()
@@ -117,5 +123,26 @@ class FinancialFunctions {
       $interest_array
     );
   } // ends [static] function calc_fmontant_from_imontant_plus_interest_array_plus_border_proportions()
+
+
+  public static function calc_monthly_payment_pmt(
+      $initial_montant,
+      $n_months, //
+      $interest_rate
+    ) {
+    /*
+      This method calculates a PMT, ie, what is the monthly payment based on P, r and n
+    */
+    $p = $initial_montant;
+    $n = $n_months;
+    $r = $interest_rate;
+    $numerator = $p * $r * ((1 + $r) ** $n); // ***CHECK*** THIS: maybe the first $r is $i
+    $denominator = ((1 + $r) ** $n) - 1;
+    $pmt = $numerator / $denominator;
+    return $pmt;
+
+  } // ends [static] function calc_fmontant_from_imontant_plus_interest_array_plus_border_proportions()
+
+
 
 } // ends class FinancialFunctions

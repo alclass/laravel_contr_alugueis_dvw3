@@ -62,4 +62,35 @@ class FinancialFunctionsTest extends TestCase {
 
   }  // ends testcalc_fmontant_from_imontant_plus_interest_array_plus_border_proportions()
 
+  public function testcalc_monthly_payment_pmt() {
+    /*
+    This method calculates a PMT, ie, what is the monthly payment based on P, r and n
+    */
+    $initial_montant = 101.515; // 1000;
+    $n_months = 6;
+    $interest_rate = 0.005;
+
+    $p = $initial_montant;
+    $n = $n_months;
+    $r = $interest_rate;
+
+    $prestacao = 20; // only for the expected calculation here to be confronted with the function return
+    $expected_pmt = $initial_montant;
+    for ($i=0; $i < $n_months; $i++) {
+      $expected_pmt = $expected_pmt * (1 + $r) - $prestacao;
+    }
+
+    $returned_pmt = FinancialFunctions
+      ::calc_monthly_payment_pmt(
+        $p,
+        $n,
+        $r
+    );
+
+    $this->assertEquals($returned_pmt, $expected_pmt);
+
+    return $pmt;
+
+  } // ends function testcalc_monthly_payment_pmt()
+
 } // ends class FinancialFunctionsTest extends TestCase

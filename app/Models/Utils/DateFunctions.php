@@ -16,6 +16,9 @@ calc_fraction_of_n_days_in_specified_month()
 [has unittest]
 
 [1]
+get_total_days_in_specified_month()
+
+[1]
 is_date_on_last_day_of_month()
 [doesn't have unittest]
 
