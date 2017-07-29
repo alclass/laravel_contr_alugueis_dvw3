@@ -74,20 +74,24 @@ class FinancialFunctionsTest extends TestCase {
     $n = $n_months;
     $r = $interest_rate;
 
-    $prestacao = 20; // only for the expected calculation here to be confronted with the function return
-    $expected_pmt = $initial_montant;
+    $valor_prestacao_ie_the_pmt_aprox = 20; // only for the expected calculation here to be confronted with the function return
+    $balance = $initial_montant;
     for ($i=0; $i < $n_months; $i++) {
-      $expected_pmt = $expected_pmt * (1 + $r) - $prestacao;
+      $increase = $balance * (1 + $r);
+      $balance = $increase - $valor_prestacao_ie_the_pmt_aprox;
     }
 
-    $returned_pmt = FinancialFunctions
-      ::calc_monthly_payment_pmt(
-        $p,
-        $n,
-        $r
-    );
+    $valor_aprox_prestacao_ie_pmt - $expected_zero;
+    $returned_pmt = FinancialFunctions::calc_monthly_payment_pmt($p, $n, $r);
 
-    $this->assertEquals($returned_pmt, $expected_pmt);
+    // because variables are float, the two methods will not equal to the last decimal place
+    // then, round them off to two decimal places and assertEquals
+
+    $returned_pmt = round($returned_pmt, 2);
+    $expected_pmt = round($expected_pmt, 2);
+
+    $this->assertEquals(0, $valor_aprox_prestacao_ie_pmt);
+    $this->assertEquals($returned_pmt, $valor_prestacao_ie_the_pmt_aprox);
 
     return $pmt;
 

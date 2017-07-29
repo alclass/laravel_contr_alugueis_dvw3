@@ -2,6 +2,7 @@
 
 use App\Models\Finance\CorrMonet;
 use App\Models\Finance\LMadeiraPagto;
+use App\Models\Finance\TimeEvolveParcel;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use Carbon\Carbon;
@@ -17,18 +18,19 @@ class LMadeiraController extends Controller {
 	 */
 	public function index() {
 
-		// $time_evolve_parcels_table = LMadeiraPagto::get_time_evolve_parcels_table();
-		$initial_montant = 2000;
-		$n_months = 24;
-		$interest_rate = 0.01;
-		$pmt = FinancialFunctions::calc_monthly_payment_pmt(
-			$initial_montant,
-			$n_months,
-			$interest_rate
+		$loan_ini_date           = new Carbon('2017-04-01');
+		$loan_ini_value          = 2000;
+		$loan_duration_in_months = 24;
+
+		// The constructor's object will also run its processing (the rows building)
+		$time_evolve_loan_obj = new TimeEvolveParcel(
+			$loan_ini_date,
+			$loan_ini_value,
+			$loan_duration_in_months
 		);
 
 		return view('finance.tabelasacprice', [
-			'pmt' => 'pmt'
+			'time_evolve_loan_obj' => $time_evolve_loan_obj,
 		]);
 		/*
 		return view('finance.tabelasacprice', [

@@ -18,7 +18,7 @@ calc_fmontant_from_imontant_plus_interest_array_plus_border_proportions()
 [has unittest]
 
 calc_monthly_payment_pmt()
-[no unittest yet]
+[has unittest]
 
   The method below was refactored to class CorrMonet, it's no longer here
     calc_latervalue_from_inivalue_w_ini_end_dates_n_corrmonet4charid()
@@ -131,7 +131,11 @@ class FinancialFunctions {
       $interest_rate
     ) {
     /*
-      This method calculates a PMT, ie, what is the monthly payment based on P, r and n
+      This method calculates a PMT, ie, what is the monthly payment parcel (ie, prestacao)
+      based on:
+        p (initial montant),
+        r (interest rate) and
+        n (number of monthly payments that amortize initial montant)
     */
     $p = $initial_montant;
     $n = $n_months;
@@ -142,7 +146,5 @@ class FinancialFunctions {
     return $pmt;
 
   } // ends [static] function calc_fmontant_from_imontant_plus_interest_array_plus_border_proportions()
-
-
 
 } // ends class FinancialFunctions
