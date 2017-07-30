@@ -18,7 +18,7 @@ class LMadeiraController extends Controller {
 	 */
 	public function index() {
 
-		$loan_ini_date           = new Carbon('2017-04-01');
+		$loan_ini_date           = new Carbon('2017-04-15');
 		$loan_ini_value          = 2000;
 		$loan_duration_in_months = 24;
 
@@ -32,13 +32,18 @@ class LMadeiraController extends Controller {
 		return view('finance.tabelasacprice', [
 			'time_evolve_loan_obj' => $time_evolve_loan_obj,
 		]);
-		/*
-		return view('finance.tabelasacprice', [
-      'column_keys'   => $column_keys, 'rows' => $rows,
-      'loan_ini_date' => $loan_ini_date,
-      'msg_or_info'   => $msg_or_info,
-    ]);
-		*/
+    /*
+      'column_keys'    => $this->column_keys,
+      'loan_ini_date'  => $this->loan_ini_date,
+      'loan_ini_value' => $this->loan_ini_value,
+      'loan_duration_in_months'   => $this->loan_duration_in_months,
+      'rows'           => $this->rows,
+      'pmt_prestacao_mensal_aprox_until_payment_end' => $this->pmt_prestacao_mensal_aprox_until_payment_end,
+      'n_remaining_months_on_pmt' => $this->n_remaining_months_on_pmt,
+      'interest_rate_pmt_aprox'   => $this->interest_rate_pmt_aprox,
+      'msg_or_info'               => $msg_or_info,
+    */
+
 
 	} // ends index()
 

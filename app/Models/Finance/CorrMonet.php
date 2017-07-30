@@ -19,7 +19,7 @@ class CorrMonet extends Model {
   */
 
   public static function try_to_find_conventional_average_corrmonet(
-    $corrmonet_indice4char
+    $corrmonet_indice4char = null
     ) {
     /*
 
@@ -122,7 +122,28 @@ class CorrMonet extends Model {
         $interest_array
       );
     return $final_montant;
-  } // ()
+  } // ends [static] calc_latervalue_from_inivalue_w_ini_end_dates_n_corrmonet4charid()
+
+
+  public static function get_corr_monet_for_month_or_average(
+      $monthdate,
+      $indice4char=null
+    ) {
+
+    if ($indice4char == null) {
+      $indice4char = env('K_INDICE4CHAR_SELIC', MercadoIndice::K_INDICE4CHAR_SELIC);
+    }
+    // guarantee $monthdate is a $monthyeardateref
+    $monthyeardateref = $monthdate->copy()->day(1)->setTime(0,0,0);
+    $corrmonet_obj = self::where('indice4char', $indice4char)
+      ->where('indice4char', $monthdate)
+      ->first();
+    if ($corrmonet_obj == null || $corrmonet_obj->fraction_value) {
+      return self::try_to_find_conventional_average_corrmonet();
+    }
+    return $corrmonet_obj->fraction_value;
+
+  } // ends [static] get_corr_monet_for_month_or_average()
 
 
   /*

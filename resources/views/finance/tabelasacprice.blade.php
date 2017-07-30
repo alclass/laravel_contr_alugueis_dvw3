@@ -7,19 +7,27 @@
 @endsection
 @section('content')
 <?php
-  $total_cobrancas = 0;
-  $current_month = $loan_ini_date->copy();
+  // Open up object $time_evolve_loan_obj available to this template
+  // ===============================================================
+  $column_keys    = $time_evolve_loan_obj->column_keys;
+  $loan_ini_date  = $time_evolve_loan_obj->loan_ini_date;
+  $loan_ini_value = $time_evolve_loan_obj->loan_ini_value;
+  $loan_duration_in_months = $time_evolve_loan_obj->loan_duration_in_months;
+  $rows = $time_evolve_loan_obj->rows;
+  $pmt_prestacao_mensal_aprox_until_payment_end = $time_evolve_loan_obj->pmt_prestacao_mensal_aprox_until_payment_end;
+  $n_remaining_months_on_pmt = $time_evolve_loan_obj->n_remaining_months_on_pmt;
+  $interest_rate_pmt_aprox = $time_evolve_loan_obj->interest_rate_pmt_aprox;
+  $msg_or_info = $time_evolve_loan_obj->msg_or_info;
 ?>
-<h1>Pagamentos {{ $msg_or_info }}</h1>
-
-{{-- $column_keys = ['value_ini_month', 'corrmonet_in_perc', 'corrected_value', 'abatido', 'saldo' ]; --}}
+<h1>{{ $msg_or_info }}</h1>
 
   <table class="rwd-table">
     <tr>
-      <th>Mês</th>
+      <th>Data Saldo</th>
       <th>Valor Início</th>
-      <th>Corr. Monet. %</th>
-      <th>Juros Fixos</th>
+      <th>CM mês</th>
+      <th>CM ap.</th>
+      <th>CM+J ap.</th>
       <th>Corrigido</th>
       <th>Abatido</th>
       <th>Saldo</th>
@@ -27,22 +35,30 @@
 
   @foreach ($rows as $row)
     <?php
-      $current_month = $current_month->addMonths(1);
-      $value_ini_month   = $row['value_ini_month'];
-      $corrmonet_in_perc = $row['corrmonet_in_perc'];
-      $juros_fixos_in_perc = 10;
-      $corrected_value   = $row['corrected_value'];
-      $abatido  = $row['abatido'];
-      $saldo    = $row['saldo'];
-     ?>
+      // Extracting row fields
+      $balance_date           = $row['balance_date'];
+      $montante               = $row['montante'];
+      $corrmonet_perc         = $row['corrmonet_perc'];
+      $corrmonet_aplic_dias_perc  = $row['corrmonet_aplic_dias_perc'];
+      $cm_n_juros_aplic_dias_perc = $row['cm_n_juros_aplic_dias_perc'];
+      $montante_corrigido     = $row['montante_corrigido'];
+      $abatido                = $row['abatido'];
+      if ($abatido==0) {
+        $abatido = '---';
+      } else {
+        $abatido = number_format($abatido, 2);
+      }
+      $saldo                  = $row['saldo'];
+    ?>
     <tr>
-      <td data-th="current_month"> {{ $current_month->format('M-Y') }} </td>
-      <td data-th="value_ini_month">   {{ $value_ini_month }} </td>
-      <td data-th="corrmonet_in_perc"> {{ $corrmonet_in_perc }}% </td>
-      <td data-th="juros_fixos_in_perc"> {{ $juros_fixos_in_perc}}% </td>
-      <td data-th="corrected_value">   {{ $corrected_value }} </td>
+      <td data-th="balance_date"> {{ $balance_date->format('d/m/Y') }} </td>
+      <td data-th="montante">   {{ number_format($montante,2) }} </td>
+      <td data-th="corrmonet_perc"> {{ number_format($corrmonet_perc, 3) }}% </td>
+      <td data-th="corrmonet_aplic_dias_perc"> {{ number_format($corrmonet_aplic_dias_perc, 2) }}% </td>
+      <td data-th="cm_n_juros_aplic_dias_perc"> {{ number_format($cm_n_juros_aplic_dias_perc, 3) }}% </td>
+      <td data-th="montante_corrigido">   {{ number_format($montante_corrigido) }} </td>
       <td data-th="abatido"> {{ $abatido }} </td>
-      <td data-th="saldo">   {{ $saldo }} </td>
+      <td data-th="saldo">   {{ number_format($saldo) }} </td>
     </tr>
   @endforeach
   </table>

@@ -19,6 +19,10 @@ calc_fraction_of_n_days_in_specified_month()
 get_total_days_in_specified_month()
 
 [1]
+get_last_day_in_month_date()
+[doesn't have unittest]
+
+[1]
 is_date_on_last_day_of_month()
 [doesn't have unittest]
 
@@ -93,6 +97,12 @@ class DateFunctions {
     $year  = $date->year;
     return cal_days_in_month(CAL_GREGORIAN, $month, $year);
   } // ends [static] get_total_days_in_specified_month()
+
+  public static function get_last_day_in_month_date($date) {
+    $total_days_in_month    = self::get_total_days_in_specified_month($date);
+    $last_day_in_month_date = $date->copy()->day($total_days_in_month);
+    return $last_day_in_month_date;
+  } // ends [static] get_last_day_in_month_date()
 
   public static function is_date_on_last_day_of_month($date) {
     if ($date==null) {
