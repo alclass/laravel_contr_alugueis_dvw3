@@ -1,16 +1,16 @@
 <?php
 namespace App\Models\Finance;
-// To import class LMadeiraPagto elsewhere in the Laravel App
-// use App\Models\Finance\TimeEvolveParcel;
+// To import class TimeEvolveAmortizationParcel elsewhere in the Laravel App
+// use App\Models\Finance\TimeEvolveAmortizationParcel;
 
 use App\Models\Finance\CorrMonet;
+use App\Models\Finance\MercadoIndice;
 use App\Models\Utils\DateFunctions;
 use App\Models\Utils\FinancialFunctions;
 use Carbon\Carbon;
 
-class TimeEvolveParcel {
+class TimeEvolveAmortizationParcel {
 
-  const JUROS_FIXOS_AM_CONVENCIONADOS = 0.01;
 
   /*
     =================================
@@ -47,9 +47,10 @@ class TimeEvolveParcel {
   ];
 
   public function __construct(
-      $loan_ini_date = null,
-      $loan_ini_value=2000,
-      $loan_duration_in_months=24
+      $loan_ini_date,
+      $loan_ini_value,
+      $loan_duration_in_months,
+      $payback_querybuilder
     ) {
     $this->loan_ini_date  = $loan_ini_date;
     if ($loan_ini_date == null) {
@@ -72,6 +73,7 @@ class TimeEvolveParcel {
     $this->rows[] = $row;
     $this->pmt_prestacao_mensal_aprox_until_payment_end = 0;
     $this->msg_or_info  = 'Cálculo de Amortização de Financiamento';
+    $this->payback_querybuilder = $payback_querybuilder;
     $this->generate_amortization_table();
   }
 
@@ -92,15 +94,14 @@ class TimeEvolveParcel {
   public function generate_month_row_position($from_day_in_month_date) {
 
     $last_day_in_month_date = DateFunctions::get_last_day_in_month_date($from_day_in_month_date);
-    $lmadeira_pagtos = LMadeiraPagto
-      ::where('paydate', '>=', $from_day_in_month_date)
+    $paybacks = $this->payback_querybuilder
+      ->where('paydate', '>=', $from_day_in_month_date)
       ->where('paydate', '<=', $last_day_in_month_date)
       ->get();
-    //$this->balance_date = $monthrefdate->copy()->addDays(-1); // ie, last day of previous month
     $row = array();
-    foreach ($lmadeira_pagtos as $lmadeira_pagto) {
-      $paydate  = $lmadeira_pagto->paydate;
-      $abatido = $lmadeira_pagto->valor_pago;
+    foreach ($paybacks as $payback) {
+      $paydate  = $payback->paydate;
+      $abatido  = $payback->valor_pago;
       $n_elapsed_days = $this->balance_date->diffInDays($paydate);
       $last_day_in_month = $last_day_in_month_date->day;
       $month_fraction = $n_elapsed_days / $last_day_in_month;
@@ -109,7 +110,8 @@ class TimeEvolveParcel {
       $corrmonet_month_fraction_index = CorrMonet
         ::get_corr_monet_for_month_or_average($previous_monthyeardateref);
       $applied_corrmonet_fraction = $corrmonet_month_fraction_index * $month_fraction;
-      $cm_n_juros_aplic_dias_perc = ($corrmonet_month_fraction_index + self::JUROS_FIXOS_AM_CONVENCIONADOS) * $month_fraction;
+      $juros_fixos = MercadoIndice::get_default_juros_fixos_am_in_fraction();
+      $cm_n_juros_aplic_dias_perc = ($corrmonet_month_fraction_index + $juros_fixos) * $month_fraction;
       $montante_corrigido = $this->saldo * (1 + $cm_n_juros_aplic_dias_perc);
       $novo_saldo = $montante_corrigido - $abatido;
       // Fill in $row
@@ -127,11 +129,11 @@ class TimeEvolveParcel {
       $this->balance_date = $paydate->copy(); // the new $balance_date
     } // ends foreach
 
-    if (count($lmadeira_pagtos)==0) {
-      // false means no $lmadeira_pagto was found
+    if (count($paybacks)==0) {
+      // false means no $payback was found
       return false;
     }
-    // true means some $lmadeira_pagto was found
+    // true means some $payback was found
     return true;
   } // ends generate_month_row_position()
 
@@ -172,9 +174,9 @@ class TimeEvolveParcel {
     $this->saldo        = $this->loan_ini_value;
     $this->balance_date = $this->loan_ini_date->copy();
     $from_day_in_month_date = $this->loan_ini_date->copy();
-    $n_lmadeira_pagtos = LMadeiraPagto::count();
-    $last_payment = LMadeiraPagto
-      ::orderBy('paydate', 'desc')
+    $n_paybacks = $this->payback_querybuilder->count();
+    $last_payment = $this->payback_querybuilder
+      ->orderBy('paydate', 'desc')
       ->first();
     $up_to_monthdate = $from_day_in_month_date->copy()->addMonths(1);
     if ($last_payment && $last_payment->paydate != null) {
@@ -184,10 +186,6 @@ class TimeEvolveParcel {
     $n_loop_interactions = 0;
     while ($from_day_in_month_date < $up_to_monthdate) {
       $last_day_in_month_date = DateFunctions::get_last_day_in_month_date($from_day_in_month_date);
-      $lmadeira_pagtos = LMadeiraPagto
-        ::where('paydate', '>=', $from_day_in_month_date)
-        ->where('paydate', '<=', $last_day_in_month_date)
-        ->get();
       $found_payment = self::generate_month_row_position($from_day_in_month_date);
       /*      if ($found_payment == false) {
         $this->balance_date = $monthrefdate->copy($monthrefdate);

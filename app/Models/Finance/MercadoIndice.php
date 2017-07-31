@@ -6,9 +6,34 @@ use Illuminate\Database\Eloquent\Model;
 
 class MercadoIndice extends Model {
 
+  //-----------------------------------------------------------
+  //--- Siglas 4-char dos principais indicadores monetários ---
+  //-----------------------------------------------------------
   const K_INDICE4CHAR_IGPM  = 'IGPM';
   const K_INDICE4CHAR_IPCA  = 'IPCA';
   const K_INDICE4CHAR_SELIC = 'SELI';
+  //-----------------------------------------------------------
+  const K_JUROS_FIXOS_AM_CONVENCIONADOS_IN_PERC = 0.01;
+
+  public static function get_default_juros_fixos_am_in_perc() {
+    /*
+      This method searches the default in the following manner:
+        1) first, look up the .env config file
+        2) second, if it's not there in .env, pick up the one up here
+            ie, self::K_JUROS_FIXOS_AM_CONVENCIONADOS_IN_PERC
+    */
+    $default_juros_fixos_am_in_perc = env('K_JUROS_FIXOS_AM_CONVENCIONADOS_IN_PERC', self::K_JUROS_FIXOS_AM_CONVENCIONADOS_IN_PERC);
+    return $default_juros_fixos_am_in_perc;
+
+  } // ends [static] get_default_juros_fixos_am_in_perc()
+
+  public static function get_default_juros_fixos_am_in_fraction() {
+
+    return self::get_default_juros_fixos_am_in_perc() / 100;
+
+
+  } // ends [static] get_default_juros_fixos_am_in_perc()
+
 
   public static function get_default_char4indicator_for_reajuste_imob() {
     /*

@@ -1,14 +1,13 @@
 <?php namespace App\Http\Controllers\Finance;
 
-use App\Models\Finance\CorrMonet;
-use App\Models\Finance\LMadeiraPagto;
-use App\Models\Finance\TimeEvolveParcel;
+use App\Models\Persons\Person;
+// use App\Models\Finance\TimeEvolveParcel;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
-use Carbon\Carbon;
+// use Carbon\Carbon;
 use Illuminate\Http\Request;
 
-class LMadeiraController extends Controller {
+class AmortizationParcelController extends Controller {
 
 
 	/**
@@ -17,20 +16,26 @@ class LMadeiraController extends Controller {
 	 * @return Response
 	 */
 	public function index() {
+	}
 
-		$loan_ini_date           = new Carbon('2017-04-15');
-		$loan_ini_value          = 2000;
-		$loan_duration_in_months = 24;
+	public function showevolvetable($borrower_id) {
 
-		// The constructor's object will also run its processing (the rows building)
-		$time_evolve_loan_obj = new TimeEvolveParcel(
+		$borrower = Person::findOrFail($borrower_id);
+		$loans_time_evolve_report = $borrower->get_loans_time_evolve_report();
+		/*
+		$loan_ini_date           = $borrower->get_loan_ini_date(); // new Carbon('2017-04-15');
+		$loan_ini_value          = $borrower->get_loan_ini_value(); // 2000;
+		$loan_duration_in_months = $borrower->get_loan_duration_in_months(); // 24;
+
+		$time_evolve_loan_obj = new TimeEvolveAmortizationParcel(
 			$loan_ini_date,
 			$loan_ini_value,
 			$loan_duration_in_months
 		);
+		*/
 
 		return view('finance.tabelasacprice', [
-			'time_evolve_loan_obj' => $time_evolve_loan_obj,
+			'loans_time_evolve_report' => $loans_time_evolve_report,
 		]);
     /*
       'column_keys'    => $this->column_keys,
