@@ -1,7 +1,7 @@
 <?php
 namespace App\Models\Finance;
-// To import class TimeEvolveAmortizationParcel elsewhere in the Laravel App
-// use App\Models\Finance\TimeEvolveAmortizationParcel;
+// To import class AmortizationParcelTimeEvolver elsewhere in the Laravel App
+// use App\Models\Finance\AmortizationParcelTimeEvolver;
 
 use App\Models\Finance\CorrMonet;
 use App\Models\Finance\MercadoIndice;
@@ -9,7 +9,7 @@ use App\Models\Utils\DateFunctions;
 use App\Models\Utils\FinancialFunctions;
 use Carbon\Carbon;
 
-class TimeEvolveAmortizationParcel {
+class AmortizationParcelTimeEvolver {
 
 
   /*
@@ -64,12 +64,13 @@ class TimeEvolveAmortizationParcel {
     $this->rows = array();
     $row['balance_date']        = $this->loan_ini_date;
     $row['montante']            = $this->saldo;
-    $row['corrmonet_perc']  = 0;
+    $row['corrmonet_perc']             = 0;
     $row['corrmonet_aplic_dias_perc']  = 0;
-    $row['cm_n_juros_aplic_dias_perc']  = 0;
-    $row['montante_corrigido']  = $this->loan_ini_value;
-    $row['abatido']             = 0;
-    $row['saldo']               = $this->saldo;
+    $row['juros_am_perc']              = 0;
+    $row['cm_n_juros_aplic_dias_perc'] = 0;
+    $row['montante_corrigido'] = $this->loan_ini_value;
+    $row['abatido']            = 0;
+    $row['saldo']              = $this->saldo;
     $this->rows[] = $row;
     $this->pmt_prestacao_mensal_aprox_until_payment_end = 0;
     $this->msg_or_info  = 'Cálculo de Amortização de Financiamento';
@@ -106,19 +107,21 @@ class TimeEvolveAmortizationParcel {
       $last_day_in_month = $last_day_in_month_date->day;
       $month_fraction = $n_elapsed_days / $last_day_in_month;
       // convention for corr. monet. is M-1 (M minus one)
-      $previous_monthyeardateref = $from_day_in_month_date->copy()->addMonths(-1)->day(1)->setTime(0,0,0);
+      $previous_monthyeardateref = $from_day_in_month_date->copy()
+        ->addMonths(-1)->day(1)->setTime(0,0,0);
       $corrmonet_month_fraction_index = CorrMonet
         ::get_corr_monet_for_month_or_average($previous_monthyeardateref);
       $applied_corrmonet_fraction = $corrmonet_month_fraction_index * $month_fraction;
-      $juros_fixos = MercadoIndice::get_default_juros_fixos_am_in_fraction();
-      $cm_n_juros_aplic_dias_perc = ($corrmonet_month_fraction_index + $juros_fixos) * $month_fraction;
+      $juros_am_perc = MercadoIndice::get_default_juros_fixos_am_in_perc();
+      $cm_n_juros_aplic_dias_perc = ($corrmonet_month_fraction_index + $juros_fixos_am) * $month_fraction;
       $montante_corrigido = $this->saldo * (1 + $cm_n_juros_aplic_dias_perc);
       $novo_saldo = $montante_corrigido - $abatido;
       // Fill in $row
       $row['balance_date'] = $paydate; // $this->balance_date will receive this also
       $row['montante']     = $this->saldo;
-      $row['corrmonet_perc']         = $corrmonet_month_fraction_index * 100;
+      $row['corrmonet_perc']             = $corrmonet_month_fraction_index * 100;
       $row['corrmonet_aplic_dias_perc']  = $applied_corrmonet_fraction * 100;
+      $row['juros_am_perc']              = $juros_am_perc;
       $row['cm_n_juros_aplic_dias_perc'] = $cm_n_juros_aplic_dias_perc * 100;
       $row['montante_corrigido'] = $montante_corrigido;
       $row['abatido']            = $abatido;
@@ -147,11 +150,13 @@ class TimeEvolveAmortizationParcel {
         $month_fraction = $n_elapsed_days / $total_days_in_month;
       } // ends inner if
     } // ends outer if
-    $previous_monthyeardateref = $last_day_in_month_date->copy()->addMonths(-1)->day(1)->setTime(0,0,0);
+    $previous_monthyeardateref = $last_day_in_month_date->copy()
+      ->addMonths(-1)->day(1)->setTime(0,0,0);
     $corrmonet_month_fraction_index = CorrMonet
       ::get_corr_monet_for_month_or_average($previous_monthyeardateref);
     $applied_corrmonet_fraction = $corrmonet_month_fraction_index * $month_fraction;
-    $cm_n_juros_aplic_dias_perc = ($corrmonet_month_fraction_index + self::JUROS_FIXOS_AM_CONVENCIONADOS) * $month_fraction;
+    $juros_am_perc = MercadoIndice::get_default_juros_fixos_am_in_perc();
+    $cm_n_juros_aplic_dias_perc = ($corrmonet_month_fraction_index + $juros_fixos_am) * $month_fraction;
     $montante_corrigido     = $this->saldo * (1 + $cm_n_juros_aplic_dias_perc);
     $novo_saldo             = $montante_corrigido;
 
@@ -159,6 +164,7 @@ class TimeEvolveAmortizationParcel {
     $row['balance_date']        = $last_day_in_month_date;
     $row['montante']            = $this->saldo;
     $row['corrmonet_perc']         = $corrmonet_month_fraction_index * 100;
+    $row['juros_am_perc']              = $juros_am_perc;
     $row['corrmonet_aplic_dias_perc']  = $applied_corrmonet_fraction * 100;
     $row['cm_n_juros_aplic_dias_perc'] = $cm_n_juros_aplic_dias_perc * 100;
     $row['montante_corrigido']  = $montante_corrigido;

@@ -1,7 +1,6 @@
 <?php namespace App\Http\Controllers\Finance;
 
-use App\Models\Persons\Person;
-// use App\Models\Finance\TimeEvolveParcel;
+use App\Models\Persons\Borrower;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 // use Carbon\Carbon;
@@ -20,7 +19,7 @@ class AmortizationParcelController extends Controller {
 
 	public function showevolvetable($borrower_id) {
 
-		$borrower = Person::findOrFail($borrower_id);
+		$borrower = Borrower::findOrFail($borrower_id);
 		$loans_time_evolve_report = $borrower->get_loans_time_evolve_report();
 		/*
 		$loan_ini_date           = $borrower->get_loan_ini_date(); // new Carbon('2017-04-15');
