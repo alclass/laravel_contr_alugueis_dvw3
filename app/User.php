@@ -36,22 +36,22 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 	 */
 	protected $hidden = ['password', 'remember_token'];
 
-	public function get_full_name( ) {
-		$name = "";
-		$name = $this->first_name;
-		if ( strlen($this->middle_names) > 0 ) {
-			$name = $name . ' ' . $this->middle_names;
-		}
-		$name = $name . ' ' . $this->last_name;
-		return $name;
-	} // ends function get_full_name()
-
 	public function get_first_n_last_names()	{
-		return $name = $this->first_name . ' ' . $this->last_name;
-	} // ends function get_first_n_last_names()
+		if (strlen($this->last_name) == 0) {
+			return $this->first_name;
+		}
+		return $this->first_name . ' ' . $this->last_name;
+	} // ends get_first_n_last_names()
+
+	public function get_full_name( ) {
+		if (strlen($this->middle_names) == 0) {
+			return $this->get_first_n_last_names();
+		}
+		return $this->first_name . ' ' . $this->middle_names . ' ' . $this->last_name;
+	} // ends get_full_name()
 
 	public function contracts( ) {
 		return $this->belongsToMany('App\Models\Immeubles\Contract');
-  }  // ends function contracts()
+  }  // ends contracts()
 
-} // ends class User
+} // ends class User extends Model implements AuthenticatableContract, CanResetPasswordContract

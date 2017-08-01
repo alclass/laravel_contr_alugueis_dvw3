@@ -9,6 +9,7 @@ use App\Models\Immeubles\Contract;
 use App\Models\Tributos\IPTUTabela;
 use App\Models\Utils\DateFunctions;
 use App\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 class Cobranca extends Model {
@@ -328,6 +329,12 @@ class Cobranca extends Model {
       $n_cota_ref,
       $total_cotas_ref
     );
+  }
+
+  public function find_n_days_until_duedate() {
+    $today = Carbon::today();
+    $n_days_until_duedate = $this->duedate->diffInDays($today);
+    return $n_days_until_duedate;
   }
 
   public function monthyeardateref_or_its_convention_if_it_is_null(

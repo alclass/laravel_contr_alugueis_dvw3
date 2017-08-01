@@ -4,70 +4,92 @@ namespace App\Models\Persons;
 // use App\Models\Persons\Borrower;
 
 use App\Models\Finance\AmortizationPayment;
-use App\Models\Finance\AmortizationParcelTimeEvolver;
+use App\Models\Finance\AmortizationParcelsEvolver;
 use App\Models\Persons\Person;
 use Illuminate\Database\Eloquent\Model;
 
 class Borrower extends Person {
 
-  public $loan_value = null;
-  public $loan_date  = null;
+  public $loan_ini_value = null;
+  public $loan_ini_date = null;
   public $loan_duration_in_months = null;
-  public $payback_tuplelist       = null;
-  public $payback_querybuilder    = null;
-  public $are_data_loaded         = false;
+  public $amortization_parcels_evolver = null;
+  public $are_data_loaded = false;
 
-  public function init_n_load_data($do_reload_data = false) {
+  /* THIS DOES NOT WORK : COMMENTED OUT
+     (The ideia was to run reprep_n_init_data() at construction time)
+  public function __construct(array $attributes = array(), $value = null) {
+    parent::__construct($attributes, $value);
+    $this->reprep_n_init_data(true);
+  }
+  */
+
+  public function reprep_n_init_data($do_reload_data = false) {
     if ($this->are_data_loaded == false || $do_reload_data == true) {
+      $this->reprep_data();
       $this->init_data();
-      $this->load_data();
       $this->are_data_loaded = true;
     } // ends if
-  }// ends init_n_load_data()
+  }// ends reprep_n_init_data()
 
-  public function init_data() {
-    $this->loan_value = null;
-    $this->loan_date  = null;
+  public function reprep_data() {
+    $this->loan_ini_value = null;
+    $this->loan_ini_date  = null;
     $this->loan_duration_in_months = null;
-    $this->payback_tuplelist       = null;
-    $this->payback_querybuilder    = null;
-  }
+    $this->amortization_parcels_evolver == null; // this will be fetched when its set method is issued
+  } // ends reprep_data()
 
-  private function load_data() {
-    $amortization_payments = AmortizationPayment
-      ::where('payer_person_id', $this->id);
-    // the loan itself
-    $loan_obj = $amortization_payments
+  private function init_data() {
+    $borrowers_loan = AmortizationPayment
+      ::where('payer_person_id', $this->id)
       ->where('is_loan_delivery', true)->first();
-    if ($loan_obj == null) {
+    if ($borrowers_loan == null) {
       return;
     } // ends if
-    $this->loan_value = $loan_obj->valor_pago;
-    $this->loan_date  = $loan_obj->paydate;
-    $this->loan_duration_in_months = $loan_obj->loan_duration_in_months;
-    $this->payback_querybuilder = AmortizationPayment
+    $this->loan_ini_value = $borrowers_loan->valor_pago;
+    $this->loan_ini_date  = $borrowers_loan->paydate;
+    $this->loan_duration_in_months = $borrowers_loan->loan_duration_in_months;
+
+  } // ends init_data()
+
+  public function set_amortization_parcels_evolver() {
+
+    if  (  $this->loan_ini_value          == null
+        || $this->loan_ini_date           == null
+        || $this->loan_duration_in_months == null) {
+      $this->reprep_n_init_data(true);
+    }
+    // Setting $borrowers_paybacks_qb QueryBuilder instance
+    // This attribute will be sent as param to new AmortizationParcelsEvolver()
+    //  from there, it's cloned every time it issues a ->where() or other self-returning QueryBuilder
+    $borrowers_paybacks_qb = AmortizationPayment
       ::where('payer_person_id', $this->id)
       ->where('is_loan_delivery', false);
-    $paybacks = $amortization_payments->where('is_loan_delivery', false)->get();
-    $this->payback_tuplelist = array();
-    foreach ($paybacks as $payback) {
-      $payback_tuple[] = $payback->paydate;
-      $payback_tuple[] = $payback->valor_pago;
-      $this->payback_tuplelist[] = $payback_tuple;
-    } // ends foreach
-
-  } // ends load_data()
-
-  public function get_amortization_parcel_time_evolver() {
-    $amortization_parcel_time_evolver = new AmortizationParcelTimeEvolver(
-        $this->loan_ini_date,
+    $this->amortization_parcels_evolver = new AmortizationParcelsEvolver(
         $this->loan_ini_value,
+        $this->loan_ini_date,
         $this->loan_duration_in_months,
-        $this->payback_querybuilder
-        //$this->payback_tuplelist
+        $borrowers_paybacks_qb
     );
-    return $amortization_parcel_time_evolver;
+  } // ends set_amortization_parcels_evolver()
 
-  } // ends get_amortization_parcel_time_evolver()
+  public function get_amortization_parcels_evolver() {
+    if ($this->amortization_parcels_evolver == null) {
+      $this->set_amortization_parcels_evolver();
+    }
+    return $this->amortization_parcels_evolver;
+  } // ends get_amortization_parcels_evolver()
+
+  public function generate_payback_date_n_value_tuplelist() {
+    $borrowers_paybacks = AmortizationPayment
+      ::where('payer_person_id', $this->id)
+      ->where('is_loan_delivery', false)->get();
+    $payback_date_n_value_tuplelist = array();
+    foreach ($borrowers_paybacks as $payback) {
+      $payback_date_n_value_tuple[] = $payback->paydate;
+      $payback_date_n_value_tuple[] = $payback->valor_pago;
+      $payback_date_n_value_tuplelist[] = $payback_date_n_value_tuple;
+    } // ends foreach
+  } // ends generate_payback_date_n_value_tuplelist()
 
 } // ends class Borrower extends Person

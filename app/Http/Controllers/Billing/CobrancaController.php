@@ -169,8 +169,22 @@ class CobrancaController extends Controller {
 	 * @return Response
 	 */
 	public function show($cobranca_id)	{
+
 		$cobranca = Cobranca::findOrFail($cobranca_id);
-		return view('cobrancas.cobranca.mostrarcobranca', ['cobranca'=>$cobranca]);
+		$contract = $cobranca->contract;
+		$bankaccount = $contract->bankaccount;
+		$imovel = $contract->imovel;
+		$user = $contract->users()->first();
+
+		$today = Carbon::today();
+		return view('cobrancas.cobranca.mostrar2', [
+			'cobranca'=>$cobranca,
+			'contract'=>$contract,
+			'bankaccount'=>$bankaccount,
+			'imovel'=>$imovel,
+			'user'=>$user,
+			'today'=>$today,
+		]); // alt.:cobrancas.cobranca.mostrarcobranca
 	}
 
 	/**

@@ -17,7 +17,7 @@ Here we dedicate to routes below
     /estate/billings/ouverts
     /estate/billings/reconciled
   /estate/billing
-  /estate/billing/show/{cobranca_id}
+    /estate/billing/show/{cobranca_id}
     /estate/billing/showbyref/{contract_id}/{year}/{month}
     /estate/billing/edit/{contract_id}/{year}/{month}
     /estate/billing/edit

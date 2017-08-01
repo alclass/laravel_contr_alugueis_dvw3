@@ -101,8 +101,11 @@ Route::get('/user/{id}', array(
 
 Route::get('/home', 'HomeController@index')->name('home');
 
-// Luiz Madeira financ
-Route::get('/lmadeira', 'Finance\LMadeiraController@index')->name('lmadeira');
+// financiamentopagamentos
+Route::get('/financiamentopagamentos/{borrower_id}', [
+  'as' => 'financiamentopagamentos',
+  'uses' => 'Finance\AmortizationParcelController@show', //_parcel_evolver_report'
+]);
 
 // simple test
 Route::get('/testCarbon', function() {

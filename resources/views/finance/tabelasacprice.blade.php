@@ -7,19 +7,30 @@
 @endsection
 @section('content')
 <?php
-  // Open up object $time_evolve_loan_obj available to this template
+  // Open up object $borrower
   // ===============================================================
-  $column_keys    = $time_evolve_loan_obj->column_keys;
-  $loan_ini_date  = $time_evolve_loan_obj->loan_ini_date;
-  $loan_ini_value = $time_evolve_loan_obj->loan_ini_value;
-  $loan_duration_in_months = $time_evolve_loan_obj->loan_duration_in_months;
-  $rows = $time_evolve_loan_obj->rows;
-  $pmt_prestacao_mensal_aprox_until_payment_end = $time_evolve_loan_obj->pmt_prestacao_mensal_aprox_until_payment_end;
-  $n_remaining_months_on_pmt = $time_evolve_loan_obj->n_remaining_months_on_pmt;
-  $interest_rate_pmt_aprox = $time_evolve_loan_obj->interest_rate_pmt_aprox;
-  $msg_or_info = $time_evolve_loan_obj->msg_or_info;
+  $loan_ini_value = $borrower->loan_ini_value;
+  $formatstr_loan_ini_date  = 'n/a';
+  if ($borrower->loan_ini_date != null) {
+    $formatstr_loan_ini_date  = $borrower->loan_ini_date->format('d/M/Y');
+  }
+  $loan_duration_in_months = $borrower->loan_duration_in_months;
+  $amortization_parcels_evolver = $borrower->get_amortization_parcels_evolver();
+  $column_keys = $amortization_parcels_evolver->column_keys;
+  $rows = $amortization_parcels_evolver->rows;
+  $pmt_prestacao_mensal_aprox_until_payment_end = $amortization_parcels_evolver->pmt_prestacao_mensal_aprox_until_payment_end;
+  $n_remaining_months_on_pmt = $amortization_parcels_evolver->n_remaining_months_on_pmt;
+  $interest_rate_pmt_aprox = $amortization_parcels_evolver->interest_rate_pmt_aprox;
+  $msg_or_info = $amortization_parcels_evolver->msg_or_info;
 ?>
-<h1>{{ $msg_or_info }}</h1>
+<p></p>
+
+<h1>Tabela {{ $msg_or_info }}</h1>
+
+<h5>Financiado(a): {{ $borrower->get_first_n_last_names() }} </h5>
+<h5>Valor: {{ $loan_ini_value }} </h5>
+<h6>Data: {{ $formatstr_loan_ini_date }} </h6>
+<h6>Duração:{{ $loan_duration_in_months }}</h6>
 
   <table class="rwd-table">
     <tr>
@@ -63,4 +74,20 @@
   @endforeach
   </table>
   <p>Total dos itens: {{ count($rows) }} </p>
+
+  <?php
+    // Extracting row fields
+    $pmt_pretacao_aprox = number_format($amortization_parcels_evolver->pmt_prestacao_mensal_aprox_until_payment_end, 2);
+    $interest_rate_pmt_aprox_perc = $amortization_parcels_evolver->interest_rate_pmt_aprox * 100;
+    $interest_rate_pmt_aprox_perc = number_format($interest_rate_pmt_aprox_perc, 2);
+  ?>
+
+  <h5>Projeção</h5>
+  <h5>PMT Valor Corrente (hoje) Projetado da Prestação: R$ {{ $pmt_pretacao_aprox }} </h5>
+  <h6>Nº de meses restantes: {{ $n_remaining_months_on_pmt }}</h6>
+  <h6>Na base projetada de CM+Juros de: {{ $interest_rate_pmt_aprox_perc }}% </h6>
+  <p></p>
+  <p></p>
+  <p>copyright 2017</p>
+
 @endsection
