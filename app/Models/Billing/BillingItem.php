@@ -38,6 +38,15 @@ class BillingItem extends Model {
     'obs',
 	];
 
+
+  public function generate_ref_repr_for_cota_column() {
+    if ($this->ref_type == self::K_REF_TYPE_IS_DATE) {
+      return "1";
+    }
+    $outstr = "$this->n_cota_ref/$this->total_cotas_ref";
+    return $outstr;
+  }
+
   public function copy() {
     /*
     'brief_description', 'charged_value', 'ref_type', 'freq_used_ref',

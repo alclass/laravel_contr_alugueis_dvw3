@@ -182,7 +182,7 @@ class CobrancaController extends Controller {
 			'contract'=>$contract,
 			'bankaccount'=>$bankaccount,
 			'imovel'=>$imovel,
-			'user'=>$user,
+			// 'user'=>$user,
 			'today'=>$today,
 		]); // alt.:cobrancas.cobranca.mostrarcobranca
 	}

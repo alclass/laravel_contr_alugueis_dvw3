@@ -1,12 +1,9 @@
 <?php
 namespace App\Models\Billing;
 
-// use App\Models\Billing\BillingItemsForJson;
-// use App\Models\Billing\BillingItemObjToAssocArray as BItem;
 use App\Models\Billing\BillingItem;
 use App\Models\Billing\Cobranca;
 use App\Models\Billing\CobrancaTipo;
-// use App\Models\Billing\RefForBillingItem as Ref;
 use App\Models\Finance\BankAccount;
 use App\Models\Immeubles\Contract;
 use App\Models\Immeubles\CondominioTarifa;
@@ -107,7 +104,7 @@ class CobrancaGerador {
     --------------------------------------------*/
 
 
-  private function __construct($cobranca) {
+  public function __construct($cobranca) {
 
     $this->cobranca = $cobranca;
     // --------------------------------------------
@@ -364,11 +361,19 @@ class CobrancaGerador {
     $billingitem  = new BillingItem;
     // ->save() will be used below at method's end
     // $billingitem->cobranca_id       = $this->cobranca->id;
-    $cobrancatipo = $this->cobrancatipo_objs_array[CobrancaTipo::K_4CHAR_MORA];
+    // $cobrancatipo = $this->cobrancatipo_objs_array[CobrancaTipo::K_4CHAR_MORA];
+    $cobrancatipo = CobrancaTipo
+      ::where('char4id', CobrancaTipo::K_4CHAR_MORA)
+      ->first();
+    if ($cobrancatipo == null) {
+      throw new Exception("CobrancaTipo for Mora CobrancaTipo::K_4CHAR_MORA was not found in db", 1);
+    }
     $billingitem->cobrancatipo_id   = $cobrancatipo->id;
     $billingitem->brief_description = $cobrancatipo->brief_description;
     $moradebito->run_time_correction_of_ini_debt_value();
-    $billingitem->charged_value     = $moradebito->changed_debt_value;
+    $billingitem->charged_value               = $moradebito->changed_debt_value;
+    $billingitem->original_value_if_needed    = $moradebito->ini_debt_value;
+    $billingitem->was_original_value_modified = true;
     $billingitem->ref_type          = BillingItem::K_REF_TYPE_IS_DATE;
     $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_MONTHLY;
     $billingitem->monthyeardateref  = $moradebito->monthyeardateref;
