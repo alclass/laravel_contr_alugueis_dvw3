@@ -1,8 +1,10 @@
 <?php
 namespace App\Models\Billing;
 
-// use App\Models\Billing\Payment;
-// use App\Models\Utils\DateFunctions;
+// To import class BillingItem elsewhere in the Laravel App
+// use App\Models\Billing\BillingItem;
+
+use App\Models\Billing\CobrancaTipo;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
@@ -18,7 +20,7 @@ class BillingItem extends Model {
 
   protected $table = 'billingitems';
 
- protected $dates = [
+  protected $dates = [
    'monthyeardateref',
    //'created_at',
    //'updated_at',
@@ -37,7 +39,6 @@ class BillingItem extends Model {
     'money_amount_in_modifying_if_any',
     'obs',
 	];
-
 
   public function generate_ref_repr_for_cota_column() {
     if ($this->ref_type == self::K_REF_TYPE_IS_DATE) {

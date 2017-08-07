@@ -93,12 +93,12 @@ Route::prefix('/estate')->group( function() {
     //===>>> estate/billing/edit/{contract_id}/{year}/{month} GET
     Route::get('edit/{contract_id}/{year}/{month}', [
       'as'=>'cobranca.mensal.editar',
-      'uses'=>'Billing\CobrancaController@edit'
+      'uses'=>'Billing\CobrancaController@edit_via_httpget'
     ]);
     //===>>> estate/billing/edit POST
     Route::post('/edit', [
       'as'=>'cobranca.mensal.editar',
-      'uses'=>'Billing\CobrancaController@edit'
+      'uses'=>'Billing\CobrancaController@edit_via_httppost'
     ]);
 
     //===>>> estate/billing/analyzeverify/{contract_id}/{year}/{month} GET

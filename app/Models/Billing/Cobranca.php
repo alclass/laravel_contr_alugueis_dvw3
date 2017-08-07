@@ -1,8 +1,10 @@
 <?php
 namespace App\Models\Billing;
 
+// To import class Cobranca elsewhere in the Laravel App
+// use App\Models\Billing\Cobranca;
+
 use App\Models\Finance\BankAccount;
-// use App\Models\Billing\BillingItemForJson;
 use App\Models\Billing\BillingItem;
 use App\Models\Billing\CobrancaTipo;
 use App\Models\Immeubles\Contract;
@@ -14,7 +16,34 @@ use Illuminate\Database\Eloquent\Model;
 
 class Cobranca extends Model {
 
-	//
+  /*
+    =================================
+      Beginning of Static Methods
+    =================================
+  */
+  public static function fetch_cobranca_with_triple_contract_id_year_month(
+      $contract_id,
+      $year = null,
+      $month = null
+    )	{
+    if ($contract_id == null) {
+      return null;
+    }
+		$monthyeardateref = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($year, $month);
+		$cobranca = Cobranca
+			::where('contract_id', $contract_id)
+			->where('monthyeardateref', $monthyeardateref)
+			->first();
+		// Notice $cobranca may be null from here
+		return $cobranca;
+ 	} // ends [static] fetch_cobranca_with_triple_contract_id_year_month()
+
+  /*
+    =================================
+      End of Static Methods
+    =================================
+  */
+
   protected $table     = 'cobrancas';
   public $billingitems = null;
 
@@ -40,6 +69,42 @@ class Cobranca extends Model {
 	];
 
   // contract_id is in DB Schema, but connected below with a belongsTo() method
+
+
+  /*
+    These (5) instance methods are 'brigde-methods' to static methods in CobrancaTipo:
+
+      get_cobrancatipo_with_its_4charrepr()
+      get_cobrancatipo_via_its_4charrepr_sqllikeword()
+      get_exact_4charrepr_via_sqllikeword()
+      get_4charrepr_via_cobrancatipo_id()
+      get_collection_cobrancatipos()
+
+  */
+
+  public function get_cobrancatipo_with_its_4charrepr($char4id) {
+    return CobrancaTipo::get_cobrancatipo_with_its_4charrepr($char4id);
+  }
+
+  public function get_cobrancatipo_via_its_4charrepr_sqllikeword($sqllikeword) {
+    return CobrancaTipo::get_cobrancatipo_via_its_4charrepr_sqllikeword($sqllikeword);
+  }
+
+  public function get_exact_4charrepr_via_sqllikeword($sqllikeword) {
+    return CobrancaTipo::get_exact_4charrepr_via_sqllikeword($sqllikeword);
+  }
+
+  public function get_4charrepr_via_cobrancatipo_id($cobrancatipo_id) {
+    return CobrancaTipo::get_4charrepr_via_cobrancatipo_id($cobrancatipo_id);
+  }
+
+  public function get_collection_cobrancatipos() {
+    return CobrancaTipo::all();
+  }
+
+  /*
+    End of the (5) instance methods that are 'brigde-methods' to static methods in CobrancaTipo:
+  */
 
   public function is_iptu_ano_quitado() {
     if ($this->contract->imovel == null) {
@@ -142,6 +207,20 @@ class Cobranca extends Model {
         $next_monthyeardateref,
         $n_seq_from_dateref
       );
+  }
+
+  public function extract_month_from_monthyeardateref() {
+    if ($this->monthyeardateref == null) {
+      return 's/n';
+    }
+    return $this->monthyeardateref->month;
+  }
+
+  public function extract_year_from_monthyeardateref() {
+    if ($this->monthyeardateref == null) {
+      return 's/n';
+    }
+    return $this->monthyeardateref->year;
   }
 
   public function createIfNeededBillingItemFor(

@@ -129,19 +129,16 @@ class CobrancaController extends Controller {
 
 	public function abertas()	{
 
-		//return 'hi';
+		// return 'hi';
 		$cobrancas = Cobranca
 			::where('has_been_paid', false)
 			->get();
 		$cobrancas->load('contract');
-		// where('has_been_paid', 0)->get()->first();
-		// $cobranca = Cobranca::where('has_been_paid', 0)->first();
-		// $cobrancas = Cobranca::all();
-		// $cobranca = new Cobranca;
-		// $today = Carbon::now();
-		// $cobranca->duedate = $today;
-		// return 'hi today ' . $today . ' cobrança id ' . $cobranca->id;
-		return view('cobrancas/listarcobrancas', ['cobrancas'=>$cobrancas, 'category_msg'=>'Abertas']);
+		$today = Carbon::now();
+		return view('cobrancas/listarcobrancas',	[
+			'cobrancas' => $cobrancas,
+			'today' => $today, 'category_msg'=>'Abertas',
+		]);
 	}
 
 	public function conciliadas()	{
@@ -195,25 +192,68 @@ class CobrancaController extends Controller {
 	 * @param  int  $month
 	 * @return Response
 	 */
+
 	public function showviaref($contract_id, $year, $month)	{
-		$monthyeardateref = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($year, $month);
 		$cobranca = Cobranca
-			::where('contract_id', $contract_id)
-			->where('monthyeardateref', $monthyeardateref)
-			->first();
+			::fetch_cobranca_with_triple_contract_id_year_month($contract_id, $year, $month);
 		return view('cobrancas.cobranca.mostrarcobranca', ['cobranca'=>$cobranca]);
 	}
 
 	/**
-	 * Show the form for editing the specified resource.
+	 * Show the edit form for editing the 'cobranca'
 	 *
-	 * @param  int  $id
+	 * @param  int  $contract_id, int $year, int $month
 	 * @return Response
 	 */
-	public function edit($id)
-	{
-		//
-	}
+	 public function edit_via_httpget($contract_id, $year, $month)	{
+		 $cobranca = Cobranca
+ 			::fetch_cobranca_with_triple_contract_id_year_month($contract_id, $year, $month);
+
+		return view('cobrancas.cobranca.editaritensdecobranca', ['cobranca'=>$cobranca]);
+ 	} // ends edit_via_httppost()
+
+	/**
+	 * HTTP-post the edit form for creating/updating the 'cobranca'
+	 *
+	 * @param  Request $request
+	 * @return Response
+	 */
+	public function edit_via_httppost(Request $request)	{
+
+		$cobranca_id     = $request->input('cobranca_id');
+		$cobranca = Cobranca::findOrFail($cobranca_id);
+		// -------------------------------------
+		$monthref = $request->input('monthref');
+		$yearref  = $request->input('yearref');
+		// -------------------------------------
+		$cobrancatipo_id = $request->input('cobrancatipo_id');
+		$cobrancatipo  = CobrancaTipo::findOrFail($cobrancatipo_id);
+		$monthyeardateref = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($yearref, $monthref);
+		// -------------------------------------
+		$charged_value   = $request->input('charged_value');
+		$ref_type        = $request->input('ref_type');
+		$freq_used_ref   = $request->input('freq_used_ref');
+		$n_cota_ref      = $request->input('reftype');
+		$total_cotas_ref = $request->input('total_cotas_ref');
+		// -------------------------------------
+		$bi_generator = BillingItemGenerator($cobranca);
+		$billingitem = $bi_generator->createIfNeededBillingItemFor(
+      $cobrancatipo,
+      $charged_value, // $value,
+      $ref_type,
+      $freq_used_ref,
+      $monthyeardateref,
+      $n_cota_ref,
+      $total_cotas_ref
+		);
+		$obs = $request->input('obs');
+		if ($obs != null) {
+			$billingitem->$obs = $obs;
+			$billingitem->save();
+		}
+		return view('cobrancas.cobranca.mostrarcobranca', ['cobranca'=>$cobranca]);
+
+	} // ends edit_via_httppost()
 
 	/**
 	 * Update the specified resource in storage.
