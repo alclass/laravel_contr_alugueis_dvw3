@@ -12,9 +12,6 @@ __pycache__/
 .project
 .settings/
 artisan
-composer.json
-composer.lock
-composer.phar
 gulpfile.js
 package.json
 phpspec.yml
