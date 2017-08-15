@@ -3,18 +3,65 @@
 namespace App\Http\Controllers;
 
 use App\User;
-
 use Auth;
 use Illuminate\Http\Request;
 
 class UserController extends Controller {
+  /*
 
+  Methods:
+    login_via_httpget()
+    login_via_httppost()
+    logout_via_httpget()
+    logout_via_httppost()
+    signup_via_httpget()
+    signup_via_httppost()
+    listUsers()
+    showUser()
+  */
 
-  public function getSignup() {
+  public function login_via_httpget() {
+    return view('authusers.login');
+  }
+
+  public function login_via_httppost(\Illuminate\Http\Request $request) {
+
+    $this->validate($request, [
+      'email'    => 'email|required',
+      'password' => 'required|min:6',
+    ]);
+
+    $email    = $request->input('email');
+    $password = $request->input('password');
+
+    $is_auth_good = Auth::attempt([
+      'email' => $email,
+      'password' => bcrypt($password),
+    ]);
+
+    /*
+    if ($is_auth_good == false) {
+      return redirect()->back();
+    }
+    */
+    return redirect()->route('dashboard'); // dashboard
+  }
+
+  public function logout_via_httpget() {
+    Auth::logout();
+    return redirect()->route('home');
+  }
+
+  public function logout_via_httppost(\Illuminate\Http\Request $request) {
+    Auth::logout();
+    return redirect()->route('home');
+  }
+
+  public function signup_via_httpget() {
     return view('authusers.signup');
   }
 
-  public function postSignup(\Illuminate\Http\Request $request) {
+  public function signup_via_httppost(\Illuminate\Http\Request $request) {
 
     $this->validate($request, [
       'email'    => 'email|required|unique:users',
@@ -27,48 +74,17 @@ class UserController extends Controller {
     ]);
     $user->save();
 
-    return view('authusers.signin');
+    return redirect()->route('authusers.login');
   }
 
-  public function getSignin() {
-    return view('authusers.signin');
+  public function listUsers() {
+    $users = User::orderBy('asc')->get();
+    return view('users.route',  ['users', $users]);
   }
 
-  public function postSignin(\Illuminate\Http\Request $request) {
-
-    $this->validate($request, [
-      'email'    => 'email|required',
-      'password' => 'required|min:6',
-    ]);
-
-    $email    = $request->input('email');
-    $password = $request->input('password');
-;
-
-    $is_auth_good = Auth::attempt([
-      'email' => $request->input('email'),
-      // 'password' => bcrypt($request->input('password')),
-      'email' => $email,
-      'password' => $password,
-    ]);
-    // $aa = [$is_auth_good, $email, $password];
-
-    //return var_dump($aa);
-    // if ($is_auth_good) {
-    if (true) {
-      return redirect()->route('dashboard'); // dashboard
-    }
-
-    return redirect()->back();
-  }
-
-  public function getLogout() {
-    Auth::logout();
-    return redirect('/');
-  }
-  public function postLogout(\Illuminate\Http\Request $request) {
-    Auth::logout();
-    return redirect('/');
+  public function showUser($user_id) {
+    $users = User::findOrFail($user_id);
+    return view('user.route',  ['user', $user]);
   }
 
 } // ends class UserController extends Controller

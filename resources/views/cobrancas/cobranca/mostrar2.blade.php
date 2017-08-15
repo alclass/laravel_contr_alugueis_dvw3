@@ -31,7 +31,7 @@
   </div>  <!-- ends class row-->
   <div class="row">
       <div class="text-center">
-          <h1>Boleta</h1>
+          <h2>Boleta da Cobrança Mensal</h2>
       </div>
       </span>
       <table class="table table-hover">

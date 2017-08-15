@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 // use Carbon\Carbon;
 use Illuminate\Http\Request;
 
-class AmortizationParcelController extends Controller {
+class AmortizationPaymentController extends Controller {
 
 
 	/**
