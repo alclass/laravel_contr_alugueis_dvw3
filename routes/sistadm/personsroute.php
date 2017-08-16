@@ -39,7 +39,7 @@ Route::prefix('/sistadm')->group( function() {
 
   //===>>> /sistadm/user/{id}
   Route::get('/user/{id}', [
-  	'as' => 'user.route',
+  	'as' => 'persons.user',
     'uses' => 'UserController@showUser',
   ]);
 
@@ -48,8 +48,13 @@ Route::prefix('/sistadm')->group( function() {
 
     //===>>> /sistadm/persons
     Route::get('/', [
-      'as' => 'persons.route',
+      'as' => 'persons.users',
       'uses' => 'PersonController@listPersons',
+    ]);
+
+    Route::get('/userdashboard', [
+      'as'   => 'persons.userdashboard',
+      'uses' => 'UserDashboardController@showUserDashboard',
     ]);
 
   }); // ends Route::prefix('/persons') :: //===>>> /sistadm/persons
@@ -70,13 +75,13 @@ Route::prefix('/sistadm')->group( function() {
 
     //===>>> /sistadm/account/login
     Route::get('/login', [
-      'as' => 'authusers.login',
+      'as' => 'login', // authusers.
       'uses' => 'UserController@login_via_httpget',
     ]);
 
     //===>>> /sistadm/account/login
     Route::post('/login', [
-      'as' => 'authusers.login',
+      'as' => 'login', // authusers.
       'uses' => 'UserController@login_via_httppost',
     ]);
 

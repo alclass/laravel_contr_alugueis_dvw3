@@ -34,7 +34,7 @@ Route::get('/users', function () {
 });
 
 Route::get('/user/{id}', array(
-	'as' => 'user.route',
+	'as' => 'persons.user',
   'uses' =>
 	  function ($id) {
 			$user = User::findOrFail($id);

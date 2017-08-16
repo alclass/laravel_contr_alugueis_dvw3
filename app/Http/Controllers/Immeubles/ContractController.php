@@ -1,4 +1,5 @@
-<?php namespace App\Http\Controllers\Immeubles;
+<?php
+namespace App\Http\Controllers\Immeubles;
 
 use App\Models\Billing\Cobranca;
 use App\Models\Immeubles\Contract;
@@ -9,10 +10,9 @@ use App\Models\Utils\DateFunctions;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use App\User;
-
+// use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-// use Carbon\Carbon;
 
 class ContractController extends Controller {
 
@@ -21,8 +21,7 @@ class ContractController extends Controller {
 	 *
 	 * @return Response
 	 */
-	public function index()
-	{
+	public function index() {
 		$contracts = Contract::where('is_active', 1)->get();
 		$authuser = Auth::user();
 		return view('contracts.contracts', [
@@ -36,8 +35,7 @@ class ContractController extends Controller {
 	 *
 	 * @return Response
 	 */
-	public function create()
-	{
+	public function create() {
 		//
 	}
 
@@ -96,10 +94,20 @@ class ContractController extends Controller {
 		$contract->percentual_juros     = $request->input('percentual_juros');
 
 		$confirm_button = $request->input('confirm_button');
+
 		if ($confirm_button == 'confirmed') {
-			return view('contracts.contract', ['contract' => $contract, 'imovel' => $imovel]);
+			return view(
+				'contracts.contract', [
+					'contract' => $contract,
+					'imovel' => $imovel
+				 ]);
 		}
-		return view('contracts.contract.checar_entrar', ['contract' => $contract, 'imovel' => $imovel]);
+
+		return view(
+			'contracts.contract.checar_entrar', [
+				'contract' => $contract,
+			  'imovel'   => $imovel
+		 	]);
  	} // ends store() // method to create a new Contract object
 
 	public function edit($id)	{
@@ -122,8 +130,7 @@ class ContractController extends Controller {
 	 * @param  int  $id
 	 * @return Response
 	 */
-	public function destroy($id)
-	{
+	public function destroy($id)	{
 		//
 	}
 
@@ -165,4 +172,4 @@ class ContractController extends Controller {
 	} // ends dashboard_w_userid()
 
 
-}
+} // ends class ContractController extends Controller

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\User;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 
 class UserController extends Controller {
@@ -35,16 +35,25 @@ class UserController extends Controller {
     $password = $request->input('password');
 
     $is_auth_good = Auth::attempt([
-      'email' => $email,
-      'password' => bcrypt($password),
+      'email'    => $email,
+      'password' => $password, // bcrypt()
     ]);
 
-    /*
     if ($is_auth_good == false) {
-      return redirect()->back();
+      return redirect()->back(); // ->withErrors();
     }
+    /*
+    $user = User::where('email', $email)->first();
+    if ($user == null) {
+      $user = User::first();
+    }
+    $user = Auth::login($user);
     */
-    return redirect()->route('dashboard'); // dashboard
+
+    $user = Auth::user();
+    // return 'user is ' . var_dump($user);
+    session(['user' => $user]);
+    return redirect()->route('persons.userdashboard'); // dashboard
   }
 
   public function logout_via_httpget() {
@@ -69,22 +78,22 @@ class UserController extends Controller {
     ]);
 
     $user = new User([
-      'email' => $request->input('email'),
+      'email'    => $request->input('email'),
       'password' => bcrypt($request->input('password')),
     ]);
     $user->save();
 
-    return redirect()->route('authusers.login');
+    return redirect()->route('login');
   }
 
   public function listUsers() {
     $users = User::orderBy('asc')->get();
-    return view('users.route',  ['users', $users]);
+    return view('users.route',  ['users' => $users]);
   }
 
   public function showUser($user_id) {
-    $users = User::findOrFail($user_id);
-    return view('user.route',  ['user', $user]);
+    $user = User::findOrFail($user_id);
+    return view('persons.user', ['user' => $user]);
   }
 
 } // ends class UserController extends Controller

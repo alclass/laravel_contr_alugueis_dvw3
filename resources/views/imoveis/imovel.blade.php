@@ -23,7 +23,7 @@
       <h2>Inquilino(s): {{ $contract->users->count() }}</h2>
 
       @foreach($contract->users as $user)
-        <h4> <a href="{{ route('user.route', $user) }}">{{ $user->get_first_n_last_names() }} </a></h4>
+        <h4> <a href="{{ route('persons.user', $user) }}">{{ $user->get_first_n_last_names() }} </a></h4>
         <h5> {{ $user->email }} </h5>
       @endforeach
 

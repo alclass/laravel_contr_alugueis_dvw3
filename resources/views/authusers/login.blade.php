@@ -21,7 +21,7 @@
             </div>
             @endif
 
-            <form action="{{ route('authusers.login') }}" method="POST">
+            <form action="{{ route('login') }}" method="POST">
               {!! csrf_field() !!}
               <div class="form-group">
                 <label for="email">Email Address</label>

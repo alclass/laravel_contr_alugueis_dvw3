@@ -22,11 +22,15 @@
   <h1>Exibir Contrato</h1>
   <h4> {{ $street_address }} </h4>
   <h5> {{ $contract->current_rent_value }} </h5>
-  <h5>  <a href="{{ route('cobranca.mostrar', [$contract->id, $year, $month]) }}">Ver cobrança atual</a></h5>
+  <h5>
+    <a href="{{ route('cobranca.mostrar', [$contract->id, $year, $month]) }}">
+          Ver cobrança atual
+    </a>
+  </h5>
 
   <h2>Contratante(s)</h2>
   @foreach($contract->users as $user)
-    <h4> <a href="{{ route('user.route', $user) }}">{{ $user->get_first_n_last_names() }} </a></h4>
+    <h4> <a href="{{ route('persons.user', $user) }}">{{ $user->get_first_n_last_names() }} </a></h4>
     <h5> {{ $user->email }} </h5>
   @endforeach
 

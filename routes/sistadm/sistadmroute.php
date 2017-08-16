@@ -39,16 +39,6 @@ Route::prefix('/sistadm')->group( function() {
     'uses' => 'Immeubles\ImovelController@index'
   ]);
 
-  Route::get('/dashboard', [
-    'as' => 'dashboard',
-    'uses' => 'Immeubles\ContractController@dashboard',
-  ]);
-
-  Route::get('/dashboard/{user_id}', [
-    'as' => 'user.dashboard',
-    'uses' => 'Immeubles\ContractController@userdashboard',
-  ]);
-
   // -------------------
   // === At /sistadm/condo
   // -------------------

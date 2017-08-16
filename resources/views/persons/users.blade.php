@@ -34,7 +34,7 @@
       }
     ?>
     <tr>
-      <td data-th="inquilino"> <a href="{{ route('user.route', $user) }}">{{ $user->get_first_n_last_names() }} </a></td>
+      <td data-th="inquilino"> <a href="{{ route('persons.user', $user) }}">{{ $user->get_first_n_last_names() }} </a></td>
       <td data-th="total_contratos"> {{ $n_contracts }} </td>
       <td data-th="imovel_apelido"> {{ $imovel_apelido }} </td>
       <td data-th="imovel_endereco"> {{ $imovel_endereco }} </td>
