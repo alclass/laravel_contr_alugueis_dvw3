@@ -29,3 +29,6 @@ Route::get('/sistadm/account/login', [
 
 Route::get('/home', 'HomeController@index')->name('home');
 //Auth::routes();
+
+Route::get('/sendemail', 'SendEmailController@sendemail_via_httpget')->name('sendemail');
+Route::get('/sendemail', 'SendEmailController@sendemail_via_httppost')->name('sendemail');
