@@ -16,8 +16,10 @@ return [
     |
     */
 
-    // 'driver' => env('MAIL_DRIVER', 'smtp'),
-    'driver' => env('MAIL_DRIVER', 'mailgun'),
+    // ATTENTION: the driver will be specifed in the .env config-file,
+    // NOT THE ONE here, which is a fallback
+    //  'driver' => env('MAIL_DRIVER', 'mailgun'),
+    'driver' => env('MAIL_DRIVER', 'smtp'),
 
     /*
     |--------------------------------------------------------------------------
