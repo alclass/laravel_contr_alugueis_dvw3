@@ -32,7 +32,7 @@ class SendEmailController extends Controller {
 		$do_send_checkbox = $request->input('do_send_checkbox');
 		if ($do_send_checkbox == '1') {
 			//-------------------
-			$this->sendemail();
+			$this->sendemail($request);
 			//-------------------
 			$email_sent_msg = 'an email has just been sent';
 		}
@@ -42,9 +42,10 @@ class SendEmailController extends Controller {
 			]);
 	} // ends sendemail_via_httppost()
 
-	public function sendemail() {
+	public function sendemail($request) {
 		//$lembrete_email = 1;
 		$email_obj = new AlugLembreteMensal();
+		$email_obj->set_domain_based_from_email_field($request);
 		$user = User::where('email', 'luizplus@yahoo.com.br')->first();
 		Mail::to($user)->send($email_obj);
 	} // ends sendemail()
