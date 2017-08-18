@@ -40,13 +40,13 @@ class AlugLembreteMensal extends Mailable {
    */
   public function build() {
 
-    if ($this->$instances_from_email == null) {
+    if ($this->instances_from_email == null) {
       // last try
       $hostname = env('APP_HOSTNAME');
-      $this->$instances_from_email = 'admin@' . $hostname;
+      $this->instances_from_email = 'admin@' . $hostname;
     }
 
-    return $this->from($this->$instances_from_email) // email@domain.tld
+    return $this->from($this->instances_from_email) // email@domain.tld
       ->view('emails.emailtempl_AlugLembreteMensal');
 
   } // ends build()
