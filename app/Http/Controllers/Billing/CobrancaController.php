@@ -16,8 +16,7 @@ class CobrancaController extends Controller {
 	 *
 	 * @return Response
 	 */
-	public function index()
-	{
+	public function index()	{
 		//
 	}
 
@@ -25,19 +24,16 @@ class CobrancaController extends Controller {
 
 	}
 
-
-	public function createdynamic($contract=null, $year=null, $month=null)	{
+	public function createdynamic($contract=null, $year=null, $month=null) {
 
 	}
-
 
 	/**
 	 * Show the form for creating a new resource.
 	 *
 	 * @return Response
 	 */
-	public function create()
-	{
+	public function create() {
 		//
 	}
 
@@ -52,17 +48,45 @@ class CobrancaController extends Controller {
 
 	} // ends showcalcfinanctimecorrection()
 
-
 	/**
 	 * Store a newly created resource in storage.
 	 *
 	 * @return Response
 	 */
-	public function store()
-	{
-		//
+	public function store() {
+
 	}
 
+	/**
+	 * generateHistoricoDasCobrancas
+	 *
+	 * @return Response
+	 */
+	public function generateHistoricoDasCobrancas($contract_id) {
+
+		if($contract_id == null) {
+			$user = Session::get('user');
+			$contracts = $user->get_contracts_as_inquilino();
+			foreach ($contracts as $contract) {
+				$condominio = $contract->get_condominio_if_any();
+				$contracts[] = $condominio;
+		}
+		if (count($contracts) > 1) {
+			return view('cobrancas.historicoDasCobrancasVariosContratos', [
+				'contracts' => $contracts,
+			]);
+		}
+		if (count($contracts) == 0) {
+			$contract = null;
+		}
+		else {
+			$contract = $contracts[0];
+		}
+		return view('cobrancas.historicoDasCobrancasContratos', [
+			'contract' => $contract,
+		]);
+
+	} // ends generateHistoricoDasCobrancas()
 
 	public function emmora()	{
 		$today = Carbon::today();
@@ -83,7 +107,7 @@ class CobrancaController extends Controller {
 	}
 
 	public function abrir()	{
-		//
+
 	}
 
 	public function onref($year=null, $month=null)	{
@@ -94,7 +118,7 @@ class CobrancaController extends Controller {
 			->get();
 		$cobrancas->load('contract');
 		return view('cobrancas/listarcobrancas', ['cobrancas'=>$cobrancas, 'category_msg'=>'On Ref.']);
-	}
+	} // ends onref()
 
 	public function onlyrent_onref($year=null, $month=null)	{
 		//return 'hi';

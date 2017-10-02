@@ -13,44 +13,44 @@
 
   Here we dedicate to routes below
     ------------
-    /sistadm
+    /re
     ------------
-    /sistadm/{id}
-    /sistadm/immeubles
-    /sistadm/condo
+    /re/{id}
+    /re/immeubles
+    /re/condo
     ------------
 
 */
 
-Route::prefix('/sistadm')->group( function() {
+Route::prefix('/re')->group( function() {
 
   // -------------------
-  // === At ROOT /sistadm
+  // === At ROOT /sa
   // -------------------
 
-  //===>>> /sistadm/{id}
+  //===>>> /sa/{id}
   Route::get('/{id}', [
   	'as'   => 'imovel.show',
     'uses' => 'Immeubles\ImovelController@show'
   ]);
-  //===>>> /sistadm/immeubles
+  //===>>> /sa/immeubles
   Route::get('/immeubles', [
     'as'   => 'imoveis',
     'uses' => 'Immeubles\ImovelController@index'
   ]);
 
   // -------------------
-  // === At /sistadm/condo
+  // === At /sa/condo
   // -------------------
   Route::prefix('/condo')->group( function() {
-    //===>>> /sistadm/condo/{imovel_id}/fees
+    //===>>> /sa/condo/{imovel_id}/fees
     Route::get('/{imovel_id}/fees', [
     	'as'   => 'condominio.tarifas',
       'uses' => 'Immeubles\ImovelController@show_condominium'
     ]);
   }); // ends Route::prefix('/condo')
 
-}); // ends Route::prefix('/sistadm')
+}); // ends Route::prefix('/sa')
 
 
 // ->middleware('auth');

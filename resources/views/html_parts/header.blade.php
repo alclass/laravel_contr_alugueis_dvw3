@@ -9,7 +9,7 @@
                 <span class="icon-bar"></span>
             </button>
             <a class="navbar-brand" href="#"></a>
-            <p>Sistema Web Locação Residencial</p>
+            <p>Sistema Web para o Acompanhamento e Administração de Locação Residencial</p>
 
 
         </div>

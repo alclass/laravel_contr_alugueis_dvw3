@@ -50,4 +50,4 @@ class SendEmailController extends Controller {
 		Mail::to($user)->send($email_obj);
 	} // ends sendemail()
 
-} // ends class UserDashboardController extends Controller
+} // ends class dashboardController extends Controller

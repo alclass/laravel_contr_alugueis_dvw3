@@ -11,109 +11,109 @@ This Laravel routing file has been registered in
 
 Here we dedicate to routes below
   ---------------
-  /sistadm/billing
+  /sa/billing
   ---------------
-  /sistadm/billings
-    /sistadm/billings/ouverts
-    /sistadm/billings/reconciled
-  /sistadm/billing
-    /sistadm/billing/show/{cobranca_id}
-    /sistadm/billing/showbyref/{contract_id}/{year}/{month}
-    /sistadm/billing/edit/{contract_id}/{year}/{month}
-    /sistadm/billing/edit
+  /sa/billings
+    /sa/billings/ouverts
+    /sa/billings/reconciled
+  /sa/billing
+    /sa/billing/show/{cobranca_id}
+    /sa/billing/showbyref/{contract_id}/{year}/{month}
+    /sa/billing/edit/{contract_id}/{year}/{month}
+    /sa/billing/edit
 
-    /sistadm/billing/verify/{contract_id}/{year}/{month}
-    /sistadm/billing/createdynamic/{contract_id}/{year}/{month}
+    /sa/billing/verify/{contract_id}/{year}/{month}
+    /sa/billing/createdynamic/{contract_id}/{year}/{month}
 
-  /sistadm/billing/items
-    /sistadm/billing/items/maintain/{contract_id}/{year}/{month}
+  /sa/billing/items
+    /sa/billing/items/maintain/{contract_id}/{year}/{month}
 
 
-  /sistadm/billing/payments
-    /sistadm/billing/payments/{contract_id}
-    /sistadm/billing/payments/ouverts
-  /sistadm/billing/payment
-  /sistadm/billing/payment/{contract_id}/{year}/{month}
-  /sistadm/billing/payment/reconcile
-    /sistadm/billing/payment/reconcile/history
-    /sistadm/billing/payment/reconcile/{contract_id}/{year}/{month}
-    /sistadm/billing/payment/reconcile
-  /sistadm/billing/late
-    /sistadm/billing/late/all
-    /sistadm/billing/late/{contract_id}
-    /sistadm/billing/late/{contract_id}/calcfinanctimecorrection
+  /sa/billing/payments
+    /sa/billing/payments/{contract_id}
+    /sa/billing/payments/ouverts
+  /sa/billing/payment
+  /sa/billing/payment/{contract_id}/{year}/{month}
+  /sa/billing/payment/reconcile
+    /sa/billing/payment/reconcile/history
+    /sa/billing/payment/reconcile/{contract_id}/{year}/{month}
+    /sa/billing/payment/reconcile
+  /sa/billing/late
+    /sa/billing/late/all
+    /sa/billing/late/{contract_id}
+    /sa/billing/late/{contract_id}/calcfinanctimecorrection
   ------------
 */
-Route::prefix('/sistadm')->group( function() {
+Route::prefix('/sa')->group( function() {
 
   // -----------------------
-  // === At /sistadm/billings
+  // === At /sa/billings
   // -----------------------
   Route::prefix('/billings')->group( function() {
 
-    //===>>> sistadm/billings/ouverts
+    //===>>> sa/billings/ouverts
     Route::get('/ouverts', [
       'as'   => 'cobrancas.abertas',
       'uses' => 'Billing\CobrancaController@abertas'
     ]);
-    //===>>> sistadm/billings/onref/{year?}/{month?}
+    //===>>> sa/billings/onref/{year?}/{month?}
     Route::get('/onref/{year?}/{month?}', [
       'as'   => 'cobrancas.onref',
       'uses' => 'Billing\CobrancaController@onref'
     ]);
-    //===>>> sistadm/billings/onref/{year?}/{month?}
+    //===>>> sa/billings/onref/{year?}/{month?}
     Route::get('/onlyrent/onref/{year?}/{month?}', [
       'as'   => 'cobrancas.onlyrent.onref',
       'uses' => 'Billing\CobrancaController@onlyrent_onref'
     ]);
-    //===>>> sistadm/billings/reconciled
+    //===>>> sa/billings/reconciled
     Route::get('reconciled', [
       'as'   => 'cobrancas.conciliadas',
       'uses' => 'Billing\CobrancaController@conciliadas'
     ]);
-  }); // ends Route::prefix('/billings') //===>>> sistadm/billings
+  }); // ends Route::prefix('/billings') //===>>> sa/billings
 
   // ----------------------
-  // === At /sistadm/billing
+  // === At /sa/billing
   // ----------------------
   Route::prefix('/billing')->group( function() {
 
-    //===>>> sistadm/billing/show/{cobranca_id}
+    //===>>> sa/billing/show/{cobranca_id}
     Route::get('show/{cobranca_id}', [
       'as'   => 'cobranca.mostrar',
       'uses' => 'Billing\CobrancaController@show'
     ]);
 
-    //===>>> sistadm/billing/showviaref/{contract_id}/{year}/{month}
+    //===>>> sa/billing/showviaref/{contract_id}/{year}/{month}
     Route::get('showviaref/{contract_id}/{year}/{month}', [
       'as'   => 'cobranca.mostrarviaref',
       'uses' => 'Billing\CobrancaController@showviaref'
     ]);
 
-    //===>>> sistadm/billing/edit/{contract_id}/{year}/{month} GET
+    //===>>> sa/billing/edit/{contract_id}/{year}/{month} GET
     Route::get('edit/{contract_id}/{year}/{month}', [
       'as'=>'cobranca.mensal.editar',
       'uses'=>'Billing\CobrancaController@edit_via_httpget'
     ]);
-    //===>>> sistadm/billing/edit POST
+    //===>>> sa/billing/edit POST
     Route::post('/edit', [
       'as'=>'cobranca.mensal.editar',
       'uses'=>'Billing\CobrancaController@edit_via_httppost'
     ]);
 
-    //===>>> sistadm/billing/analyzeverify/{contract_id}/{year}/{month} GET
+    //===>>> sa/billing/analyzeverify/{contract_id}/{year}/{month} GET
     Route::get('analyzeverify/{cobranca_id}', [
       'as'=>'cobranca.mensal.analisarverificar',
       'uses'=>'Billing\CobrancaController@analyzeverify'
     ]);
 
 
-    //===>>> sistadm/billing/createdynamic/{contract_id}/{year}/{month} GET
+    //===>>> sa/billing/createdynamic/{contract_id}/{year}/{month} GET
     Route::get('createdynamic/{contract_id}/{year}/{month}', [
       'as'=>'cobranca.mensal.criardinamicamente',
       'uses'=>'Billing\CobrancaController@createdynamic'
     ]);
-    //===>>> sistadm/billing/createdynamic POST
+    //===>>> sa/billing/createdynamic POST
     Route::post('/createdynamic', [
       'as'=>'cobranca.mensal.criardinamicamente',
       'uses'=>'Billing\CobrancaController@createdynamic'
@@ -121,80 +121,80 @@ Route::prefix('/sistadm')->group( function() {
 
 
     // -------------------------------
-    // === At /sistadm/billing/payments
+    // === At /sa/billing/payments
     // -------------------------------
     Route::prefix('/payments')->group( function() {
-      //===>>> sistadm/billing/payments
+      //===>>> sa/billing/payments
       Route::get('/', [
         'as'   => 'pagtos.contrato.historico',
         'uses' => 'Billing\PaymentController@history',
       ]);
-      //===>>> sistadm/billing/payments/{contract_id}
+      //===>>> sa/billing/payments/{contract_id}
       Route::get('/payments/{contract_id}', [
         'as'   => 'pagtos.contrato.historico',
         'uses' => 'Billing\PaymentController@list_per_contract',
       ]);
-      //===>>> sistadm/billing/payments/ouverts
+      //===>>> sa/billing/payments/ouverts
       Route::get('/ouverts', [
         'as'   => 'pagtos.abertos',
         'uses' => 'Billing\PaymentController@abertos',
       ]);
-    }); // ends Route::prefix('/payments') //===>>> sistadm/billing/payments
+    }); // ends Route::prefix('/payments') //===>>> sa/billing/payments
 
     // ------------------------------
-    // === At /sistadm/billing/payment
+    // === At /sa/billing/payment
     // ------------------------------
     Route::prefix('/payment')->group( function() {
 
-      //===>>> sistadm/billing/payment/{contract_id}/{year}/{month}
+      //===>>> sa/billing/payment/{contract_id}/{year}/{month}
       Route::get('/{contract_id}/{year}/{month}', [
         'as'   => 'pagto',
         'uses' => 'Billing\PaymentController@listar_aberto'
       ]);
 
       // ----------------------------------------
-      // === At /sistadm/billing/payment/reconcile
+      // === At /sa/billing/payment/reconcile
       // ----------------------------------------
       Route::prefix('/reconcile')->group( function() {
 
-        //===>>> sistadm/billing/payment/reconcile/history
+        //===>>> sa/billing/payment/reconcile/history
         Route::get('/history', [
           'as'   => 'conciliacao.historico',
           'uses' => 'Billing\PaymentController@reconcilehistory'
         ]);
-        //===>>> sistadm/billing/payment/reconcile/{contract_id}/{year}/{month} GET
+        //===>>> sa/billing/payment/reconcile/{contract_id}/{year}/{month} GET
         Route::get('/{contract_id}/{year}/{month}', [
           'as'   => 'pagto.conciliar',
           'uses' => 'Billing\PaymentController@reconcile'
         ]);
-        //===>>> sistadm/billing/payment/reconcile/{contract_id}/{year}/{month} POST
+        //===>>> sa/billing/payment/reconcile/{contract_id}/{year}/{month} POST
         Route::post('/reconcile', [     //{contract_id}/{year}/{month}
           'as'   => 'pagto.conciliar',
           'uses' => 'Billing\PaymentController@reconcile'
         ]);
-      }); // ends Route::prefix('/reconcile') //===>>> sistadm/billing/payment/reconcile
-    }); // ends Route::prefix('/payment') //===>>> sistadm/billing/payment
+      }); // ends Route::prefix('/reconcile') //===>>> sa/billing/payment/reconcile
+    }); // ends Route::prefix('/payment') //===>>> sa/billing/payment
 
     // ---------------------------
-    // === At /sistadm/billing/late
+    // === At /sa/billing/late
     // ---------------------------
     Route::prefix('/late')->group( function() {
 
-      //===>>> /sistadm/billing/late/all
+      //===>>> /sa/billing/late/all
       Route::get('/all', [
         'as'   => 'cobrancas.emmora',
         'uses' => 'Billing\MoraDebitoController@listall'
       ]);
-      //===>>> /sistadm/billing/late/{$contract_id}
+      //===>>> /sa/billing/late/{$contract_id}
       Route::get('/{contract_id}', [
       	'as'   => 'cobrancas.emmora.contrato',
         'uses' => 'Billing\MoraDebitoController@list'
       ]);
-      //===>>> /sistadm/billing/late/{contract_id}/calcfinanctimecorrection
+      //===>>> /sa/billing/late/{contract_id}/calcfinanctimecorrection
       Route::get('/{contract_id}/calcfinanctimecorrection', [
       	'as'   => 'cobrancas.emmora.exibirmoradebito',
         'uses' => 'Billing\MoraDebitoController@showcalcfinanctimecorrection'
       ]);
-    }); // ends Route::prefix('/late')     //===>>> /sistadm/billing/late
-  }); // ends Route::prefix('/billing') //===>>> /sistadm/billing
-}); // ends Route::prefix('/sistadm') //===>>> /sistadm
+    }); // ends Route::prefix('/late')     //===>>> /sa/billing/late
+  }); // ends Route::prefix('/billing') //===>>> /sa/billing
+}); // ends Route::prefix('/sa') //===>>> /sa

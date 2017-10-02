@@ -19,7 +19,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 /*
-Route::get('/sistadm/account/login', [
+Route::get('/sa/account/login', [
   'as' => 'login',
   'uses' => function() {
     return 'login';

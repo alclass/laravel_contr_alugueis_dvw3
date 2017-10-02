@@ -53,7 +53,7 @@ class UserController extends Controller {
     $user = Auth::user();
     // return 'user is ' . var_dump($user);
     session(['user' => $user]);
-    return redirect()->route('persons.userdashboard'); // dashboard
+    return redirect()->route('persons.dashboard'); // dashboard
   }
 
   public function logout_via_httpget() {

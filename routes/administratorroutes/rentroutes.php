@@ -13,29 +13,29 @@
 
   Here we dedicate to routes below
     ------------
-    /sistadm/rent
+    /sa/rent
     ------------
-    /sistadm/rent/contracts
-    /sistadm/rent/contract{id}
-    /sistadm/rent/contract/register
+    /sa/rent/contracts
+    /sa/rent/contract{id}
+    /sa/rent/contract/register
     ------------
 
 */
 
 Route::middleware('auth')-> group( function() {
-  Route::prefix('/sistadm')->group( function() {
+  Route::prefix('/sa')->group( function() {
     Route::prefix('/rent')->group(   function() {
 
       // -----------------------------
-      // === At /sistadm/rent/contracts
+      // === At /sa/rent/contracts
       // -----------------------------
       Route::prefix('/contracts')->group( function() {
-        //===>>> /sistadm/rent/contracts
+        //===>>> /sa/rent/contracts
         Route::get('/', [
           'as'   => 'contratos.historico',
           'uses' => 'Immeubles\ContractController@history'
         ]);
-        //===>>> /sistadm/rent/contracts/ongoing
+        //===>>> /sa/rent/contracts/ongoing
         Route::get('/ongoing', [
           'as'   => 'contratos.em.tela',
           'uses' => 'Immeubles\ContractController@index'
@@ -44,21 +44,21 @@ Route::middleware('auth')-> group( function() {
       }); // ends Route::prefix('/contracts')
 
       // -----------------------------
-      // === At /sistadm/rent/contract
+      // === At /sa/rent/contract
       // -----------------------------
       Route::prefix('/contract')->group( function() {
 
-        //===>>> /sistadm/rent/contract/{id}
+        //===>>> /sa/rent/contract/{id}
         Route::get('/{id}', [
         	'as'   => 'contract',
           'uses' => 'Immeubles\ContractController@show'
         ]);
-        //===>>> /sistadm/rent/contract/register
+        //===>>> /sa/rent/contract/register
         Route::post('/register', [
           'as'   => 'contrato.cadastrar',
           'uses' => 'Immeubles\ContractController@store'
         ]);
       }); // ends Route::prefix('/contract')
     }); // ends Route::prefix('/rent')
-  }); // ends Route::prefix('/sistadm')
+  }); // ends Route::prefix('/sa')
 }); // ends Route::middleware('auth')

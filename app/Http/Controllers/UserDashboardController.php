@@ -9,24 +9,24 @@ use App\Http\Controllers\Controller;
 
 use Illuminate\Http\Request;
 
-class UserDashboardController extends Controller {
+class dashboardController extends Controller {
 
 	/**
 	 * Display a listing of the resource.
 	 *
 	 * @return Response
 	 */
-	public function showUserDashboard() { // $user_id
+	public function showdashboard() { // $user_id
 
 		$user      = session('user');
 		$contracts = $user->contracts; // OBS: ->contracts is a Collection
 		//$imoveis   = $user->get_imoveis();
 
-		return view('persons.userdashboard', [
+		return view('persons.dashboard', [
 			'user'      => $user,
 			'contracts' => $contracts,
 			//'imoveis'   => $imoveis,
 		]);
-	} // ends showUserDashboard()
+	} // ends showdashboard()
 
-} // ends class UserDashboardController extends Controller
+} // ends class dashboardController extends Controller
