@@ -15,7 +15,7 @@
   /signup
   /login
   /logout
-  
+
 */
 
 Route::get('/signup', [
@@ -38,17 +38,15 @@ Route::post('/login', [
   'uses' => 'UserController@login_via_httppost',
 ]);
 
-
 Route::middleware('auth')->group( function() {
 
   Route::get('/logout', [
     'as' => 'logoutroute',
     'uses' => 'UserController@logout_via_httpget',
   ]);
-
   Route::post('/logout', [
     'as' => 'logoutroute',
     'uses' => 'UserController@logout_via_httppost',
   ]);
 
-} // ->middleware('auth');
+}); // ->middleware('auth');

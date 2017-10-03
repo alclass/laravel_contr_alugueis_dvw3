@@ -58,31 +58,27 @@ class RouteServiceProvider extends ServiceProvider
 
       Route::middleware('web')
         ->namespace($this->namespace)
-        ->group(base_path('routes/administratorroute/realestateroutes.php'));
+        ->group(base_path('routes/administratorroutes/realestateroutes.php'));
 
       Route::middleware('web')
         ->namespace($this->namespace)
-        ->group(base_path('routes/administratorroute/rentroutes.php'));
+        ->group(base_path('routes/administratorroutes/rentroutes.php'));
 
       Route::middleware('web')
         ->namespace($this->namespace)
-        ->group(base_path('routes/administratorroute/billingroutes.php'));
+        ->group(base_path('routes/administratorroutes/billingroutes.php'));
 
       Route::middleware('web')
         ->namespace($this->namespace)
-        ->group(base_path('routes/administratorroute/personsroutes.php'));
+        ->group(base_path('routes/administratorroutes/financroutes.php'));
 
       Route::middleware('web')
         ->namespace($this->namespace)
-        ->group(base_path('routes/administratorroute/financroutes.php'));
+        ->group(base_path('routes/userroutes/inquilinoroutes.php'));
 
       Route::middleware('web')
         ->namespace($this->namespace)
-        ->group(base_path('routes/userroute/inquilinoroutes.php'));
-
-      Route::middleware('web')
-        ->namespace($this->namespace)
-        ->group(base_path('routes/userroute/logandsignroutes.php'));
+        ->group(base_path('routes/userroutes/logandsignroutes.php'));
 
     } // ends mapWebRoutes()
 
