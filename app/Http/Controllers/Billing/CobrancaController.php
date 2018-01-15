@@ -64,12 +64,13 @@ class CobrancaController extends Controller {
 	 */
 	public function generateHistoricoDasCobrancas($contract_id) {
 
-		if($contract_id == null) {
+		if ($contract_id == null) {
 			$user = Session::get('user');
 			$contracts = $user->get_contracts_as_inquilino();
 			foreach ($contracts as $contract) {
 				$condominio = $contract->get_condominio_if_any();
 				$contracts[] = $condominio;
+			}
 		}
 		if (count($contracts) > 1) {
 			return view('cobrancas.historicoDasCobrancasVariosContratos', [
@@ -85,7 +86,6 @@ class CobrancaController extends Controller {
 		return view('cobrancas.historicoDasCobrancasContratos', [
 			'contract' => $contract,
 		]);
-
 	} // ends generateHistoricoDasCobrancas()
 
 	public function emmora()	{
