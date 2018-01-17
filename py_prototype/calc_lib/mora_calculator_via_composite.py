@@ -9,6 +9,9 @@ def generate_month_sequence(month_year, up_til_date):
   pass
 
 
+def get_corr_monet_percent_for_month_year(month_year):
+  pass
+
 class Mora:
 
   def __init__(self, from_value, ref_monthyear, calc_closing_date, contract_convention ):
