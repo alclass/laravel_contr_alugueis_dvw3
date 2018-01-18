@@ -10,8 +10,10 @@ try:
   from .BillMod import create_adhoctest_bill
 except SystemError:
   sys.path.insert(0, '.')
-  from BillMod import create_adhoctest_bill
-
+  try:
+    from BillMod import create_adhoctest_bill
+  except ImportError:
+    pass
 
 class Payment:
   '''
@@ -32,6 +34,7 @@ class PaymentProcessor:
 
   def __init__(self, payment_obj, counterpart_bill):
 
+    self.do_close_bill_and_forward_balance_if_needed = False
     self.payment_obj      = payment_obj
     self.counterpart_bill = counterpart_bill
 
@@ -44,8 +47,18 @@ class PaymentProcessor:
     :param counterpart_bill:
     :return:
     '''
-    if self.payment_obj.paid_amount == 0 or self.payment_obj.is_payment_transaction_done:
+    if self.payment_obj.is_payment_transaction_done:
       return
+
+    if self.payment_obj.paid_amount == 0:
+      self.payment_obj.is_payment_transaction_done = True
+      if self.do_close_bill_and_forward_balance_if_needed:
+        self.counterpart_bill.debo_to_carry += self.counterpart_bill.debi_to_carry
+        self.counterpart_bill.debi_to_carry = self.counterpart_bill.sum_items_without_debi_or_debo()
+        self.counterpart_bill.zero_items_without_debi_or_debo()
+        self.counterpart_bill.bill_closed_balance_if_any_to_forward = True
+        return
+
     # if something goes wrong, restablish object at the end
     backup_counterpart_bill = copy(self.counterpart_bill)
     self.counterpart_bill.apply_late_mora_if_tardy(self.payment_obj.paydate)
@@ -55,23 +68,29 @@ class PaymentProcessor:
       self.counterpart_bill.payment_missing = 0
       self.counterpart_bill.debi_to_carry   = 0
       self.counterpart_bill.debo_to_carry   = 0
-    elif self.payment_obj.paid_amount < self.counterpart_bill.total_due:
-      self.counterpart_bill.payment_missing = self.counterpart_bill.total_due - self.payment_obj.paid_amount
+      self.counterpart_bill.zero_items_without_debi_or_debo()
 
-      if self.payment_obj.paid_amount >= self.counterpart_bill.debo_to_carry:
-        diminish_from_debi = self.payment_obj.paid_amount - self.counterpart_bill.debo_to_carry
-        self.counterpart_bill.debo_to_carry = 0
-        self.counterpart_bill.debi_to_carry -= diminish_from_debi
-      else:
-        self.counterpart_bill.debo_to_carry -= self.payment_obj.paid_amount
+    elif self.payment_obj.paid_amount < self.counterpart_bill.total_due:
+      # move debi to debo, then move contract-items to debi, then debit/credit
+      self.counterpart_bill.move_contractitems_to_debi()
+      self.counterpart_bill.payment_missing = self.counterpart_bill.total_due - self.payment_obj.paid_amount
+      remainder = self.counterpart_bill.credit_debo_with_value_n_return_remainder(self.payment_obj.paid_amount)
+      if remainder > 0:
+        remainder = self.counterpart_bill.credit_debi_with_value_n_return_remainder(remainder)
+        if remainder > 0:
+          # this exception below should never be raised, hopefully
+          raise ValueError('Logical Error when amount paid is less than total due')
+      self.counterpart_bill.move_debi_to_debo()
+
     else: # ie payment_obj.paid_amount > counterpart_bill.payment_due:
       self.counterpart_bill.add_to_cred_to_carry(self.payment_obj.total_paid - self.counterpart_bill.total_due)
       self.counterpart_bill.debi_to_carry = 0
       self.counterpart_bill.debo_to_carry = 0
+      self.counterpart_bill.zero_items_without_debi_or_debo()
+
 
     self.counterpart_bill.payment_done = self.payment_obj.paid_amount
     self.payment_obj.is_payment_transaction_done = True
-
 
 
 def get_nonprocessed_payments_ordered_by_date():

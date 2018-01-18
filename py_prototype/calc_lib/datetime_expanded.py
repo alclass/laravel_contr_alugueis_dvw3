@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 import datetime
+from dateutil.relativedelta import relativedelta
 
 
 def add_n_months_to_date(p_date, p_n_months):
+  return p_date + relativedelta(months=p_n_months)
+
+def add_n_months_to_date_oldimpl(p_date, p_n_months):
 
   # 1st step: how many years are there in p_n_months?
   n_years = p_n_months // 12
@@ -18,23 +22,15 @@ def add_n_months_to_date(p_date, p_n_months):
   return projected_monthyear
 
 def date_for_next_month(ref_monthyear):
-  # day = ref_monthyear.day
-  month = ref_monthyear.month
-  next_year = year = ref_monthyear.year
-  next_month = month + 1
-  if next_month > 12:
-    next_month = 1
-    next_year += 1
-  next_month_date = datetime.date(year=next_year, month=next_month, day=1)
-  return next_month_date
+  return add_n_months_to_date(ref_monthyear)
 
 def get_afterdatesmonth_the_month_by_month_time_fraction_array(ref_monthyear, end_date):
-  start_date = date_for_next_month(ref_monthyear)
+  start_date      = date_for_next_month(ref_monthyear)
   months_and_days = months_and_days_inbetween(end_date, start_date)
-  n_months = months_and_days[0]
-  n_days = months_and_days[1]
+  n_months        = months_and_days[0]
+  n_days          = months_and_days[1]
   fraction_months = [1]*n_months
-  fraction_days = 0
+  fraction_days   = 0
   if end_date.month in [1,3,5,7,8,10,12]:
     fraction_days = n_days / 31.0
   elif end_date.month in [4,6,9,11]:

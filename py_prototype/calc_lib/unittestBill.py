@@ -6,8 +6,17 @@ from dateutil.relativedelta import relativedelta
 import unittest
 #import calendar
 
+import sys
 
-from .BillMod import Bill
+try:
+  from .BillMod import Bill
+  from .BillMod import create_billingitems_list_for_invoicebill
+  from .PaymentMod import Payment
+except SystemError:
+  sys.path.insert(0, '.')
+  from BillMod import Bill
+  from BillMod import create_billingitems_list_for_invoicebill
+  from PaymentMod import Payment
 
 '''
 Info on method monthrange()
@@ -19,7 +28,21 @@ weekdayindex is 0 for Monday, 1 for Tuesday, on until 6 for Sunday
 class TestMonthRefs(unittest.TestCase):
 
   def setUp(self):
-    self.bill_obj = Bill()
+    monthyeardateref = date(2018,1,1)
+    duedate          = date(2018,2,10)
+    billingitems  = create_billingitems_list_for_invoicebill()
+    self.bill_obj = Bill(
+      monthyeardateref,
+      duedate,
+      billingitems
+    )
+
+  def test_1(self):
+    paid_amount = 1000
+    paydate = date(2018, 2, 5)
+    payment_obj = Payment(paid_amount, paydate)
+    self.bill_obj.add_payment_obj(payment_obj)
+
 
   def test_generate_conventioned_monthyeardateref_against_given_date_before_day10(self):
     '''
@@ -71,13 +94,8 @@ class TestMonthRefs(unittest.TestCase):
     self.assertEqual(expected_monthref, returned_monthref)
 
 
-def adhoctest():
-  b = Bill()
-  d = b.generate_conventioned_monthyeardateref_against_given_date()
-  print (d)
 
 if __name__ == '__main__':
-  adhoctest()
-
+  pass
 
 unittest.main()

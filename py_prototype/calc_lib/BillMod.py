@@ -3,7 +3,18 @@ from copy import copy
 from datetime import date
 # from datetime import timedelta
 from dateutil.relativedelta import relativedelta
-# import unittest
+import sys
+import calendar # calendar.monthrange(year, month)
+
+# from .DateBillCalculatorMod import DateBillCalculator
+
+try:
+  from .PaymentMod import Payment
+  from .juros_calculator import Juros
+except SystemError:
+  sys.path.insert(0, '.')
+  from PaymentMod import Payment
+
 
 REFTYPE_KEY = 'reftype'
 def create_billingitems_list_for_invoicebill():
@@ -23,11 +34,12 @@ def create_billingitems_list_for_invoicebill():
   billingitems.append(billingitem)
   billingitem = {REFTYPE_KEY: 'IPTU', 'value': 200}
   billingitems.append(billingitem)
-  billingitem = {REFTYPE_KEY: 'DEBI', 'value': 200}
+  billing_item = {REFTYPE_KEY: 'DEBI', 'value': 200}
   billingitems.append(billingitem)
   billingitem = {REFTYPE_KEY: 'DEBO', 'value': 400}
   billingitems.append(billingitem)
   return billingitems
+
 
 class MonthYearDateRef:
 
@@ -63,11 +75,16 @@ class Bill:
   REFTYPE_KEY = REFTYPE_KEY
 
   def __init__(self, monthyeardateref, duedate, billingitems):
+    self.payment_objs = [] # payment_obj has amount_paid and paydate
     self.late_mora_has_been_applied = False
-    self.debi_to_carry = 0
-    self.debo_to_carry = 0
+    self.multa_account    = 0
+    self.debt_account     = 0
+    self.cred_account     = 0
+    self.debi_to_carry    = 0
+    self.debo_to_carry    = 0
     self.payment_missing  = 0
-    self.payment_done  = 0
+    self.payment_done     = 0
+    self.bill_closed_balance_if_any_to_forward = False
     self.monthyeardateref = monthyeardateref
     self.duedate          = duedate
     self.billingitems     = billingitems
@@ -80,6 +97,106 @@ class Bill:
         self.debi_to_carry = billingitem['value']
       if reftype == 'DEBO':
         self.debo_to_carry = billingitem['value']
+
+  def pay(self, payment_obj):
+    # credit / debit
+    self.debt_account -= payment_obj.paid_amount
+    self.cred_account += payment_obj.paid_amount
+
+  def pay_with_mora(self, payment_obj, mo_by_mo_interest_plus_corrmonet_times_fraction_array):
+    debt = self.debt_account
+    for factor in mo_by_mo_interest_plus_corrmonet_times_fraction_array:
+      debt += debt * factor
+    self.debt_account = debt
+    self.debt_account -= payment_obj.paid_amount
+    self.cred_account += payment_obj.paid_amount
+
+  def apply_multa_if_payment_is_incomplete(self):
+    '''
+
+    *** THIS METHOD IS YET LOGICALLY INCOMPLETE ***
+      Because it's not enough to find a later date, it should also find
+        if earlier pay was enough
+
+    This method should use functional programming techniques for TWO needs, ie:
+    1) the method should know whether or not various payments paid on time
+    2) the method should quickly find, if it happened, a 'fine' incidence
+
+    :return:
+    '''
+    for payment_obj in self.payment_objs:
+      if payment_obj.paydate > self.duedate:
+        multa_amount = self.debt_account * 0.1
+        self.multa_account += multa_amount
+        self.debt_account += multa_amount
+        return
+
+  def recalculate_bill(self):
+    self.apply_multa_if_payment_is_incomplete()
+    for payment_obj in self.payment_objs:
+      if payment_obj.paydate <= self.duedate:
+        self.pay(payment_obj)
+      else:
+        mo_by_mo_days = self.datecalculator.calc_mo_by_mo_days_between_dates(
+          self.duedate,
+          self.payment_obj.paydate
+        )
+        if len(mo_by_mo_days) > 0:
+          monthfractions = self.datecalculator.transform_monthdays_into_monthfractions(
+            mo_by_mo_days,
+            self.duedate
+          )
+          interestarray = [0.01]*len(monthfractions)
+          mo_by_mo_interest_plus_corrmonet_times_fraction_array = Juros\
+            .gen_mo_by_mo_interest_plus_corrmonet_times_fraction_array(
+              self.duedate,
+              monthfractions,
+              interestarray
+            )
+          self.pay_with_mora(payment_obj, mo_by_mo_interest_plus_corrmonet_array)
+
+  def add_payment_obj(self, payment_obj):
+
+    self.payment_objs.append(payment_obj)
+
+  def sync_debi(self):
+    for billingitem in self.billingitems:
+      if billingitem[self.REFTYPE_KEY] == 'DEBI':
+        billingitem['value'] = self.debi_to_carry
+
+  def sync_debo(self):
+    for billingitem in self.billingitems:
+      if billingitem[self.REFTYPE_KEY] == 'DEBO':
+        billingitem['value'] = self.debo_to_carry
+
+  def credit_debo_with_value_n_return_remainder(self, value):
+    remainder = value - self.debo_to_carry
+    if remainder >= 0:
+      self.debo_to_carry = 0
+    else:
+      self.debo_to_carry -= value
+    self.sync_debo()
+    return remainder
+
+  def credit_debi_with_value_n_return_remainder(self, value):
+    remainder = value - self.debi_to_carry
+    if remainder >= 0:
+      self.debi_to_carry = 0
+    else:
+      self.debi_to_carry -= value
+    self.sync_debi()
+    return remainder
+
+  def move_contractitems_to_debi(self):
+    contractitemsvalue = self.sum_items_without_debi_or_debo()
+    self.debi_to_carry += contractitemsvalue
+    self.zero_items_without_debi_or_debo()
+
+  def move_debi_to_debo(self):
+    value = self.debi_to_carry
+    self.debi_to_carry = 0
+    self.debo_to_carry += value
+    self.sync_debi_n_debo_back_to_billing_items()
 
   def add_contracts_billing_items_to_self(self, contract_obj):
     '''
@@ -126,6 +243,13 @@ class Bill:
     if paydate > self.duedate:
       return True
     return False
+
+  def zero_items_without_debi_or_debo(self):
+    for billingitem in self.billingitems:
+      reftype = billingitem[self.REFTYPE_KEY]
+      if reftype in ['DEBI', 'DEBO']:
+        continue
+      billingitem['value'] = 0
 
   def sum_items_without_debi_or_debo(self):
     total_without_debi_n_debo = 0 # ie, only the contract items (ALUG, COND, IPTU etc)
