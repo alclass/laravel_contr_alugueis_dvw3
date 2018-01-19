@@ -18,80 +18,42 @@ except SystemError:
   from BillMod import create_billingitems_list_for_invoicebill
   from PaymentMod import Payment
 
-'''
-Info on method monthrange()
-=> calendar.monthrange(year, month) returns a 2-tuple (weekdayindex, number of days in month)
-weekdayindex is 0 for Monday, 1 for Tuesday, on until 6 for Sunday
-'''
 
-
-class TestMonthRefs(unittest.TestCase):
+class TestBill(unittest.TestCase):
 
   def setUp(self):
-    monthyeardateref = date(2018,1,1)
-    duedate          = date(2018,2,10)
-    billingitems  = create_billingitems_list_for_invoicebill()
-    self.bill_obj = Bill(
-      monthyeardateref,
-      duedate,
-      billingitems
-    )
+    pass
 
-  def test_1(self):
-    paid_amount = 1000
+  def test_bill_payment_1(self):
+    monthyeardateref = date(2018, 1, 1)
+    duedate          = date(2018, 2, 10)
+    billingitems = []
+    billingitem  = {Bill.REFTYPE_KEY:'ALUG','value':1000}
+    billingitems.append(billingitem)
+    billingitem  = {Bill.REFTYPE_KEY:'COND','value':600}
+    billingitems.append(billingitem)
+    billingitem  = {Bill.REFTYPE_KEY:'IPTU','value':200}
+    billingitems.append(billingitem)
+
+    bill_obj = Bill(monthyeardateref=monthyeardateref, duedate=duedate, billingitems=billingitems)
+    payments = []
     paydate = date(2018, 2, 5)
-    payment_obj = Payment(paid_amount, paydate)
-    self.bill_obj.add_payment_obj(payment_obj)
+    payment_obj = Payment(paid_amount=1000, paydate=paydate)
+    payments.append(payment_obj)
+    paydate = date(2018, 2, 15)
+    payment_obj = Payment(paid_amount=500, paydate=paydate)
+    payments.append(payment_obj)
+    bill_obj.setPayments(payments)
+    bill_obj.process_payment()
+    self.assertEqual(bill_obj.months_due_amount, 1000+600+200)
+    self.assertEqual(bill_obj.payment_account, 1000+500)
+    amount_to_fine = (1000+600+200) - 1000  # 800
+    self.assertEqual(bill_obj.multa_account, 80) # ie, 10% of 800
+    debt_on_day_15 = 800 * (1 + 0.1 + (0.01 + 0.005)*(15/28)) # 0.005 must be fetched (TO-DO): for the time being, it's hardcoded
+    payment_missing = debt_on_day_15 - 500
+    self.assertEqual(bill_obj.debt_account, payment_missing) # ie, 10% of 800
 
 
-  def test_generate_conventioned_monthyeardateref_against_given_date_before_day10(self):
-    '''
-    A 'monthref' is a date that always ends up with day=1.
-    (Day has no meaning to a 'monthref', a 'monthref' is a somewhat class-reuse of Date.)
-    The convention in the callee method is that when day > 10, monthref forwards to next month.
-    :return:
-    '''
-    given_date        = date(2017,1,9)
-    expected_monthref = date(2017,1,1)
-    returned_monthref = self.bill_obj.generate_conventioned_monthyeardateref_against_given_date(given_date)
-    self.assertEqual(expected_monthref, returned_monthref)
-    given_date        = date(2017,1,1)
-    expected_monthref = date(2017,1,1)
-    returned_monthref = self.bill_obj.generate_conventioned_monthyeardateref_against_given_date(given_date)
-    self.assertEqual(expected_monthref, returned_monthref)
-
-  def test_generate_conventioned_monthyeardateref_against_given_date_after_day10(self):
-    given_date        = date(2017,1,11)
-    expected_monthref = date(2017,2,1)
-    returned_monthref = self.bill_obj.generate_conventioned_monthyeardateref_against_given_date(given_date)
-    self.assertEqual(expected_monthref, returned_monthref)
-    given_date        = date(2017,1,31)
-    expected_monthref = date(2017,2,1)
-    returned_monthref = self.bill_obj.generate_conventioned_monthyeardateref_against_given_date(given_date)
-    self.assertEqual(expected_monthref, returned_monthref)
-
-  def test_generate_conventioned_monthyeardateref_against_given_date_on_day10(self):
-    given_date        = date(2017,1,10)
-    expected_monthref = date(2017,1,1)
-    returned_monthref = self.bill_obj.generate_conventioned_monthyeardateref_against_given_date(given_date)
-    self.assertEqual(expected_monthref, returned_monthref)
-
-  def test_generate_conventioned_monthyeardateref_against_today(self):
-    '''
-    This test is a bit odd in the sense that it depends on today's date.
-    However, if tests are run everyday, in the case it ends up passing thru' all days (along some months),
-    it seems a reasonable complement to the above tests that do not depend on case variable
-      inside the test and also have the 'casing' coverage that diverges results (returns)
-      when day = 10.
-    :return:
-    '''
-    today = date.today()
-    expected_monthref = date(today.year, today.month, 1)
-    if today.day > 10:
-      expected_monthref = expected_monthref + relativedelta(months=+1)
-    # passing None to method means that the method will consider given_date to be today's date
-    returned_monthref = self.bill_obj.generate_conventioned_monthyeardateref_against_given_date(None)
-    self.assertEqual(expected_monthref, returned_monthref)
 
 
 

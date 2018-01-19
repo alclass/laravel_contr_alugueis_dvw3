@@ -4,6 +4,7 @@ from copy import copy
 # from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 # import decimal
+import sys
 
 INTEREST_RATE_DEFAULT = 0.01
 MULTA_RATE_DEFAULT    = 0.1
@@ -30,31 +31,6 @@ def equalize_array_sizes(l1, l2):
 class Juros:
 
   @staticmethod
-  def calculate_fmontant_from_increment_factor_array(montant_i, month_by_month_increment_factor_array):
-
-    prod = montant_i
-    for j in range(len(month_by_month_increment_factor_array)):
-      fraction = month_by_month_increment_factor_array[j]
-      prod *= (1 + fraction)
-      # print ('prod [', j, '] by ', '{:.3f}'.format(fraction), '=>', '{:.2f}'.format(prod))
-    return prod
-
-  @staticmethod
-  def calculate_fmontant_from_mo_by_mo_interest_n_corrmonet_array(
-      imontant,
-      mo_by_mo_interest_n_corrmonet_array,
-      mo_by_mo_fraction
-  ):
-    fmontant = imontant
-    mo_by_mo_interest_n_corrmonet_array, mo_by_mo_fraction = \
-      equalize_array_sizes(mo_by_mo_interest_n_corrmonet_array, mo_by_mo_fraction)
-    for c, interest_n_corrmonet in enumerate(mo_by_mo_interest_n_corrmonet_array):
-      interest, corrmonet = interest_n_corrmonet
-      monthfraction = mo_by_mo_fraction[c]
-      fmontant = fmontant * (1 + ((interest + corrmonet) * monthfraction))
-    return fmontant
-
-  @staticmethod
   def fetch_corrmonet_for_month(monthdate):
     month = monthdate.month
     corrmonets = [
@@ -69,38 +45,73 @@ class Juros:
     return corrmonet
 
   @staticmethod
+  def calculate_fmontant_from_increment_factor_array(
+      montant_i,
+      month_by_month_increment_factor_array
+    ):
+    fmontant = montant_i
+    for j in range(len(month_by_month_increment_factor_array)):
+      fraction = month_by_month_increment_factor_array[j]
+      fmontant *= (1 + fraction)
+      # print ('prod [', j, '] by ', '{:.3f}'.format(fraction), '=>', '{:.2f}'.format(prod))
+    return fmontant
+
+  @staticmethod
+  def calculate_fmontant_from_mo_by_mo_interest_n_corrmonet_array(
+      imontant,
+      mo_by_mo_interest_n_corrmonet_array,
+      mo_by_mo_fraction
+    ):
+    fmontant = imontant
+    mo_by_mo_interest_n_corrmonet_array, mo_by_mo_fraction = \
+      equalize_array_sizes(mo_by_mo_interest_n_corrmonet_array, mo_by_mo_fraction)
+    for c, interest_n_corrmonet in enumerate(mo_by_mo_interest_n_corrmonet_array):
+      interest, corrmonet = interest_n_corrmonet
+      monthfraction = mo_by_mo_fraction[c]
+      fmontant = fmontant * (1 + ((interest + corrmonet) * monthfraction))
+    return fmontant
+
+  @staticmethod
   def gen_mo_by_mo_interest_plus_corrmonet_times_fraction_array(
-      duedate,
+      monthrefdate,
       interestarray,
-      mo_by_mo_fraction_array
+      mo_by_mo_fraction_array,
+      usesMminus1CorrMonetIndex=True
   ):
     mo_by_mo_fraction_array, interestarray = equalize_array_sizes(mo_by_mo_fraction_array, interestarray)
     mo_by_mo_interest_plus_corrmonet_times_fraction_array = []
     for i, interest in enumerate(interestarray):
-      ongoingdate = duedate + relativedelta(months=i)
-      corrmonet = Juros.fetch_corrmonet_for_month(ongoingdate)
+      ongoingdate = monthrefdate + relativedelta(months=i)
+      if usesMminus1CorrMonetIndex:
+        corrmonetmonthdate = ongoingdate + relativedelta(months=-1)
+      else:
+        corrmonetmonthdate = copy(ongoingdate)
+      corrmonet   = Juros.fetch_corrmonet_for_month(corrmonetmonthdate)
       integrated_fraction = (interest + corrmonet) * mo_by_mo_fraction_array[i]
       mo_by_mo_interest_plus_corrmonet_times_fraction_array.append(integrated_fraction)
     return mo_by_mo_interest_plus_corrmonet_times_fraction_array
 
-  def apply_multa_interest_n_corrmonet(self, value, monthdateref, contractrule=None):
+  '''
+  @staticmethod
+  def apply_multa_interest_n_corrmonet(value, monthrefdate, contractrule=None):
     interest = get_default_interest_rate()
     multa    = get_default_multa_rate()
     if contractrule is not None:
       interest = contractrule.get_interest_rate()
       multa    = contractrule.get_multa_rate()
-    corrmonet = self.fetch_corrmonet_for_month(monthdateref)
+    corrmonet = Juros.fetch_corrmonet_for_month(monthrefdate)
     compounded_rate = multa + interest + corrmonet
     return value * (1 + compounded_rate)
+  '''
 
-  def apply_interest_n_corrmonet(self, value, monthdateref, contractrule=None):
+  @staticmethod
+  def apply_interest_n_corrmonet(value, monthrefdate, contractrule=None):
     interest = get_default_interest_rate()
     if contractrule is not None:
       interest = contractrule.get_interest_rate()
-    corrmonet = self.fetch_corrmonet_for_month(monthdateref)
+    corrmonet = Juros.fetch_corrmonet_for_month(monthrefdate)
     compounded_rate = interest + corrmonet
     return value * (1 + compounded_rate)
-
 
 def ad_hoc_test():
   fractions_array = [0.02, 0.015, 0.011]
@@ -108,9 +119,6 @@ def ad_hoc_test():
   print ('montant_i = ', '{:.2f}'.format(montant_i))
   montant_f = Juros.calculate_fmontant_from_increment_factor_array(montant_i, fractions_array)
   print ('montant_f = ', '{:.2f}'.format(montant_f))
-
-if __name__ == '__main__':
-  ad_hoc_test()
 
 
 import unittest
@@ -185,4 +193,9 @@ class TestJurosCalculator(unittest.TestCase):
       returned_mo_by_mo_interest_plus_corrmonet_times_fraction_array
     )
 
-unittest.main()
+
+if __name__ == '__main__':
+  ad_hoc_test()
+  if len(sys.argv) > 1 and sys.argv[1] == '-u':
+    del sys.argv[1]
+    unittest.main()

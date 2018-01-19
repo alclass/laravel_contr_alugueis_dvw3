@@ -7,6 +7,8 @@ from dateutil.relativedelta import relativedelta
 # import unittest
 import calendar # calendar.monthrange(year, month)
 
+import sys
+
 class MonthYearDateRef:
 
   def generate_conventioned_monthyeardateref_against_given_date(self, p_date=None):
@@ -140,4 +142,12 @@ class TestDateBill(unittest.TestCase):
       firstmonthdate
     )
 
-unittest.main()
+
+def adhoctest():
+  pass
+
+if __name__ == '__main__':
+  adhoctest()
+  if len(sys.argv) > 1 and sys.argv[1] == '-u':
+    del sys.argv[1]
+    unittest.main()
