@@ -4,8 +4,7 @@ from datetime import date
 # from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 import sys
-import calendar # calendar.monthrange(year, month)
-
+# import calendar # calendar.monthrange(year, month)
 # from .DateBillCalculatorMod import DateBillCalculator
 
 try:
@@ -14,6 +13,7 @@ try:
 except SystemError:
   sys.path.insert(0, '.')
   from PaymentMod import Payment
+  from juros_calculator import Juros
 
 
 REFTYPE_KEY = 'reftype'
@@ -34,69 +34,46 @@ def create_billingitems_list_for_invoicebill():
   billingitems.append(billingitem)
   billingitem = {REFTYPE_KEY: 'IPTU', 'value': 200}
   billingitems.append(billingitem)
-  billing_item = {REFTYPE_KEY: 'DEBI', 'value': 200}
-  billingitems.append(billingitem)
-  billingitem = {REFTYPE_KEY: 'DEBO', 'value': 400}
-  billingitems.append(billingitem)
   return billingitems
 
 
-class MonthYearDateRef:
-
-  def generate_conventioned_monthyeardateref_against_given_date(self, p_date=None):
-    '''
-    if date is from yyyy-mm-01 until yyyy-mm-10,
-      then
-        monthyeardateref is yyyy-mm-01
-      else (ie, date > yyyy-mm-10)
-        monthyeardateref is next_month(yyyy-mm-01)
-          ie, it's the first day in the following month relative to yyyy-mm-01
-    :return:
-    '''
-
-    if p_date is None:
-      monthyeardateref = date.today()
-    else:
-      monthyeardateref = copy(p_date)
-    if monthyeardateref.day > 10:
-      monthyeardateref = monthyeardateref + relativedelta(months=+1)
-    monthyeardateref = monthyeardateref.replace(day = 1)
-    return monthyeardateref
-
-  def find_monthyearrefdate(self, month=None, year=None):
-    if month is None or year is None:
-      monthyeardateref = self.generate_conventioned_monthyeardateref_against_given_date()
-    else:
-      monthyeardateref = date(year, month, 1)
-    return monthyeardateref
 
 class Bill:
 
   REFTYPE_KEY = REFTYPE_KEY
 
   def __init__(self, monthyeardateref, duedate, billingitems):
-    self.payment_objs = [] # payment_obj has amount_paid and paydate
-    self.late_mora_has_been_applied = False
-    self.multa_account    = 0
-    self.debt_account     = 0
-    self.cred_account     = 0
-    self.debi_to_carry    = 0
-    self.debo_to_carry    = 0
-    self.payment_missing  = 0
-    self.payment_done     = 0
+    self.monthyeardateref  = monthyeardateref
+    self.duedate           = duedate
+    self.billingitems      = billingitems # generally, it may have: ALUG, COND, IPTU
+
+    self.payment_objs      = [] # payment_obj has amount_paid and paydate
+    self.multa_account     = 0
+    self.debt_account      = 0
+    self.cred_account      = 0
+    self.payment_missing   = 0
+    self.bool_payment_done = 0
     self.bill_closed_balance_if_any_to_forward = False
-    self.monthyeardateref = monthyeardateref
-    self.duedate          = duedate
-    self.billingitems     = billingitems
-    self.total_due        = 0
+    self.total_due         = 0
     for billingitem in self.billingitems:
       value = billingitem['value']
-      self.total_due += value
-      reftype = billingitem[self.REFTYPE_KEY]
-      if reftype == 'DEBI':
-        self.debi_to_carry = billingitem['value']
-      if reftype == 'DEBO':
-        self.debo_to_carry = billingitem['value']
+      self.months_due_amount += value
+    self.carried_amount = self.get_updated_carried_amount_from_previous_bills_if_any()
+
+  def fetch_debi_amount_from_previous_bills_if_any(self):
+    return self.debi_amount
+
+  def fetch_debo_amount_from_previous_bills_if_any(self):
+    return self.debo_amount
+
+  def get_updated_carried_amount_from_previous_bills_if_any(self):
+    previousmonthrefdate = self.monthyeardateref - relativedelta(months=-1)
+    debi_value           = self.fetch_debi_amount_from_previous_bills_if_any()
+    upt_debi_value       = Juros.apply_multa_interest_n_corrmonet(debi_value, previousmonthrefdate)
+    debo_value           = self.fetch_debo_amount_from_previous_bills_if_any()
+    upt_debo_value       = Juros.apply_interest_n_corrmonet(debo_value, previousmonthrefdate)
+    updated_debi_n_debo  = upt_debi_value + upt_debo_value
+    return updated_debi_n_debo
 
   def pay(self, payment_obj):
     # credit / debit
@@ -126,9 +103,9 @@ class Bill:
     '''
     for payment_obj in self.payment_objs:
       if payment_obj.paydate > self.duedate:
-        multa_amount = self.debt_account * 0.1
+        multa_amount = self.months_due_amount * 0.1
         self.multa_account += multa_amount
-        self.debt_account += multa_amount
+        self.debt_account  += multa_amount
         return
 
   def recalculate_bill(self):

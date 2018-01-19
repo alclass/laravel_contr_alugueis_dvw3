@@ -7,6 +7,34 @@ from dateutil.relativedelta import relativedelta
 # import unittest
 import calendar # calendar.monthrange(year, month)
 
+class MonthYearDateRef:
+
+  def generate_conventioned_monthyeardateref_against_given_date(self, p_date=None):
+    '''
+    if date is from yyyy-mm-01 until yyyy-mm-10,
+      then
+        monthyeardateref is yyyy-mm-01
+      else (ie, date > yyyy-mm-10)
+        monthyeardateref is next_month(yyyy-mm-01)
+          ie, it's the first day in the following month relative to yyyy-mm-01
+    :return:
+    '''
+
+    if p_date is None:
+      monthyeardateref = date.today()
+    else:
+      monthyeardateref = copy(p_date)
+    if monthyeardateref.day > 10:
+      monthyeardateref = monthyeardateref + relativedelta(months=+1)
+    monthyeardateref = monthyeardateref.replace(day = 1)
+    return monthyeardateref
+
+  def find_monthyearrefdate(self, month=None, year=None):
+    if month is None or year is None:
+      monthyeardateref = self.generate_conventioned_monthyeardateref_against_given_date()
+    else:
+      monthyeardateref = date(year, month, 1)
+    return monthyeardateref
 
 
 

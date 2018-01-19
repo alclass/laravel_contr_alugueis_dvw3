@@ -5,6 +5,14 @@ from copy import copy
 from dateutil.relativedelta import relativedelta
 # import decimal
 
+INTEREST_RATE_DEFAULT = 0.01
+MULTA_RATE_DEFAULT    = 0.1
+
+def get_default_interest_rate():
+  return INTEREST_RATE_DEFAULT
+
+def get_default_multa_rate():
+  return MULTA_RATE_DEFAULT
 
 def equalize_array_sizes(l1, l2):
   lenl1 = len(l1); lenl2 = len(l2)
@@ -74,6 +82,24 @@ class Juros:
       integrated_fraction = (interest + corrmonet) * mo_by_mo_fraction_array[i]
       mo_by_mo_interest_plus_corrmonet_times_fraction_array.append(integrated_fraction)
     return mo_by_mo_interest_plus_corrmonet_times_fraction_array
+
+  def apply_multa_interest_n_corrmonet(self, value, monthdateref, contractrule=None):
+    interest = get_default_interest_rate()
+    multa    = get_default_multa_rate()
+    if contractrule is not None:
+      interest = contractrule.get_interest_rate()
+      multa    = contractrule.get_multa_rate()
+    corrmonet = self.fetch_corrmonet_for_month(monthdateref)
+    compounded_rate = multa + interest + corrmonet
+    return value * (1 + compounded_rate)
+
+  def apply_interest_n_corrmonet(self, value, monthdateref, contractrule=None):
+    interest = get_default_interest_rate()
+    if contractrule is not None:
+      interest = contractrule.get_interest_rate()
+    corrmonet = self.fetch_corrmonet_for_month(monthdateref)
+    compounded_rate = interest + corrmonet
+    return value * (1 + compounded_rate)
 
 
 def ad_hoc_test():
