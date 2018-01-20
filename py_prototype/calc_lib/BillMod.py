@@ -70,9 +70,13 @@ class Bill:
 
   REFTYPE_KEY = REFTYPE_KEY
 
-  def __init__(self, monthrefdate, duedate, billingitems):
+  def __init__(self, monthrefdate, duedate=None, billingitems=[]):
     self.monthrefdate   = monthrefdate
     self.duedate        = duedate
+    if self.duedate is None:
+      # the default duedate, if caller passes None to it, is monthref's next month on day 10
+      self.duedate = self.monthrefdate + relativedelta(months=+1)
+      self.duedate = self.duedate.replace(day=10)
     self.billingitems   = billingitems # generally, it may have: ALUG, COND, IPTU
     self.datecalculator = DateBillCalculator()
     self.payments       = [] # element payment_obj has amount_paid and paydate
@@ -119,7 +123,7 @@ class Bill:
     return self.multa_account + self.interest_n_cm_account
 
   @property
-  def inmonthplusdebts_minus_payments(self):
+  def inmonthpluspreviousdebts_minus_payments(self):
     return self.inmonthpluspreviousdebts - self.payment_account
 
   def setPayments(self, payments):
@@ -333,8 +337,8 @@ class Bill:
     text += line
     line = 'Total Pago ----  %.2f\n' % (self.payment_account)
     text += line
-    if self.inmonthplusdebts_minus_payments > 0:
-      line = 'Total menos pagt(s) ----  %.2f\n' % (self.inmonthplusdebts_minus_payments)
+    if self.inmonthpluspreviousdebts_minus_payments > 0:
+      line = 'Total menos pagt(s) ----  %.2f\n' % (self.inmonthpluspreviousdebts_minus_payments)
       text += line
     if self.fine_interest_n_cm > 0:
       line = 'Total Mora   -------   %.2f\n' %(self.fine_interest_n_cm)

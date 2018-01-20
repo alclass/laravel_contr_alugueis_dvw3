@@ -9,6 +9,19 @@ import sys
 INTEREST_RATE_DEFAULT = 0.01
 MULTA_RATE_DEFAULT    = 0.1
 
+CORRMONET_INDICES = {
+  2017: [
+    0.010, 0.003, 0.002, 0.003,
+    0.004, 0.002, 0.006, 0.001,
+    0.001, 0.003, 0.003, 0.004,
+  ],
+  2018: [
+    0.005, 0.002, 0.006, 0.002,
+    0.003, 0.003, 0.007, 0.003,
+    0.002, 0.004, 0.006, 0.001,
+  ],
+}
+
 def get_default_interest_rate():
   return INTEREST_RATE_DEFAULT
 
@@ -31,18 +44,11 @@ def equalize_array_sizes(l1, l2):
 class Juros:
 
   @staticmethod
-  def fetch_corrmonet_for_month(monthdate):
-    month = monthdate.month
-    corrmonets = [
-      0.005, 0.003, 0.006, 0.002,
-      0.003, 0.003, 0.007, 0.001,
-      0.002, 0.004, 0.006, 0.001,
-    ]
-    index = month - 1
-    corrmonet = corrmonets[index]
-    # line = 'corrmonet %s = %s' % (str(monthdate), str(corrmonet))
-    # print (line)
-    return corrmonet
+  def fetch_corrmonet_for_month(monthrefdate):
+    year  = monthrefdate.year
+    month = monthrefdate.month
+    monthzeroindex = month - 1
+    return CORRMONET_INDICES[year][monthzeroindex]
 
   @staticmethod
   def calculate_fmontant_from_increment_factor_array(
