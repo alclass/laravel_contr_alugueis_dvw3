@@ -70,29 +70,57 @@ class Bill:
 
   REFTYPE_KEY = REFTYPE_KEY
 
-  def __init__(self, monthyeardateref, duedate, billingitems):
-    self.monthyeardateref  = monthyeardateref
-    self.duedate           = duedate
-    self.billingitems      = billingitems # generally, it may have: ALUG, COND, IPTU
-
-    self.datecalculator    = DateBillCalculator()
-    self.payments          = [] # payment_obj has amount_paid and paydate
-    self.multa_account     = 0
-    self.debt_account      = 0
-    self.cred_account      = 0
-    self.payment_account   = 0
-    self.juros_n_interest  = 0
-    self.bool_payment_done = 0
-    self.bill_closed_balance_if_any_to_forward = False
-    self.total_due         = 0
-    self.months_due_amount = 0
+  def __init__(self, monthrefdate, duedate, billingitems):
+    self.monthrefdate   = monthrefdate
+    self.duedate        = duedate
+    self.billingitems   = billingitems # generally, it may have: ALUG, COND, IPTU
+    self.datecalculator = DateBillCalculator()
+    self.payments       = [] # element payment_obj has amount_paid and paydate
+    self.total_paid     = 0
+    self.debt_factor_mora_increasedvalue_quadlist = [] # list of tuples
+    # Accounting-like accounts
+    self.debt_account            = 0
+    self.base_for_i_n_cm_account = 0
+    self.cred_account            = 0
+    self.payment_account         = 0
+    self.multa_account           = 0
+    self.interest_n_cm_account   = 0
+    self.inmonth_due_amount      = 0 # inmonth_due_amount is the amounts that arise in the contract's monthly bill
     for billingitem in self.billingitems:
       value = billingitem['value']
-      self.months_due_amount += value
-    self.carried_amount = self.get_updated_carried_amount_from_previous_bills_if_any()
-    self.debt_account = self.months_due_amount + self.carried_amount
+      self.inmonth_due_amount += value
+    self.previousmonthsdebts = self.get_updated_carried_amount_from_previous_bills_if_any()
+    # Initial values for debt_account and base_for_i_n_cm_account (they will diverge if fine occurs)
+    self.debt_account            = self.inmonthpluspreviousdebts
+    self.base_for_i_n_cm_account = self.debt_account
     # self.payment_missing IS THE SAME AS self.debt_account
 
+  @property
+  def inmonthpluspreviousdebts(self):
+    '''
+    Reader attribute as method
+    inmonthpluspreviousdebts is inmonth_due_amount plus previous months' debts
+    :return:
+    '''
+    return self.inmonth_due_amount + self.previousmonthsdebts
+
+  @property
+  def total_bill_with_mora_if_any(self):
+    '''
+    Reader attribute as method
+    total_bill_with_mora_if_any is inmonthpluspreviousdebts plus, if any, in-month fine, interest and corr.monet.
+    :return:
+    '''
+    mora_increases = self.multa_account + self.interest_n_cm_account
+    return self.inmonthpluspreviousdebts + mora_increases
+
+  @property
+  def fine_interest_n_cm(self):
+    return self.multa_account + self.interest_n_cm_account
+
+  @property
+  def inmonthplusdebts_minus_payments(self):
+    return self.inmonthpluspreviousdebts - self.payment_account
 
   def setPayments(self, payments):
     self.payments = payments
@@ -104,7 +132,7 @@ class Bill:
     return PreviousBill.fetch_carriedup_debt_amount()
 
   def get_updated_carried_amount_from_previous_bills_if_any(self):
-    previousmonthrefdate = self.monthyeardateref - relativedelta(months=-1)
+    previousmonthrefdate = self.monthrefdate - relativedelta(months=-1)
     debi_value           = self.fetch_debi_amount_from_previous_bills_if_any()
     upt_debi_value       = Juros.apply_interest_n_corrmonet(debi_value, previousmonthrefdate)
     debo_value           = self.fetch_debo_amount_from_previous_bills_if_any()
@@ -121,6 +149,7 @@ class Bill:
     :return:
     '''
     self.debt_account    -= payment_obj.paid_amount
+    self.base_for_i_n_cm_account -= payment_obj.paid_amount
     self.payment_account += payment_obj.paid_amount
 
   def apply_multa_if_payment_is_incomplete(self):
@@ -137,13 +166,16 @@ class Bill:
     :return:
     '''
     # obs: payments list must be IN ORDER OF PAYDATE
+    self.total_paid = 0
     amount_paid_on_date = 0
     for payment_obj in self.payments:
+      self.total_paid += payment_obj.paid_amount
       if payment_obj.paydate <= self.duedate:
         amount_paid_on_date += payment_obj.paid_amount
-    if amount_paid_on_date < self.months_due_amount:
-      amount_to_fine = self.months_due_amount - amount_paid_on_date
+    if amount_paid_on_date < self.inmonth_due_amount:
+      amount_to_fine = self.inmonth_due_amount - amount_paid_on_date
       multa_amount = amount_to_fine * 0.1
+      # Accounting-like accounts debt/credit
       self.multa_account += multa_amount
       self.debt_account  += multa_amount
 
@@ -189,7 +221,7 @@ class Bill:
     :return:
     '''
 
-    interest_startdate = self.monthyeardateref + relativedelta(months=+1)
+    interest_startdate = self.monthrefdate + relativedelta(months=+1)
     mo_by_mo_days = self.datecalculator.calc_mo_by_mo_days_between_dates(
       interest_startdate,
       payment_obj.paydate
@@ -201,13 +233,17 @@ class Bill:
       mo_by_mo_days,
       interest_startdate
     )
+    print ('******************************')
+    print ('monthfractions:', str(monthfractions))
     interestarray = [0.01] * len(monthfractions)
     mo_by_mo_interest_plus_corrmonet_times_fraction_array = Juros \
       .gen_mo_by_mo_interest_plus_corrmonet_times_fraction_array(
       interest_startdate,
-      monthfractions,
-      interestarray
+      interestarray,
+      monthfractions
     )
+    print ('******************************')
+    print ('mo_by_mo_interest_plus_corrmonet_times_fraction_array:', str(mo_by_mo_interest_plus_corrmonet_times_fraction_array))
     self.pay_applying_correctionfractions_array(
       payment_obj,
       mo_by_mo_interest_plus_corrmonet_times_fraction_array
@@ -218,11 +254,15 @@ class Bill:
       payment_obj,
       mo_by_mo_interest_plus_corrmonet_times_fraction_array
     ):
-    debt = self.debt_account
+    base_for_i_n_cm_account = self.base_for_i_n_cm_account
     for factor in mo_by_mo_interest_plus_corrmonet_times_fraction_array:
-      debt = debt * (1 + factor)
-    self.juros_n_interest = debt - self.debt_account
-    self.debt_account     = debt
+      basevalue    = base_for_i_n_cm_account
+      moraincrease = base_for_i_n_cm_account * factor
+      base_for_i_n_cm_account += moraincrease
+      debt_factor_moraincrease_triple = (basevalue, factor, moraincrease, base_for_i_n_cm_account)
+      self.debt_factor_mora_increasedvalue_quadlist.append(debt_factor_moraincrease_triple)
+    self.interest_n_cm_account = base_for_i_n_cm_account - self.base_for_i_n_cm_account
+    self.debt_account    += self.interest_n_cm_account
     self.debt_account    -= payment_obj.paid_amount
     self.payment_account += payment_obj.paid_amount
 
@@ -255,7 +295,7 @@ class Bill:
     text += line
     line = '====================\n'
     text += line
-    line = 'Monthref ------- % s\n' %(self.monthyeardateref)
+    line = 'Monthref ------- % s\n' %(self.monthrefdate)
     text += line
     line = 'Due Date ------- % s\n' %(self.duedate)
     text += line
@@ -264,20 +304,47 @@ class Bill:
     for i, billingitem in enumerate(self.billingitems):
       line = '%d -> %s  ----------  %s\n' %(i, billingitem[self.REFTYPE_KEY], str(billingitem['value']))
       text += line
+    line = "Previous Months Carryingup's  %s\n" % (str(self.previousmonthsdebts))
+    text += line
     line = '-------------------\n'
     text += line
-    line = 'Debt Account (same as paym.miss.) %s\n' %(self.debt_account)
+    line = 'Total (Itens) ----  %.2f\n' % (self.inmonth_due_amount)
     text += line
-    line = 'juros_n_interest ------- % s\n' %(self.juros_n_interest)
+    line = '==================\n'
     text += line
-    line = 'Payment done (account) %s\n' % (str(self.payment_account))
+    line = 'Payments:\n'
     text += line
-    line = 'multa_account ----  %s\n' % (str(self.multa_account))
+    for payment_obj in self.payments:
+      line = '    Payment: %s   %.2f \n' % (payment_obj.paydate, payment_obj.paid_amount)
+      text += line
+    line = 'Payment done (account) %.2f\n' % (self.payment_account)
     text += line
-    line = 'Carrying-up ----  %s\n' % (str(self.carried_amount))
+    if self.multa_account > 0:
+      line = 'Multa incidência de atraso ----  %.2f\n' % (self.multa_account)
+      text += line
+    if self.interest_n_cm_account > 0:
+      line = 'Juro e Corr. Monet. relat. tempo-atraso %.2f\n' %(self.interest_n_cm_account)
+      text += line
+    for debt_factor_mora_increasedvalue_quadlist in self.debt_factor_mora_increasedvalue_quadlist:
+      basevalue, factor, moraincrease, debt = debt_factor_mora_increasedvalue_quadlist
+      line = '   value | factor | increase | debt ----%.2f | %.4f | %.2f | %.2f\n' %(basevalue, factor, moraincrease, debt)
+      text += line
+    line = 'Total (Mês) ----  %.2f\n' % (self.inmonthpluspreviousdebts)
     text += line
-    line = 'Total  ----------  %s\n' % (str(self.total_due))
+    line = 'Total Pago ----  %.2f\n' % (self.payment_account)
     text += line
+    if self.inmonthplusdebts_minus_payments > 0:
+      line = 'Total menos pagt(s) ----  %.2f\n' % (self.inmonthplusdebts_minus_payments)
+      text += line
+    if self.fine_interest_n_cm > 0:
+      line = 'Total Mora   -------   %.2f\n' %(self.fine_interest_n_cm)
+      text += line
+    if self.total_bill_with_mora_if_any > 0:
+      line = 'Total mês considerado mora-atraso -----  %.2f\n' % (self.total_bill_with_mora_if_any)
+      text += line
+    if self.debt_account > 0:
+      line = 'Valor aberto em débito: %.2f\n' %(self.debt_account)
+      text += line
     return text
 
   def __str__(self):

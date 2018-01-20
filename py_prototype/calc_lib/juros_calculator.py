@@ -17,7 +17,7 @@ def get_default_multa_rate():
 
 def equalize_array_sizes(l1, l2):
   lenl1 = len(l1); lenl2 = len(l2)
-  if len(l1) == len(l2):
+  if lenl1 == lenl2:
     return l1, l2
   min_size = min(lenl1, lenl2)
   if lenl1 > min_size:

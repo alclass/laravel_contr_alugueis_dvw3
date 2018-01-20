@@ -25,7 +25,7 @@ class TestBill(unittest.TestCase):
     pass
 
   def test_bill_payment_1(self):
-    monthyeardateref = date(2018, 1, 1)
+    monthrefdate = date(2018, 1, 1)
     duedate          = date(2018, 2, 10)
     billingitems = []
     billingitem  = {Bill.REFTYPE_KEY:'ALUG','value':1000}
@@ -35,7 +35,7 @@ class TestBill(unittest.TestCase):
     billingitem  = {Bill.REFTYPE_KEY:'IPTU','value':200}
     billingitems.append(billingitem)
 
-    bill_obj = Bill(monthyeardateref=monthyeardateref, duedate=duedate, billingitems=billingitems)
+    bill_obj = Bill(monthrefdate=monthrefdate, duedate=duedate, billingitems=billingitems)
     payments = []
     paydate = date(2018, 2, 5)
     payment_obj = Payment(paid_amount=1000, paydate=paydate)
@@ -45,16 +45,28 @@ class TestBill(unittest.TestCase):
     payments.append(payment_obj)
     bill_obj.setPayments(payments)
     bill_obj.process_payment()
-    self.assertEqual(bill_obj.months_due_amount, 1000+600+200)
+
+    # inmonth_due_amount
+    self.assertEqual(bill_obj.inmonth_due_amount, 1000 + 600 + 200)
+    # inmonthpluspreviousdebts
+    self.assertEqual(bill_obj.inmonthpluspreviousdebts, 1000 + 600 + 200)
+    # payment_account
     self.assertEqual(bill_obj.payment_account, 1000+500)
+    # inmonthplusdebts_minus_payments
+    expected_inmonthplusdebts_minus_payments = 1000 + 600 + 200 - (1000 + 500)
+    self.assertEqual(bill_obj.inmonthplusdebts_minus_payments, expected_inmonthplusdebts_minus_payments)
+
+    # inmonthplusdebts_minus_payments
     amount_to_fine = (1000+600+200) - 1000  # 800
-    self.assertEqual(bill_obj.multa_account, 80) # ie, 10% of 800
-    debt_on_day_15 = 800 * (1 + 0.1 + (0.01 + 0.005)*(15/28)) # 0.005 must be fetched (TO-DO): for the time being, it's hardcoded
-    payment_missing = debt_on_day_15 - 500
-    self.assertEqual(bill_obj.debt_account, payment_missing) # ie, 10% of 800
+    fine_value = amount_to_fine * 0.1
+    self.assertEqual(bill_obj.multa_account, fine_value) # 80 ie 10% of 800
 
-
-
+    # debt_account, after processing, is payment_missing
+    corrmonet = 0.005 # corr_monet considers 2018-jan not february
+    monthdaysfraction = 15/28 # monthdaysfraction considers february not january
+    interest_n_cm_on_day_15 = amount_to_fine * ((0.01 + corrmonet) * monthdaysfraction) # 0.005 must be fetched (TO-DO): for the time being, it's hardcoded
+    payment_missing = amount_to_fine + fine_value + interest_n_cm_on_day_15 - 500
+    self.assertEqual(bill_obj.debt_account, payment_missing)
 
 
 if __name__ == '__main__':

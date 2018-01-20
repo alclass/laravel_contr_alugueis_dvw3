@@ -15,9 +15,9 @@ class MonthYearDateRef:
     '''
     if date is from yyyy-mm-01 until yyyy-mm-10,
       then
-        monthyeardateref is yyyy-mm-01
+        monthrefdate is yyyy-mm-01
       else (ie, date > yyyy-mm-10)
-        monthyeardateref is next_month(yyyy-mm-01)
+        monthrefdate is next_month(yyyy-mm-01)
           ie, it's the first day in the following month relative to yyyy-mm-01
     :return:
     '''
