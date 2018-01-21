@@ -73,17 +73,20 @@ class Bill:
   def __init__(self, monthrefdate, duedate=None, billingitems=[]):
     self.monthrefdate   = monthrefdate
     self.duedate        = duedate
+    self.date_of_last_interest_applied = None # this is initialized when a first mora pay is done
     if self.duedate is None:
       # the default duedate, if caller passes None to it, is monthref's next month on day 10
       self.duedate = self.monthrefdate + relativedelta(months=+1)
       self.duedate = self.duedate.replace(day=10)
-    self.billingitems   = billingitems # generally, it may have: ALUG, COND, IPTU
+    self.billingitems = billingitems # generally, it may have: ALUG, COND, IPTU
+    # the value below should be set after constructor (__init())
+    self.previousmonthsdebts = 0
     self.datecalculator = DateBillCalculator()
     self.payments       = [] # element payment_obj has amount_paid and paydate
     self.total_paid     = 0
     self.debt_factor_mora_increasedvalue_quadlist = [] # list of tuples
     # Accounting-like accounts
-    self.debt_account            = 0
+    # self.debt_account            = 0
     self.base_for_i_n_cm_account = 0
     self.cred_account            = 0
     self.payment_account         = 0
@@ -93,11 +96,8 @@ class Bill:
     for billingitem in self.billingitems:
       value = billingitem['value']
       self.inmonth_due_amount += value
-    self.previousmonthsdebts = self.get_updated_carried_amount_from_previous_bills_if_any()
-    # Initial values for debt_account and base_for_i_n_cm_account (they will diverge if fine occurs)
-    self.debt_account            = self.inmonthpluspreviousdebts
-    self.base_for_i_n_cm_account = self.debt_account
-    # self.payment_missing IS THE SAME AS self.debt_account
+    self.base_for_i_n_cm_account = self.inmonthpluspreviousdebts
+
 
   @property
   def inmonthpluspreviousdebts(self):
@@ -123,38 +123,42 @@ class Bill:
     return self.multa_account + self.interest_n_cm_account
 
   @property
+  def debt_account(self):
+    '''
+    Reader attribute as method
+    inmonthpluspreviousdebts is inmonth_due_amount plus previous months' debts
+    :return:
+    '''
+    return self.inmonthpluspreviousdebts + self.fine_interest_n_cm - self.payment_account
+
+  @property
   def inmonthpluspreviousdebts_minus_payments(self):
     return self.inmonthpluspreviousdebts - self.payment_account
 
   def setPayments(self, payments):
     self.payments = payments
 
-  def fetch_debi_amount_from_previous_bills_if_any(self):
-    return PreviousBill.fetch_nonpaid_months_amount()
+  def set_previousmonthsdebts(self, previousmonthsdebts):
+    if previousmonthsdebts is None:
+      return
+    if previousmonthsdebts < 0:
+      raise ValueError('previousmonthsdebts (=%s) < 0' %(previousmonthsdebts))
+    self.previousmonthsdebts = previousmonthsdebts
 
   def fetch_debo_amount_from_previous_bills_if_any(self):
     return PreviousBill.fetch_carriedup_debt_amount()
 
-  def get_updated_carried_amount_from_previous_bills_if_any(self):
-    previousmonthrefdate = self.monthrefdate - relativedelta(months=-1)
-    debi_value           = self.fetch_debi_amount_from_previous_bills_if_any()
-    upt_debi_value       = Juros.apply_interest_n_corrmonet(debi_value, previousmonthrefdate)
-    debo_value           = self.fetch_debo_amount_from_previous_bills_if_any()
-    upt_debo_value       = Juros.apply_interest_n_corrmonet(debo_value, previousmonthrefdate)
-    updated_debi_n_debo  = upt_debi_value + upt_debo_value
-    return updated_debi_n_debo
-
   def pay(self, payment_obj):
     '''
+    This method is for payment on time, not late-mora payments.
     Consider this as a private method.
     Also that it works as a credit / debit operation.
     It can only be called from inside the 'if' that checks this pay is on date
     :param payment_obj:
     :return:
     '''
-    self.debt_account    -= payment_obj.paid_amount
     self.base_for_i_n_cm_account -= payment_obj.paid_amount
-    self.payment_account += payment_obj.paid_amount
+    self.payment_account         += payment_obj.paid_amount
 
   def apply_multa_if_payment_is_incomplete(self):
     '''
@@ -181,7 +185,6 @@ class Bill:
       multa_amount = amount_to_fine * 0.1
       # Accounting-like accounts debt/credit
       self.multa_account += multa_amount
-      self.debt_account  += multa_amount
 
   def process_payment(self):
     '''
@@ -212,8 +215,11 @@ class Bill:
 
   def pay_late(self, payment_obj):
     '''
-    The interest startdate is not duedate, it's monthref plus ONE month.
-      Example: if monthref is (01)Jan2018, interest_startdate is 01Feb2018.
+    The interest startdate is not duedate, it takes on two possible values, ie:
+      1) for the first late payment, it's monthref plus ONE month.
+      2) for the a late payment, it's date of last payment plus one.
+
+    Example [for 1) above]: if monthref is (01)Jan2018, interest_startdate is 01Feb2018.
     However, the corr-monet index is taken M-1, ie, it's the index of its
       previous month. Example: 15 days late in February are calculated with
       January's interest rate.
@@ -225,13 +231,19 @@ class Bill:
     :return:
     '''
 
-    interest_startdate = self.monthrefdate + relativedelta(months=+1)
+    if self.date_of_last_interest_applied is not None:
+      interest_startdate = self.date_of_last_interest_applied
+    else:
+      interest_startdate = self.monthrefdate + relativedelta(months=+1)
+
     mo_by_mo_days = self.datecalculator.calc_mo_by_mo_days_between_dates(
       interest_startdate,
       payment_obj.paydate
     )
+    '''
     if len(mo_by_mo_days) == 0:
       return
+    '''
 
     monthfractions = self.datecalculator.transform_monthdays_into_monthfractions(
       mo_by_mo_days,
@@ -265,9 +277,11 @@ class Bill:
       base_for_i_n_cm_account += moraincrease
       debt_factor_moraincrease_triple = (basevalue, factor, moraincrease, base_for_i_n_cm_account)
       self.debt_factor_mora_increasedvalue_quadlist.append(debt_factor_moraincrease_triple)
-    self.interest_n_cm_account = base_for_i_n_cm_account - self.base_for_i_n_cm_account
-    self.debt_account    += self.interest_n_cm_account
-    self.debt_account    -= payment_obj.paid_amount
+    self.interest_n_cm_account += base_for_i_n_cm_account - self.base_for_i_n_cm_account
+    # the 2 account (debt_account and base_for_i_n_cm_account) need to debit/credit
+    self.base_for_i_n_cm_account += self.interest_n_cm_account
+    self.base_for_i_n_cm_account -= payment_obj.paid_amount
+    self.date_of_last_interest_applied = payment_obj.paydate + relativedelta(days=+1)
     self.payment_account += payment_obj.paid_amount
 
   '''

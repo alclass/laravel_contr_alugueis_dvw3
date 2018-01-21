@@ -46,5 +46,40 @@ def test_bill_payment_2():
 
   print(bill_obj)
 
+def test_bill_payment_12():
+  monthrefdate = date(2017, 11, 1)
+  # duedate          = date(2018, 1, 10)
+  duedate = None
+  alug = 3000;
+  cond = 1300;
+  iptu = 300
+  inmonth_due = alug + cond + iptu
+  billingitems = []
+  billingitem = {Bill.REFTYPE_KEY: 'ALUG', 'value': alug}
+  billingitems.append(billingitem)
+  billingitem = {Bill.REFTYPE_KEY: 'COND', 'value': cond}
+  billingitems.append(billingitem)
+  billingitem = {Bill.REFTYPE_KEY: 'IPTU', 'value': iptu}
+  billingitems.append(billingitem)
+
+  bill_obj = Bill(monthrefdate=monthrefdate, duedate=duedate, billingitems=billingitems)
+  previousmonthsdebts = 1255.00
+  bill_obj.set_previousmonthsdebts(previousmonthsdebts=previousmonthsdebts)
+  payments = []
+  paydate = date(2017, 12, 10)
+  # paydate_frozen = copy(paydate)
+  firstpayondateamount = inmonth_due + previousmonthsdebts
+  payment_obj = Payment(paid_amount=firstpayondateamount, paydate=paydate)
+  payments.append(payment_obj)
+  paydatelate = date(2017, 12, 11)
+  secondpaylateamount = 100
+  payment_obj = Payment(paid_amount=secondpaylateamount, paydate=paydatelate)
+  payments.append(payment_obj)
+  bill_obj.setPayments(payments)
+  bill_obj.process_payment()
+
+  print(bill_obj)
+
+
 if __name__ == '__main__':
-  test_bill_payment_2()
+  test_bill_payment_12()
