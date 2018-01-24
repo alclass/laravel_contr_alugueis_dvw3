@@ -82,8 +82,16 @@ class TestBill(unittest.TestCase):
     getDecimalContext().prec = 8
     self.assertEqual(objsdebtaccount, paymentmissingtocompare)
 
+    overpaid = 0
+    if payment_missing < 0:
+      overpaid -= payment_missing
+      payment_missing = 0
+    self.assertEqual(objsdebtaccount, paymentmissingtocompare)
 
-  def test_bill_payment_4(self):
+    self.assertEqual(bill_obj.cred_account, overpaid)
+
+
+  def test_bill_payment_2(self):
     '''
     Here ONE payments is on time and ANOTHER is late.
     :return:
@@ -138,12 +146,22 @@ class TestBill(unittest.TestCase):
     monthdaysfraction = 15/28 # monthdaysfraction considers february not january
     interest_n_cm_on_day_15 = amount_in_mora * ((0.01 + corrmonet) * monthdaysfraction) # 0.005 must be fetched (TO-DO): for the time being, it's hardcoded
     payment_missing = inmonth_due + fine_value + interest_n_cm_on_day_15 - payment_total_amount
+
+    # With these numbers, we'll class Decimal() otherwise, equality will differ 'far away' into the decimal places
+
     objsdebtaccount = Decimal(payment_missing)
     paymentmissingtocompare = Decimal(payment_missing)
     getDecimalContext().prec = 8
+
+    overpaid = 0
+    if payment_missing < 0:
+      overpaid -= payment_missing
+      payment_missing = 0
     self.assertEqual(objsdebtaccount, paymentmissingtocompare)
 
-  def test_bill_payment_8(self):
+    self.assertEqual(bill_obj.cred_account, overpaid)
+
+  def test_bill_payment_3(self):
     '''
     Here TWO payments are done on the same late date
     :return:
@@ -183,9 +201,7 @@ class TestBill(unittest.TestCase):
     expected_inmonthplusdebts_minus_payments = inmonth_due - paid_amount
     self.assertEqual(bill_obj.inmonthpluspreviousdebts_minus_payments, expected_inmonthplusdebts_minus_payments)
 
-    # inmonthpluspreviousdebts_minus_payments
-    amount_to_fine = inmonth_due  # 800
-    fine_value = amount_to_fine * 0.1
+    fine_value = inmonth_due * 0.1
     self.assertEqual(bill_obj.multa_account, fine_value) # 80 ie 10% of 800
 
     # debt_account, after processing, is payment_missing
@@ -193,13 +209,20 @@ class TestBill(unittest.TestCase):
     corrmonet = Juros.fetch_corrmonet_for_month(paydate_minus_one_month) # corr_monet considers 2018-jan not february
     print ('corrmonet paydate_frozen', paydate_frozen, paydate_minus_one_month, corrmonet)
     monthdaysfraction = 27/31 # monthdaysfraction considers february not january
-    interest_n_cm_on_payday = amount_to_fine * ((0.01 + corrmonet) * monthdaysfraction) # 0.005 must be fetched (TO-DO): for the time being, it's hardcoded
-    payment_missing = amount_to_fine + fine_value + interest_n_cm_on_payday - paid_amount
+    interest_n_cm_on_payday = inmonth_due * ((0.01 + corrmonet) * monthdaysfraction) # 0.005 must be fetched (TO-DO): for the time being, it's hardcoded
+    payment_missing = inmonth_due + fine_value + interest_n_cm_on_payday - paid_amount
     print ('payment_missing', payment_missing)
+    overpaid = 0
+    if payment_missing < 0:
+      overpaid -= payment_missing
+      payment_missing = 0
     self.assertEqual(bill_obj.debt_account, payment_missing)
 
+    # cred_account (overpaid is simmetric of payment_missing if latter is negative, otherwise, it's zero)
+    self.assertEqual(bill_obj.cred_account, overpaid)
 
-  def test_bill_payment_12(self):
+
+  def test_bill_payment_4(self):
     '''
     Here TWO payments are done on the same late date
     :return:
@@ -248,7 +271,7 @@ class TestBill(unittest.TestCase):
     self.assertEqual(bill_obj.inmonthpluspreviousdebts_minus_payments, expected_inmonthplusdebts_minus_payments)
 
     # inmonthpluspreviousdebts_minus_payments
-    amount_in_mora = inmonth_due_plus_previousmonthsdebts - firstpayondateamount  # 800
+    amount_in_mora = inmonth_due - firstpayondateamount  # 800
     fine_value = amount_in_mora * 0.1
     self.assertEqual(bill_obj.multa_account, fine_value) # 80 ie 10% of 800
 
@@ -256,9 +279,113 @@ class TestBill(unittest.TestCase):
     corrmonet = Juros.fetch_corrmonet_for_month(monthrefdate)
     monthdaysfraction = 1/31
     interest_n_cm_on_payday = amount_in_mora * ((0.01 + corrmonet) * monthdaysfraction) # 0.005 must be fetched (TO-DO): for the time being, it's hardcoded
-    payment_missing = amount_in_mora + fine_value + interest_n_cm_on_payday - paid_amount
-    print ('payment_missing', payment_missing)
-    # self.assertEqual(bill_obj.debt_account, payment_missing)
+    payment_missing = inmonth_due_plus_previousmonthsdebts + fine_value + interest_n_cm_on_payday - paid_amount
+    overpaid = 0
+    if payment_missing < 0:
+      overpaid -= payment_missing
+      payment_missing = 0
+    self.assertEqual(bill_obj.debt_account, payment_missing)
+
+    # cred_account (overpaid is simmetric of payment_missing if latter is negative, otherwise, it's zero)
+    self.assertEqual(bill_obj.cred_account, overpaid)
+
+
+  def test_bill_payment_5(self):
+    '''
+    Here TWO payments are done on the same late date
+    :return:
+    '''
+    monthrefdate = date(2017, 1, 1)
+    #duedate          = date(2018, 1, 10)
+    duedate = None
+    alug = 2500; cond = 950; iptu = 250
+    inmonth_due = alug + cond + iptu
+    billingitems = []
+    billingitem  = {Bill.REFTYPE_KEY:'ALUG','value':alug}
+    billingitems.append(billingitem)
+    billingitem  = {Bill.REFTYPE_KEY:'COND','value':cond}
+    billingitems.append(billingitem)
+    billingitem  = {Bill.REFTYPE_KEY:'IPTU','value':iptu}
+    billingitems.append(billingitem)
+
+    bill_obj = Bill(monthrefdate=monthrefdate, duedate=duedate, billingitems=billingitems)
+    previousmonthsdebts = 3000.00
+    bill_obj.set_previousmonthsdebts(previousmonthsdebts = previousmonthsdebts)
+    payments = []
+    paid_amount  = 0
+    paydate1 = date(2017, 4, 10)
+    payamount1 = 3000
+    paid_amount += payamount1
+    payment_obj = Payment(paid_amount=payamount1, paydate=paydate1)
+    payments.append(payment_obj)
+    paydate2 = date(2017, 5, 10)
+    payamount2 = 1000
+    paid_amount += payamount2
+    payment_obj = Payment(paid_amount=payamount2, paydate=paydate2)
+    payments.append(payment_obj)
+    paydate3 = date(2017, 6, 3)
+    payamount3 = 500
+    paid_amount += payamount3
+    payment_obj = Payment(paid_amount=payamount3, paydate=paydate3)
+    payments.append(payment_obj)
+    bill_obj.setPayments(payments)
+    bill_obj.process_payment()
+
+    # inmonth_due_amount
+    self.assertEqual(bill_obj.inmonth_due_amount, inmonth_due)
+    # previousmonthsdebts
+    self.assertEqual(bill_obj.previousmonthsdebts, previousmonthsdebts)
+    # inmonthpluspreviousdebts
+    inmonth_due_plus_previousmonthsdebts = inmonth_due + previousmonthsdebts
+    self.assertEqual(bill_obj.inmonthpluspreviousdebts, inmonth_due_plus_previousmonthsdebts)
+    # payment_account
+    self.assertEqual(bill_obj.payment_account, paid_amount)
+    # inmonthpluspreviousdebts_minus_payments
+    expected_inmonthplusdebts_minus_payments = inmonth_due_plus_previousmonthsdebts - paid_amount
+    self.assertEqual(bill_obj.inmonthpluspreviousdebts_minus_payments, expected_inmonthplusdebts_minus_payments)
+
+    # inmonthpluspreviousdebts_minus_payments
+    amount_in_mora = inmonth_due
+    fine_value = amount_in_mora * 0.1
+    # print('=>', inmonth_due_plus_previousmonthsdebts, bill_obj.multa_account, fine_value)
+    self.assertEqual(bill_obj.multa_account, fine_value)
+
+    # debt_account, after processing, is payment_missing
+    cm_jan_for_feb = Juros.fetch_corrmonet_for_month(monthrefdate)
+    date2018_02 = monthrefdate + relativedelta(months=+1)
+    cm_feb_for_mar = Juros.fetch_corrmonet_for_month(date2018_02)
+    date2018_03 = date2018_02 + relativedelta(months=+1)
+    cm_mar_for_apr = Juros.fetch_corrmonet_for_month(date2018_03)
+    date2018_04 = date2018_03 + relativedelta(months=+1)
+    cm_apr_for_may = Juros.fetch_corrmonet_for_month(date2018_04)
+    date2018_05 = date2018_04 + relativedelta(months=+1)
+    cm_may_for_jun = Juros.fetch_corrmonet_for_month(date2018_05)
+    ongoingvalue = inmonth_due * (1.1) # fine applied
+    # correction in Feb
+    ongoingvalue += ongoingvalue *(0.01 + cm_jan_for_feb)
+    # correction in Mar
+    ongoingvalue += ongoingvalue * (0.01 + cm_feb_for_mar)
+    # correction in Aprr
+    # paydate1 = date(2017, 4, 10)
+    ongoingvalue += ongoingvalue * ((0.01+cm_mar_for_apr)*(10/30))
+    ongoingvalue -= payamount1
+    # paydate2 = date(2017, 5, 10)
+    ongoingvalue += ongoingvalue * ((0.01+cm_mar_for_apr)*(20/30)) # part in April (20 days of Apr)
+    ongoingvalue += ongoingvalue * ((0.01+cm_apr_for_may)*(10/31)) # part in May (10 days of May)
+    ongoingvalue -= payamount2
+    # paydate3 = date(2017, 6, 3)
+    ongoingvalue += ongoingvalue * (1 + (0.01+cm_apr_for_may)*(21/31)) # part in May (21 days of May)
+    ongoingvalue += ongoingvalue * (1 + (0.01+cm_may_for_jun)*(3/30)) # part in June (3 days of Jun)
+    ongoingvalue -= payamount3
+    payment_missing = ongoingvalue
+    overpaid = 0
+    if payment_missing < 0:
+      overpaid -= payment_missing
+      payment_missing = 0
+    self.assertEqual(bill_obj.debt_account, payment_missing)
+
+    # cred_account (overpaid is simmetric of payment_missing if latter is negative, otherwise, it's zero)
+    self.assertEqual(bill_obj.cred_account, overpaid)
 
 
 

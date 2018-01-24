@@ -86,18 +86,20 @@ class Bill:
     self.total_paid     = 0
     self.debt_factor_mora_increasedvalue_quadlist = [] # list of tuples
     # Accounting-like accounts
-    # self.debt_account            = 0
-    self.base_for_i_n_cm_account = 0
+    self.debt_account            = 0 # has accessors because base_for_i_n_cm_account
+    # dynamic self.base_for_i_n_cm_account = 0 # it depends on debt_account minus 'multa' (fine)
     self.cred_account            = 0
     self.payment_account         = 0
     self.multa_account           = 0
     self.interest_n_cm_account   = 0
     self.inmonth_due_amount      = 0 # inmonth_due_amount is the amounts that arise in the contract's monthly bill
+    self.set_inmonth_due_amount()
+
+  def set_inmonth_due_amount(self):
     for billingitem in self.billingitems:
       value = billingitem['value']
       self.inmonth_due_amount += value
-    self.base_for_i_n_cm_account = self.inmonthpluspreviousdebts
-
+      self.debt_account       += value
 
   @property
   def inmonthpluspreviousdebts(self):
@@ -123,13 +125,17 @@ class Bill:
     return self.multa_account + self.interest_n_cm_account
 
   @property
-  def debt_account(self):
+  def base_for_i_n_cm_account(self):
     '''
-    Reader attribute as method
-    inmonthpluspreviousdebts is inmonth_due_amount plus previous months' debts
+    base_for_i_n_cm_account is a DEPENDENT variable. It's either:
+      base_for_i_n_cm_account = debt_account - multa_account
+      or 0 if (debt_account - multa_account) is negative
     :return:
     '''
-    return self.inmonthpluspreviousdebts + self.fine_interest_n_cm - self.payment_account
+    basevalue = self.debt_account - self.multa_account
+    if basevalue < 0:
+      return 0
+    return basevalue
 
   @property
   def inmonthpluspreviousdebts_minus_payments(self):
@@ -144,21 +150,33 @@ class Bill:
     if previousmonthsdebts < 0:
       raise ValueError('previousmonthsdebts (=%s) < 0' %(previousmonthsdebts))
     self.previousmonthsdebts = previousmonthsdebts
+    self.debt_account += self.previousmonthsdebts
 
   def fetch_debo_amount_from_previous_bills_if_any(self):
     return PreviousBill.fetch_carriedup_debt_amount()
 
-  def pay(self, payment_obj):
+  def credit_debit_payment(self, paid_amount):
     '''
-    This method is for payment on time, not late-mora payments.
-    Consider this as a private method.
-    Also that it works as a credit / debit operation.
-    It can only be called from inside the 'if' that checks this pay is on date
-    :param payment_obj:
+    Order is:
+    1) older debts quit first
+    2) non-ALUG quit first
+    3) ALUG is the last one to purge
     :return:
     '''
-    self.base_for_i_n_cm_account -= payment_obj.paid_amount
-    self.payment_account         += payment_obj.paid_amount
+    if paid_amount is None or paid_amount <= 0:
+      return
+    self.payment_account += paid_amount
+    if self.debt_account > 0:
+      diff = self.debt_account - paid_amount
+      if diff < 0:
+        self.debt_account = 0
+        self.cred_account += diff
+      else:
+        self.debt_account -= paid_amount
+
+    else:
+      self.cred_account += paid_amount
+
 
   def apply_multa_if_payment_is_incomplete(self):
     '''
@@ -174,17 +192,16 @@ class Bill:
     :return:
     '''
     # obs: payments list must be IN ORDER OF PAYDATE
-    self.total_paid = 0
     amount_paid_on_date = 0
     for payment_obj in self.payments:
-      self.total_paid += payment_obj.paid_amount
       if payment_obj.paydate <= self.duedate:
         amount_paid_on_date += payment_obj.paid_amount
-    if amount_paid_on_date < self.inmonth_due_amount:
+    if amount_paid_on_date < self.inmonthpluspreviousdebts:
       amount_to_fine = self.inmonth_due_amount - amount_paid_on_date
       multa_amount = amount_to_fine * 0.1
       # Accounting-like accounts debt/credit
       self.multa_account += multa_amount
+      self.debt_account  += multa_amount
 
   def process_payment(self):
     '''
@@ -213,6 +230,17 @@ class Bill:
         self.pay_late(payment_obj)
 
 
+  def pay(self, payment_obj):
+    '''
+    This method is for payment on time, not late-mora payments.
+    Consider this as a private method.
+    Also that it works as a credit / debit operation.
+    It can only be called from inside the 'if' that checks this pay is on date
+    :param payment_obj:
+    :return:
+    '''
+    self.credit_debit_payment(payment_obj.paid_amount)
+
   def pay_late(self, payment_obj):
     '''
     The interest startdate is not duedate, it takes on two possible values, ie:
@@ -230,6 +258,12 @@ class Bill:
     :param payment_obj:
     :return:
     '''
+
+    # 1st hypothesis: a payment happened without no debt at all, simplily 'debit' it to cred_account
+    if self.debt_account <= 0:
+      self.cred_account    += payment_obj.paid_amount
+      self.payment_account += payment_obj.paid_amount
+      return
 
     if self.date_of_last_interest_applied is not None:
       interest_startdate = self.date_of_last_interest_applied
@@ -270,19 +304,23 @@ class Bill:
       payment_obj,
       mo_by_mo_interest_plus_corrmonet_times_fraction_array
     ):
-    base_for_i_n_cm_account = self.base_for_i_n_cm_account
-    for factor in mo_by_mo_interest_plus_corrmonet_times_fraction_array:
-      basevalue    = base_for_i_n_cm_account
-      moraincrease = base_for_i_n_cm_account * factor
-      base_for_i_n_cm_account += moraincrease
-      debt_factor_moraincrease_triple = (basevalue, factor, moraincrease, base_for_i_n_cm_account)
+    if self.base_for_i_n_cm_account == 0:
+      return self.pay(payment_obj)
+
+    for e, factor in enumerate(mo_by_mo_interest_plus_corrmonet_times_fraction_array):
+      # notice that self.base_for_i_n_cm_account is DYNAMIC, ie, it depends on debt_account
+      if e > 0:
+        basevalue = self.base_for_i_n_cm_account
+      else:
+        basevalue = self.debt_account
+      moraincrease = basevalue * factor
+      self.debt_account          += moraincrease
+      self.interest_n_cm_account += moraincrease
+      debt_factor_moraincrease_triple = (basevalue, factor, moraincrease, self.base_for_i_n_cm_account)
       self.debt_factor_mora_increasedvalue_quadlist.append(debt_factor_moraincrease_triple)
-    self.interest_n_cm_account += base_for_i_n_cm_account - self.base_for_i_n_cm_account
-    # the 2 account (debt_account and base_for_i_n_cm_account) need to debit/credit
-    self.base_for_i_n_cm_account += self.interest_n_cm_account
-    self.base_for_i_n_cm_account -= payment_obj.paid_amount
+
+    self.credit_debit_payment(payment_obj.paid_amount)
     self.date_of_last_interest_applied = payment_obj.paydate + relativedelta(days=+1)
-    self.payment_account += payment_obj.paid_amount
 
   '''
   def add_payment_obj(self, payment_obj):
@@ -326,7 +364,7 @@ class Bill:
     text += line
     line = '-------------------\n'
     text += line
-    line = 'Total (Itens) ----  %.2f\n' % (self.inmonth_due_amount)
+    line = 'Total (Itens) ----  %.2f\n' % (self.inmonthpluspreviousdebts)
     text += line
     line = '==================\n'
     text += line
@@ -357,11 +395,14 @@ class Bill:
     if self.fine_interest_n_cm > 0:
       line = 'Total Mora   -------   %.2f\n' %(self.fine_interest_n_cm)
       text += line
-    if self.total_bill_with_mora_if_any > 0:
+    if self.multa_account + self.interest_n_cm_account > 0:
       line = 'Total mês considerado mora-atraso -----  %.2f\n' % (self.total_bill_with_mora_if_any)
       text += line
     if self.debt_account > 0:
       line = 'Valor aberto em débito: %.2f\n' %(self.debt_account)
+      text += line
+    if self.cred_account > 0:
+      line = 'Crédito para próx. mês: %.2f\n' %(self.cred_account)
       text += line
     return text
 
