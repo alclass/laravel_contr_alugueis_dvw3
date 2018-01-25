@@ -271,7 +271,9 @@ class TestBill(unittest.TestCase):
     self.assertEqual(bill_obj.inmonthpluspreviousdebts_minus_payments, expected_inmonthplusdebts_minus_payments)
 
     # inmonthpluspreviousdebts_minus_payments
-    amount_in_mora = inmonth_due - firstpayondateamount  # 800
+    amount_in_mora = inmonth_due - firstpayondateamount
+    if amount_in_mora < 0:
+      amount_in_mora = 0
     fine_value = amount_in_mora * 0.1
     self.assertEqual(bill_obj.multa_account, fine_value) # 80 ie 10% of 800
 

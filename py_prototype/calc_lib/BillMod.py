@@ -299,6 +299,24 @@ class Bill:
       mo_by_mo_interest_plus_corrmonet_times_fraction_array
     )
 
+  def is_pay_moment_later_than_mplus1(self, payment_obj):
+    '''
+    This method regulates which basevalue to be used to calculate interest plus corr.monet.
+    Example:
+      Suppose monthrefdate is 2018-01-01
+      Suppose also duedate is 2018-01-10 (reminding that duedate is checked before entering pay_late()
+      Under these 2 hypotheses:
+        case 1) window moment from 2018-02-11 to 2018-02-28 (or 29 in leap years)
+          takes basevalue as debt_account minus fine_amount
+        case 2) window moment beyond 2018-02-28 as the whole debt_account applying days down to last interest-corr.monet. calculation
+    :param payment_obj:
+    :return:
+    '''
+    date_later_than_mplus1 = self.monthrefdate + relativedelta(months=+2) # monthrefdate is always day 1
+    if payment_obj.paydate < date_later_than_mplus1:
+      return False
+    return True
+
   def pay_applying_correctionfractions_array(
       self,
       payment_obj,
@@ -307,12 +325,12 @@ class Bill:
     if self.base_for_i_n_cm_account == 0:
       return self.pay(payment_obj)
 
-    for e, factor in enumerate(mo_by_mo_interest_plus_corrmonet_times_fraction_array):
+    for factor in mo_by_mo_interest_plus_corrmonet_times_fraction_array:
       # notice that self.base_for_i_n_cm_account is DYNAMIC, ie, it depends on debt_account
-      if e > 0:
-        basevalue = self.base_for_i_n_cm_account
-      else:
+      if self.is_pay_moment_later_than_mplus1(payment_obj):
         basevalue = self.debt_account
+      else:
+        basevalue = self.base_for_i_n_cm_account
       moraincrease = basevalue * factor
       self.debt_account          += moraincrease
       self.interest_n_cm_account += moraincrease
