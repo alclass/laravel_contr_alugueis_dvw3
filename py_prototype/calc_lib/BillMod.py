@@ -83,6 +83,7 @@ class Bill:
     self.previousmonthsdebts = 0
     self.datecalculator = DateBillCalculator()
     self.payments       = [] # element payment_obj has amount_paid and paydate
+    self.late_payments  = []
     self.total_paid     = 0
     self.debt_factor_mora_increasedvalue_quadlist = [] # list of tuples
     # Accounting-like accounts
@@ -227,7 +228,32 @@ class Bill:
       if payment_obj.paydate <= self.duedate:
         self.pay(payment_obj)
       else:
+        #self.pay_late(payment_obj)
+        self.late_payments.append(payment_obj)
+
+    self.batch_late_payments()
+
+  def batch_late_payments(self, ongoingmonthrefdate=None):
+
+    first_increase = True # boolean signal to add fine_account
+    if ongoingmonthrefdate is None:
+      ongoingmonthrefdate = self.monthrefdate + relativedelta(months=+1)
+
+    while len(self.late_payments) > 0:
+      payment_obj = self.late_payments.pop()
+      monthrefOfPayDate = payment_obj.paydate.replace(day=1)
+      if monthrefOfPayDate > ongoingmonthrefdate:
+        # apply interest for full month
+        if first_increase:
+          self.debt_account += self.debt_account * (0.01 + Juros.fetch_corrmonet_for_month(ongoingmonthrefdate))
+          self.debt_account += self.multa_account
+          first_increase = False # boolean signal to add fine_account
+          self.date_of_last_interest_applied = ongoingmonthrefdate + relativedelta(months=+1)
+      elif monthrefOfPayDate == ongoingmonthrefdate:
         self.pay_late(payment_obj)
+      else:
+        ongoingmonthrefdate = ongoingmonthrefdate + relativedelta(months=+1)
+
 
 
   def pay(self, payment_obj):

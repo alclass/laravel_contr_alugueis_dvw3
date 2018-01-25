@@ -362,23 +362,31 @@ class TestBill(unittest.TestCase):
     cm_apr_for_may = Juros.fetch_corrmonet_for_month(date2018_04)
     date2018_05 = date2018_04 + relativedelta(months=+1)
     cm_may_for_jun = Juros.fetch_corrmonet_for_month(date2018_05)
-    ongoingvalue = inmonth_due * (1.1) # fine applied
+    multa_unica = inmonth_due * 0.1 # fine applied
+    ongoingvalue = inmonth_due_plus_previousmonthsdebts
     # correction in Feb
-    ongoingvalue += ongoingvalue *(0.01 + cm_jan_for_feb)
+    ongoingvalue += ongoingvalue * (0.01 + cm_jan_for_feb) + multa_unica
+    print (' correction in Feb =>', ongoingvalue)
     # correction in Mar
     ongoingvalue += ongoingvalue * (0.01 + cm_feb_for_mar)
+    print (' correction in Mar =>', ongoingvalue)
     # correction in Aprr
     # paydate1 = date(2017, 4, 10)
     ongoingvalue += ongoingvalue * ((0.01+cm_mar_for_apr)*(10/30))
     ongoingvalue -= payamount1
+    print (' correction in Apr with pay =>', ongoingvalue)
     # paydate2 = date(2017, 5, 10)
     ongoingvalue += ongoingvalue * ((0.01+cm_mar_for_apr)*(20/30)) # part in April (20 days of Apr)
+    print (' correction in Apr month\'s end =>', ongoingvalue)
     ongoingvalue += ongoingvalue * ((0.01+cm_apr_for_may)*(10/31)) # part in May (10 days of May)
     ongoingvalue -= payamount2
+    print (' correction in May with pay =>', ongoingvalue)
     # paydate3 = date(2017, 6, 3)
-    ongoingvalue += ongoingvalue * (1 + (0.01+cm_apr_for_may)*(21/31)) # part in May (21 days of May)
-    ongoingvalue += ongoingvalue * (1 + (0.01+cm_may_for_jun)*(3/30)) # part in June (3 days of Jun)
+    ongoingvalue += ongoingvalue * ((0.01+cm_apr_for_may)*(21/31)) # part in May (21 days of May)
+    print (' correction in May month\'s end =>', ongoingvalue)
+    ongoingvalue += ongoingvalue * ((0.01+cm_may_for_jun)*(3/30)) # part in June (3 days of Jun)
     ongoingvalue -= payamount3
+    print (' correction in June with pay =>', ongoingvalue)
     payment_missing = ongoingvalue
     overpaid = 0
     if payment_missing < 0:

@@ -20,7 +20,7 @@ except SystemError:
   from PaymentMod import Payment
   from juros_calculator import Juros
 
-def test_bill_payment_2():
+def test_bill_payment_1():
   monthrefdate = date(2017, 12, 1)
   #duedate          = date(2018, 1, 10)
   duedate = None
@@ -46,7 +46,7 @@ def test_bill_payment_2():
 
   print(bill_obj)
 
-def test_bill_payment_12():
+def test_bill_payment_2():
   monthrefdate = date(2017, 11, 1)
   # duedate          = date(2018, 1, 10)
   duedate = None
@@ -80,6 +80,51 @@ def test_bill_payment_12():
 
   print(bill_obj)
 
+def test_bill_payment_5():
+  '''
+  Here TWO payments are done on the same late date
+  :return:
+  '''
+  monthrefdate = date(2017, 1, 1)
+  # duedate          = date(2018, 1, 10)
+  duedate = None
+  alug = 2500;
+  cond = 950;
+  iptu = 250
+  inmonth_due = alug + cond + iptu
+  billingitems = []
+  billingitem = {Bill.REFTYPE_KEY: 'ALUG', 'value': alug}
+  billingitems.append(billingitem)
+  billingitem = {Bill.REFTYPE_KEY: 'COND', 'value': cond}
+  billingitems.append(billingitem)
+  billingitem = {Bill.REFTYPE_KEY: 'IPTU', 'value': iptu}
+  billingitems.append(billingitem)
+
+  bill_obj = Bill(monthrefdate=monthrefdate, duedate=duedate, billingitems=billingitems)
+  previousmonthsdebts = 3000.00
+  bill_obj.set_previousmonthsdebts(previousmonthsdebts=previousmonthsdebts)
+  payments = []
+  paid_amount = 0
+  paydate1 = date(2017, 4, 10)
+  payamount1 = 3000
+  paid_amount += payamount1
+  payment_obj = Payment(paid_amount=payamount1, paydate=paydate1)
+  payments.append(payment_obj)
+  paydate2 = date(2017, 5, 10)
+  payamount2 = 1000
+  paid_amount += payamount2
+  payment_obj = Payment(paid_amount=payamount2, paydate=paydate2)
+  payments.append(payment_obj)
+  paydate3 = date(2017, 6, 3)
+  payamount3 = 500
+  paid_amount += payamount3
+  payment_obj = Payment(paid_amount=payamount3, paydate=paydate3)
+  payments.append(payment_obj)
+  bill_obj.setPayments(payments)
+  bill_obj.process_payment()
+
+  print(bill_obj)
+
 
 if __name__ == '__main__':
-  test_bill_payment_12()
+  test_bill_payment_5()
