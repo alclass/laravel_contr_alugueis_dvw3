@@ -12,15 +12,14 @@ import sys
 import calendar # calendar.monthrange(year, month)
 # from .DateBillCalculatorMod import DateBillCalculator
 
-'''
-data for a unit test
-'''
-
+try:
+  from .AmountIncreaseTrailMod import AmountIncreaseTrail
+except SystemError:
+  from AmountIncreaseTrailMod import AmountIncreaseTrail
 
 # =======================
 # DATA AREA
 # =======================
-
 
 bill_dict = {
   'inmonthdue'   : 3700,
@@ -35,6 +34,9 @@ corr_monet_month_dict = {
   date(2017, 3, 1) : 0.002,
   date(2017, 4, 1) : 0.003,
   date(2017, 5, 1) : 0.004,
+  # -------------------------
+  date(2017, 6, 1): 0.004,
+  date(2017, 7, 1): 0.004,
 }
 
 interest_rate = 0.01
@@ -47,10 +49,11 @@ payments_list = [
 
 ]
 
-#print (bill_dict)
-#print (payments_list)
-
-outlist = []
+def extract_lastmonthsdate_from(fromdate):
+  if fromdate is None:
+    return None
+  daysinmonth = calendar.monthrange(fromdate.year, fromdate.month)[1]
+  return fromdate.replace(day=daysinmonth)
 
 
 class PaymentTimeProcessor:
@@ -89,7 +92,6 @@ class PaymentTimeProcessor:
       return
     paytuple = self.payments_list[0]
     del self.payments_list[0]
-    outlist.append(paytuple)
     print ('paytuple => ', paytuple)
     print ('debt_account => ', self.debt_account)
 
@@ -105,80 +107,99 @@ class PaymentTimeProcessor:
     return self.recursively_process_payments()
 
 
-  def are_restart_mora_date_and_paydate_in_the_same_month(self, restart_mora_date, paydate):
+  def are_dates_in_the_same_yearmonth(self, restart_mora_date, paydate):
     if restart_mora_date.year == paydate.year:
       if restart_mora_date.month == paydate.month:
         return True
     return False
 
-  seq = 0
+  def apply_interestcm_with_pay_to_remaining_month_n_return_ait(self, paydate, paid_amount):
+
+    daysinmonth    = calendar.monthrange(paydate.year, paydate.month)[1]
+    daysininterest = paydate.day - self.restart_mora_date.day + 1
+    monthfraction  = daysininterest / daysinmonth
+    corrmonet_monthrefdate = paydate - relativedelta(months=+1)
+    corrmonet_monthrefdate = corrmonet_monthrefdate.replace(day=1)
+    corrmonet     = corr_monet_month_dict[corrmonet_monthrefdate]
+    montant_ini   = self.debt_account
+    debt_increase = self.debt_account * ((interest_rate + corrmonet) * monthfraction)
+    self.debt_account     += debt_increase
+    self.restart_mora_date = paydate + relativedelta(days=+1)
+    self.seq += 1
+    print('seq =>', self.seq)
+    multa_value_for_trail = None
+    if self.add_multa_first_time:
+      self.debt_account        += self.multa_account
+      multa_value_for_trail     = self.multa_account
+      self.add_multa_first_time = False
+      print(' :: multa =>', self.multa_account)
+    print(' :: restart_mora_date =>', self.restart_mora_date)
+    self.debt_account    -= paid_amount
+    paid_amount_for_trail = paid_amount
+    monthrefdate          = corrmonet_monthrefdate + relativedelta(months=+1)
+    print('monthref =>', monthrefdate, ' days =>', daysininterest)
+    print('debt_account => ', self.debt_account, 'debt_increase =>', debt_increase)
+    '''
+      montant_ini, monthrefdate, paydate, paid_amount,
+      interest_rate, corrmonet_in_month, daysininterest, finevalue = None      
+    '''
+    ait = AmountIncreaseTrail(
+      montant_ini=montant_ini,
+      monthrefdate=monthrefdate,
+      pay_or_restart_date=paydate,
+      paid_amount=paid_amount_for_trail,
+      interest_rate=interest_rate,
+      corrmonet_in_month=corrmonet,
+      daysininterest=daysininterest,
+      finevalue=multa_value_for_trail
+    )
+    return ait
+
   def pay_recursively_consuming_either_month_or_pay(self, paydate, paid_amount):
 
     if paydate < self.restart_mora_date:
-      raise ValueError('paydate_as_monthref_with_day1 < restart_mora_date_monthref')
+      return
+      #raise ValueError('paydate_as_monthref_with_day1 < restart_mora_date_monthref')
 
-    if self.are_restart_mora_date_and_paydate_in_the_same_month(
+    if self.are_dates_in_the_same_yearmonth(
         self.restart_mora_date,
         paydate
       ):
-      daysinmonth = calendar.monthrange(paydate.year, paydate.month)[1]
-      daysininterest = paydate.day - self.restart_mora_date.day + 1
-      monthfraction = daysininterest / daysinmonth
-      corrmonet_monthrefdate = paydate - relativedelta(months=+1)
-      corrmonet_monthrefdate = corrmonet_monthrefdate.replace(day=1)
-      corrmonet = corr_monet_month_dict[corrmonet_monthrefdate]
-      montant_ini = self.debt_account
-      debt_increase = self.debt_account * ((interest_rate + corrmonet) * monthfraction)
-      self.debt_account += debt_increase
-      self.restart_mora_date = paydate + relativedelta(days=+1)
-      self.seq += 1
-      print('seq =>', self.seq)
-      multa_value_for_trail = None
-      if self.add_multa_first_time:
-        self.debt_account += self.multa_account
-        multa_value_for_trail = self.multa_account
-        self.add_multa_first_time = False
-        print(' :: multa =>', self.multa_account)
-      print(' :: restart_mora_date =>', self.restart_mora_date)
-      self.debt_account -= paid_amount
-      paid_amount_for_trail = paid_amount
-      monthrefdate = corrmonet_monthrefdate + relativedelta(months=+1)
-      print('monthref =>', monthrefdate, ' days =>', daysininterest)
-      print('debt_account => ', self.debt_account, 'debt_increase =>', debt_increase)
-      ait = AmountIncreaseTrail(
-        montant_ini        = montant_ini,
-        interest_rate      = interest_rate,
-        corrmonet_in_month = corrmonet,
-        monthrefdate       = monthrefdate,
-        paydate            = paydate,
-        daysininterest     = daysininterest,
-        payapplied         = paid_amount_for_trail,
-        finevalue          = multa_value_for_trail
-      )
+      # non-recursive
+      ait = self.apply_interestcm_with_pay_to_remaining_month_n_return_ait(paydate, paid_amount)
       self.increase_trails.append(ait)
       return
 
-    daysinmonth = calendar.monthrange(self.restart_mora_date.year, self.restart_mora_date.month)[1]
+    ait = self.apply_interestcm_to_remaining_month_n_return_ait(paydate) # , paid_amount not given here
+    self.increase_trails.append(ait)
+    # Readjust paydate for recursion
+    # paydate = ait.pay_or_restart_date
+    return self.pay_recursively_consuming_either_month_or_pay(paydate, paid_amount)
+
+  def apply_interestcm_to_remaining_month_n_return_ait(self, updated_until_date):
+
+    print (' :: updated_until_date =>', updated_until_date)
+    year  = updated_until_date.year
+    month = updated_until_date.month
+    daysinmonth = calendar.monthrange(year, month)[1]
     # remaining days in month
-    daysininterest = daysinmonth - self.restart_mora_date.day + 1
+    daysininterest = daysinmonth - updated_until_date.day + 1
     monthfraction  = daysininterest / daysinmonth
-    monthrefdate   = self.restart_mora_date.replace(day=1)
-    corrmonet_monthrefdate = self.restart_mora_date - relativedelta(months=+1)
+    monthrefdate   = updated_until_date.replace(day=1)
+    corrmonet_monthrefdate = updated_until_date - relativedelta(months=+1)
     corrmonet_monthrefdate = corrmonet_monthrefdate.replace(day=1)
-    corrmonet   = corr_monet_month_dict[corrmonet_monthrefdate]
-    montant_ini = self.debt_account
+    corrmonet     = corr_monet_month_dict[corrmonet_monthrefdate]
+    montant_ini   = self.debt_account
     debt_increase = self.debt_account * ((interest_rate + corrmonet) * monthfraction)
     self.debt_account += debt_increase
     paid_amount_for_trail = 0
-    self.restart_mora_date = self.restart_mora_date + relativedelta(months=+1)
-    self.restart_mora_date = self.restart_mora_date.replace(day=1)
-    multa_value_for_trail = None
+    new_pay_or_restart_date = updated_until_date + relativedelta(months=+1)
+    new_pay_or_restart_date = new_pay_or_restart_date.replace(day=1)
+    multa_value_for_trail  = None
     if self.add_multa_first_time:
-      self.debt_account += self.multa_account
+      self.debt_account    += self.multa_account
       multa_value_for_trail = self.multa_account
-      add_multa_first_time = False
       print(' :: multa =>', self.multa_account)
-    print (' :: restart_mora_date =>', self.restart_mora_date)
     # payment not yet counterplaced, so recurse on until pay's month is the same as restart_mora_date's month
     self.seq += 1
     print('seq =>', self.seq)
@@ -186,45 +207,68 @@ class PaymentTimeProcessor:
     print('debt_account => ', self.debt_account, 'debt_increase =>', debt_increase)
     ait = AmountIncreaseTrail(
       montant_ini        = montant_ini,
+      monthrefdate       = monthrefdate,
+      pay_or_restart_date= new_pay_or_restart_date,
+      paid_amount        = paid_amount_for_trail,
       interest_rate      = interest_rate,
       corrmonet_in_month = corrmonet,
-      monthrefdate       = monthrefdate,
-      paydate            = None,
       daysininterest     = daysininterest,
-      payapplied         = paid_amount_for_trail,
       finevalue          = multa_value_for_trail
     )
-    self.increase_trails.append(ait)
-    return self.pay_recursively_consuming_either_month_or_pay(paydate, paid_amount)
+    self.restart_mora_date = new_pay_or_restart_date
+    return ait
 
-  def calculate_end_of_month_debt(self):
+
+  def check_trail_debt_account_n_raise_exception_if_inconsistent(self, last_increase_trail):
+    '''
+    Only TWO attributes need to be made equal
+    :param last_increase_trail:
+    :return:
+    '''
+    if self.debt_account != last_increase_trail.balance:
+      error_msg = 'debt_account (%f) != last_increase_trail.debt_account (%f)' %(
+        self.debt_account,
+        last_increase_trail.debt_account
+      )
+      raise ValueError(error_msg)
+    if self.restart_mora_date != last_increase_trail.restart_mora_date:
+      error_msg = 'restart_mora_date (%s) != last_increase_trail.restart_mora_date (%s)' %(
+        self.restart_mora_date,
+        last_increase_trail.restart_mora_date
+      )
+      raise ValueError(error_msg)
+
+  def set_payment_tuplelist(self, payments_list):
+    self.payments_list = payments_list
+
+  def update_balance_from_increase_trails_end_n_return_ait(self, untildate=None):
     '''
         fieldlist = [
-      'montant_ini', 'interest_rate', 'corrmonet_in_month',
-      'monthrefdate', 'paydate',
-      'daysininterest', 'daysinmonth',
-      'increaseamount', 'updatedvalue', 'payapplied',
+      'montant_ini', 'monthrefdate', 'paydate','paid_amount',
+      'interest_rate', 'corrmonet_in_month', 'daysininterest',
+
+       'daysinmonth', 'increaseamount', 'updatedvalue',
       'was_fine_applied', 'finevalue', 'balance',
     ]
     :return:
     '''
-    last_increase_trail = self.increase_trails[-1]
-    restart_mora_date = last_increase_trail
-    daysinmonth = calendar.monthrange(self.restart_mora_date.year, self.restart_mora_date.month)[1]
-    # remaining days in month
-    daysininterest = daysinmonth - self.restart_mora_date.day + 1
-    monthfraction  = daysininterest / daysinmonth
-    monthrefdate   = self.restart_mora_date.replace(day=1)
-    corrmonet_monthrefdate = self.restart_mora_date - relativedelta(months=+1)
-    corrmonet_monthrefdate = corrmonet_monthrefdate.replace(day=1)
-    corrmonet   = corr_monet_month_dict[corrmonet_monthrefdate]
-    projected_debt_account = balance
-    montant_ini = projected_debt_account
-    debt_increase = debt_account * ((interest_rate + corrmonet) * monthfraction)
-    debt_account += debt_increase
-    monthsenddate = self.restart_mora_date.replace(day=daysinmonth)
-    print('debt_account =>', debt_account, 'on', monthsenddate)
 
+    if len(self.increase_trails) == 0:
+      print('Nothing to update in update_balance_from_increase_trails_end(); empty list self.increase_trails')
+      return None
+
+    last_increase_trail = self.increase_trails[-1]
+    self.check_trail_debt_account_n_raise_exception_if_inconsistent(last_increase_trail)
+
+    if untildate is None:
+      untildate = last_increase_trail.extract_lastdayofmonthdate()
+      if untildate == last_increase_trail.uptodate:
+        # no need to update trail, it's already at the required point
+        return last_increase_trail
+
+    # from here on, untildate exists and is not equal to or less than paydate_or_restart_date, ie, it's more than the latter
+    ait = self.apply_interestcm_to_remaining_month_n_return_ait(untildate)
+    return ait
 
   def print_increase_trails(self):
     for ait in self.increase_trails:
@@ -236,6 +280,7 @@ if __name__ == '__main__':
   ptp.set_bill_dict(bill_dict)
   ptp.set_payment_tuplelist(payments_list)
   ptp.recursively_process_payments()
-  # print (outlist)
   ptp.print_increase_trails()
-  ptp.calculate_end_of_month_debt()
+  ait = ptp.update_balance_from_increase_trails_end_n_return_ait()
+  print('update =>', ait)
+
