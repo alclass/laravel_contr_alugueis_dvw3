@@ -6,6 +6,7 @@ See docstring for class AmountIncreaseTrail
 # from datetime import date
 # from datetime import timedelta
 from dateutil.relativedelta import relativedelta
+from datetime import date
 import calendar # for calendar.monthrange(year, month)
 # import sys
 
@@ -20,20 +21,27 @@ class AmountIncreaseTrail:
   '''
 
   def __init__(self,
-               montant_ini, monthrefdate, pay_or_restart_date, paid_amount,
-               interest_rate, corrmonet_in_month, daysininterest, finevalue = None
-               ):
+      montant_ini,
+      monthrefdate,
+      restart_timerange_date,
+      end_timerange_date,
+      interest_rate,
+      corrmonet_in_month,
+      paid_amount = None,
+      finevalue   = None
+    ):
     '''
     Dynamic properties, ie derived fields, depend on other (original) fields (above)
-      self.restart_mora_date
-        => if paid_amount is not None, restart_mora_date is the (daysininterest+1)th in the monthref+1 month
-        => if paid_amount is None, restart_mora_date is monthref+2 (ie, the first month after M+1)
       self.uptodate
-        => is one day less than self.restart_mora_date
+        => the same as end_timerange_date
+      self.restart_mora_date
+        => day after end_timerange_date
       self.was_fine_applied
         => if finevalue is not None, was_fine_applied is True; False otherwise
       self.daysinmonth
-        => it calendar.monthrange()[1] (ie, total days in a month) of M+1
+        => it calendar.monthrange(end_timerange_date)[1] (ie, total days in a month) of M+1
+        OBS.: end_timerange_date AND restart_timerange_date MUST ALWAYS BE IN THE SAME MONTH/YEAR
+              otherwise, an exception will be raised
       self.increaseamount
         => it's the interest plus corr.monet. applied to debt (it does not include fine)
       self.updatedvalue
@@ -44,16 +52,38 @@ class AmountIncreaseTrail:
            previousdebts or cred_amount in the following bill.
 
     '''
-    self.montant_ini   = montant_ini
-    self.monthrefdate  = monthrefdate
-    self.interest_rate = interest_rate
-    self.corrmonet_in_month  = corrmonet_in_month
-    self.pay_or_restart_date = None
-    if pay_or_restart_date is not None:
-      self.pay_or_restart_date = pay_or_restart_date
-    self.daysininterest = daysininterest
-    self.paid_amount    = paid_amount
+    self.montant_ini  = montant_ini
+    self.monthrefdate = monthrefdate # this is never changed across an Amount Increase Trail list that shows the updating of a debt_account according to late payments!
+    self.restart_timerange_date = restart_timerange_date
+    self.end_timerange_date     = end_timerange_date
+    self.interest_rate          = interest_rate
+    self.corrmonet_in_month     = corrmonet_in_month
+
+    if self.restart_timerange_date is None:
+      self.restart_timerange_date = self.monthrefdate + relativedelta(months=+1)
+    if self.end_timerange_date is None:
+      year  = self.restart_timerange_date.year
+      month = self.restart_timerange_date.month
+      lastdayinmonth = calendar.monthrange(year, month)[1]
+      self.end_timerange_date = self.restart_timerange_date.replace(day=lastdayinmonth)
+    self.check_ini_n_end_dates_n_raise_if_consistent()
+
+    self.paid_amount    = paid_amount # if not None, end_timerange_date equals semantically paydate
     self.finevalue      = finevalue
+
+  @property
+  def daysininterest(self):
+    delta = self.end_timerange_date - self.restart_timerange_date
+    days_in_range = delta.days + 1
+    return days_in_range
+
+  @property
+  def monthfraction(self):
+    return self.daysininterest / self.daysinmonth
+
+  @property
+  def updatefactor(self):
+    return (self.interest_rate + self.corrmonet_in_month) * self.monthfraction
 
   @property
   def was_fine_applied(self):
@@ -62,32 +92,30 @@ class AmountIncreaseTrail:
     return True
 
   @property
-  def uptodate(self):
+  def restart_mora_date(self):
     '''
-    uptodate is one day less than restart_mora_date
+      formerly this method was called day_after_end_date()
     :return:
     '''
-    if self.pay_or_restart_date is None:
-      lastdayinmonth = calendar.monthrange(self.monthrefdate.year, self.monthrefdate.month)[1]
-      lastdayinmonthdate = self.monthrefdate.replace(day=lastdayinmonth)
-      return lastdayinmonthdate
-    return self.pay_or_restart_date
+    return self.end_timerange_date + relativedelta(days=+1)
 
-  @property
-  def restart_mora_date(self):
-    return self.uptodate + relativedelta(days=+1)
+  def check_ini_n_end_dates_n_raise_if_consistent(self):
+    iniyear  = self.restart_timerange_date.year
+    inimonth = self.restart_timerange_date.month
+    fimyear  = self.end_timerange_date.year
+    fimmonth = self.end_timerange_date.month
+    if (iniyear, inimonth) != (fimyear, fimmonth):
+      error_msg = '(iniyear=%d, inimonth=%d) != (fimyear=%d, fimmonth=%d)' %(iniyear, inimonth, fimyear, fimmonth)
+      raise ValueError(error_msg)
 
   @property
   def daysinmonth(self):
-    return calendar.monthrange(self.monthrefdate.year, self.monthrefdate.month)[1]
+    self.check_ini_n_end_dates_n_raise_if_consistent()
+    return calendar.monthrange(self.end_timerange_date.year, self.end_timerange_date.month)[1]
 
   @property
   def increaseamount(self):
-    interest_rate_plus_corrmonet = self.interest_rate + self.corrmonet_in_month
-    monthfraction = self.daysininterest / self.daysinmonth
-    increase      = self.montant_ini * (interest_rate_plus_corrmonet * monthfraction)
-    return increase
-
+    return self.montant_ini * self.updatefactor
 
   @property
   def updatedvalue(self):
@@ -104,24 +132,27 @@ class AmountIncreaseTrail:
     :return:
     '''
     multa = 0
-    if self.was_fine_applied:
+    paid_amount = 0
+    if self.finevalue is not None:
       multa = self.finevalue
-    return self.updatedvalue + multa - self.paid_amount
+    if self.paid_amount is not None:
+      paid_amount = self.paid_amount
+    return self.updatedvalue + multa - paid_amount
 
-  def extract_lastdayofmonthdate(self):
-    year  = self.monthrefdate.year
-    month = self.monthrefdate.month
-    lastday = calendar.monthrange(year, month)
-    lastdayofmonthdate = self.monthrefdate.replace(day=lastday)
+  def extract_lastdayofmonth_of_enddate(self):
+    year  = self.end_timerange_date.year
+    month = self.end_timerange_date.month
+    lastdayinmonth = calendar.monthrange(year, month)[1]
+    lastdayofmonthdate = self.end_timerange_date.replace(day=lastdayinmonth)
     return lastdayofmonthdate
 
   def __str__(self):
     fieldlist = [
       'montant_ini', 'interest_rate', 'corrmonet_in_month',
-      'monthrefdate', 'pay_or_restart_date',
-      'daysininterest', 'daysinmonth',
+      'monthrefdate', 'restart_timerange_date', 'end_timerange_date',
+      'daysininterest', 'daysinmonth', 'monthfraction', 'updatefactor',
       'increaseamount', 'updatedvalue', 'paid_amount',
-      'was_fine_applied', 'finevalue', 'balance', 'uptodate',
+      'was_fine_applied', 'finevalue', 'balance',
     ]
     datadict = {}
     for f in fieldlist:
@@ -132,33 +163,59 @@ class AmountIncreaseTrail:
     Mês ref.: {0}
     ================='''.format(monthyearref)
     outstr += '''
-    -> montant_ini        = {montant_ini:.2f}
-    -> daysininterest     = {daysininterest}
-    -> daysinmonth        = {daysinmonth}
-    -> interest_rate      = {interest_rate:.2f}
-    -> corrmonet_in_month = {corrmonet_in_month:.4f}
-    -> increaseamount     = {increaseamount:.2f}'''.format(**datadict)
-    outstr += '''
-    ----------------------------------
-     + updatedvalue       = {updatedvalue:.2f}'''.format(**datadict)
-    if self.paid_amount > 0:
+    -> montante base      = {montant_ini:.2f}
+    -> alícota juros      = {interest_rate:.2f}
+    -> corr.monet. no mês = {corrmonet_in_month:.4f}
+    -> data-início j+cm   = {restart_timerange_date}
+    -> data-até j+cm      = {end_timerange_date}    
+    -> dias contados      = {daysininterest}
+    -> dias no mês        = {daysinmonth}
+    -> fração do mês (fm) = {monthfraction:.2f}
+    -> fator atu(j+cm)*fm = {updatefactor:.4f}
+    -> montante*(j+cm)*fm = {increaseamount:.2f}
+    -> montante atualiz.  = {updatedvalue:.2f}'''.format(**datadict)
+    if self.paid_amount is not None and self.paid_amount > 0:
       outstr += '''
-     - paid_amount        = {paid_amount}
-       -> paydate         = {pay_or_restart_date}'''.format(**datadict)
+    -> pagamento          = -{paid_amount}
+                         em {end_timerange_date}'''.format(**datadict)
     if self.was_fine_applied:
       outstr += '''
-     + finevalue (incid)  = {finevalue}'''.format(**datadict)
+    -> incidência multa   = {finevalue}'''.format(**datadict)
     outstr += '''
     ----------------------------------
-    balance               = {balance:.2f}
-    uptodate              = {uptodate}
+    Saldo a pagar         = {balance:.2f}
+                         em {end_timerange_date}
     ----------------------------------
     '''.format(**datadict)
     return outstr
 
+def adhoctest():
+  ait = AmountIncreaseTrail(
+    montant_ini = 1000,
+    monthrefdate = date(2017,1,1),
+    restart_timerange_date = None,
+    end_timerange_date     = None,
+    interest_rate      = 0.01,
+    corrmonet_in_month = 0.004,
+    paid_amount        = 800,
+    finevalue          = 100,
+  )
+  print (ait)
 
-
+  ait = AmountIncreaseTrail(
+    montant_ini = 2000,
+    monthrefdate = date(2017,12,1),
+    restart_timerange_date = date(2018,3,15),
+    end_timerange_date     = None,
+    interest_rate      = 0.01,
+    corrmonet_in_month = 0.004,
+    paid_amount        = None,
+    finevalue          = None,
+  )
+  print (ait)
 
 
 if __name__ == '__main__':
-  pass
+  adhoctest()
+
+# TO-DO: unit testing
