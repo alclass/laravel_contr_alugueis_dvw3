@@ -48,7 +48,11 @@ class Juros:
     year  = monthrefdate.year
     month = monthrefdate.month
     monthzeroindex = month - 1
-    return CORRMONET_INDICES[year][monthzeroindex]
+    try:
+      cm_index = CORRMONET_INDICES[year][monthzeroindex]
+    except IndexError:
+      cm_index = 0.005
+    return cm_index
 
   @staticmethod
   def calculate_fmontant_from_increment_factor_array(

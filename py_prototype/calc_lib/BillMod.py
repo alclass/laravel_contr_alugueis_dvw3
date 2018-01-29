@@ -11,6 +11,7 @@ try:
   from .PaymentMod import Payment
   from .juros_calculator import Juros
   from .DateBillCalculatorMod import DateBillCalculator
+  from .PaymentTimeProcessorMod import PaymentTimeProcessor
 except SystemError:
   '''
   SystemError is raised when running this script in its folder
@@ -21,9 +22,12 @@ except SystemError:
   from PaymentMod import Payment
   from juros_calculator import Juros
   from DateBillCalculatorMod import DateBillCalculator
+  from PaymentTimeProcessorMod import PaymentTimeProcessor
 
 
 REFTYPE_KEY = 'reftype'
+CARR_REFTYPE = 'CARR'
+
 def create_billingitems_list_for_invoicebill():
   '''
     # data
@@ -40,6 +44,8 @@ def create_billingitems_list_for_invoicebill():
   billingitem = {REFTYPE_KEY: 'COND', 'value': 600}
   billingitems.append(billingitem)
   billingitem = {REFTYPE_KEY: 'IPTU', 'value': 200}
+  billingitems.append(billingitem)
+  billingitem = {REFTYPE_KEY: 'CARR', 'value': 800}
   billingitems.append(billingitem)
   return billingitems
 
@@ -70,34 +76,78 @@ class Bill:
 
   REFTYPE_KEY = REFTYPE_KEY
 
-  def __init__(self, monthrefdate, duedate=None, billingitems=[]):
+  def __init__(self, monthrefdate, duedate=None, billingitems=[], previous_bill = None, monthseqnumber=1, contract_id=None):
     self.monthrefdate   = monthrefdate
+    self.monthseqnumber = monthseqnumber # with this attribute, it's possible to have more than one bill in a month
+    self.contract_id = contract_id
     self.duedate        = duedate
     self.date_of_last_interest_applied = None # this is initialized when a first mora pay is done
     if self.duedate is None:
       # the default duedate, if caller passes None to it, is monthref's next month on day 10
       self.duedate = self.monthrefdate + relativedelta(months=+1)
       self.duedate = self.duedate.replace(day=10)
-    self.billingitems = billingitems # generally, it may have: ALUG, COND, IPTU
     # the value below should be set after constructor (__init())
-    self.previousmonthsdebts = 0
     self.datecalculator = DateBillCalculator()
-    self.payments       = [] # element payment_obj has amount_paid and paydate
-    self.late_payments  = []
-    self.total_paid     = 0
-    self.debt_factor_mora_increasedvalue_quadlist = [] # list of tuples
-    # Accounting-like accounts
-    self.debt_account            = 0 # has accessors because base_for_i_n_cm_account
-    # dynamic self.base_for_i_n_cm_account = 0 # it depends on debt_account minus 'multa' (fine)
-    self.cred_account            = 0
-    self.payment_account         = 0
-    self.multa_account           = 0
-    self.interest_n_cm_account   = 0
-    self.inmonth_due_amount      = 0 # inmonth_due_amount is the amounts that arise in the contract's monthly bill
-    self.set_inmonth_due_amount()
+    self.payments       = [] # payment_obj elements of class Payment
+    self.latepaysprocessor = None # is the AmountIncreaseTrail instance that keeps the records of late pays
+    # self.late_payments  = []   # derivable, it should be a dynamic property
+    # self.total_paid     = 0   # derivable, it should be a dynamic property
 
-  def set_inmonth_due_amount(self):
+    # Accounting-like accounts
+    self.debt_account        = 0 # has accessors because base_for_i_n_cm_account
+    self.previousmonthsdebts = 0
+    self.amount_paid_ontime  = 0
+    # dynamic self.base_for_i_n_cm_account = 0 # it depends on debt_account minus 'multa' (fine)
+    # self.cred_account      = 0 # is dynamic
+    self.payment_account       = 0
+    # self.multa_account       = 0 depends on the first AmountIncreaseTrail object
+    self.interest_n_cm_account = 0
+    self.set_billingitems(billingitems) # generally, it may have: ALUG, COND, IPTU
+    # self.inmonth_due_amount is set above # it's the amounts that arise in the contract's monthly bill, not to be confused with the previousdebts
+    # self.previousmonthsdebts is also set above
+    self.previous_bill = None
+    if previous_bill is not None:
+      self.previous_bill = previous_bill
+
+  @property
+  def multa_account(self):
+    '''
+    NOTICE THE IMPORTANT CONVENTION:
+      A fine, when applied, is only applied to the first trail.
+      If it's not there, then there's no fine.
+    :return:
+    '''
+    if self.latepaysprocessor is not None:
+      if len(self.latepaysprocessor.increase_trails) > 0:
+        firsttrail = self.latepaysprocessor.increase_trails[0]
+        multavalue = 0
+        if firsttrail.finevalue is not None:
+          multavalue = firsttrail.finevalue
+        return multavalue
+    return 0
+
+  @property
+  def valor_sob_mora(self):
+    return self.inmonthpluspreviousdebts - self.amount_paid_ontime
+
+  @property
+  def add_previousmonthsdebts_from_previousbill(self):
+    if self.previous_bill is not None:
+      self.previousmonthsdebts += self.previous_bill.debt_account
+    return 0
+
+  def set_billingitems(self, billingitems):
+    if billingitems is None:
+      return
+    self.billingitems = billingitems
+    self.inmonth_due_amount  = 0
+    self.previousmonthsdebts = 0
     for billingitem in self.billingitems:
+      if billingitem[REFTYPE_KEY] == CARR_REFTYPE: # CARR means carried-up and is the previous month's debt_account
+        value = billingitem['value']
+        self.previousmonthsdebts += value
+        self.debt_account        += value
+        continue
       value = billingitem['value']
       self.inmonth_due_amount += value
       self.debt_account       += value
@@ -122,6 +172,12 @@ class Bill:
     return self.inmonthpluspreviousdebts + mora_increases
 
   @property
+  def cred_account(self):
+    if self.debt_account < 0:
+      return -self.debt_account
+    return 0
+
+  @property
   def fine_interest_n_cm(self):
     return self.multa_account + self.interest_n_cm_account
 
@@ -142,8 +198,31 @@ class Bill:
   def inmonthpluspreviousdebts_minus_payments(self):
     return self.inmonthpluspreviousdebts - self.payment_account
 
-  def setPayments(self, payments):
+  @property
+  def payment_missing(self):
+    if self.debt_account > 0:
+      self.debt_account
+    return 0
+
+  def set_payments(self, payments):
+    if len(payments) == 0:
+      self.payments = []
+      return
+    first_payment = payments[0]
+    if type(first_payment) != Payment:
+      error_msg = 'type(first_payment = [%s]) != Payment' %str(first_payment)
+      raise TypeError(error_msg)
+
+    if Payment.are_there_more_than_one_payment_in_a_day(payments):
+      payments = Payment.consolidate_days_when_there_are_more_than_one_payment_in_a_day(payments)
+
+    Payment.check_paydates_order_n_raise_exception_if_inconsistent(payments)
+
     self.payments = payments
+    self.payment_account = 0
+
+    for payment in self.payments:
+      self.payment_account += payment.paid_amount
 
   def set_previousmonthsdebts(self, previousmonthsdebts):
     if previousmonthsdebts is None:
@@ -153,8 +232,70 @@ class Bill:
     self.previousmonthsdebts = previousmonthsdebts
     self.debt_account += self.previousmonthsdebts
 
-  def fetch_debo_amount_from_previous_bills_if_any(self):
-    return PreviousBill.fetch_carriedup_debt_amount()
+  def reprocess_payment(self):
+    self.payments = copy(self.original_payments)
+    self.process_payment()
+
+  def pay_those_on_date(self):
+
+    while len(self.payments) > 0:
+      currentpay = self.payments[0]
+      if currentpay.paydate <= self.duedate:
+        self.amount_paid_ontime += currentpay.paid_amount
+        self.debt_account -= currentpay.paid_amount
+        del self.payments[0]
+      else:
+        # ie, break out of while, otherwise this is an infinite loop
+        break
+
+  def process_payment(self):
+    print (' ============>>>>>>>>>>>>>>> Getting inside process_payment()')
+
+    self.pay_those_on_date()
+
+    if len(self.payments) == 0:
+      return
+
+    self.CALLED_FROM_PROCESS_PAYMENT = True
+    self.pay_late()
+
+  def pay_late(self):
+    '''
+    ONLY process_payment() can call THIS METHOD !!!
+    Otherwise inconsistencies may happen !
+    :return:
+    '''
+
+    if not self.CALLED_FROM_PROCESS_PAYMENT:
+      error_msg =  'CALLED_FROM_PROCESS_PAYMENT is False. It should not be in method pay_late().'
+      raise SystemError(error_msg)
+    self.CALLED_FROM_PROCESS_PAYMENT = False
+
+    if self.latepaysprocessor is None:
+      self.latepaysprocessor = PaymentTimeProcessor()
+
+    local_inmonthdue = self.inmonth_due_amount - self.amount_paid_ontime
+
+    if local_inmonthdue < 0:
+      local_inmonthdue = 0
+
+    local_previousdebts = self.debt_account - local_inmonthdue
+
+    bill_remaining = {
+      'inmonthdue'   : local_inmonthdue,
+      'previousdebts': local_previousdebts,
+      'monthrefdate' : self.monthrefdate,
+      'duedate'      : self.duedate,
+    }
+
+    self.latepaysprocessor.set_bill_dict(bill_remaining)
+    self.latepaysprocessor.set_payment_tuplelist_via_paymentinstances(self.payments)
+    self.latepaysprocessor.process_payments()
+    #ait = ptp.calculate_debt_ondate_n_return_ait(date(2017, 6, 15))
+
+    # Empty list of payments because they were processed above
+    self.payments = []
+    self.debt_account = self.latepaysprocessor.debt_account
 
   def credit_debit_payment(self, paid_amount):
     '''
@@ -179,198 +320,6 @@ class Bill:
       self.cred_account += paid_amount
 
 
-  def apply_multa_if_payment_is_incomplete(self):
-    '''
-
-    *** THIS METHOD IS YET LOGICALLY INCOMPLETE ***
-      Because it's not enough to find a later date, it should also find
-        if earlier pay was enough
-
-    This method should use functional programming techniques for TWO needs, ie:
-    1) the method should know whether or not various payments paid on time
-    2) the method should quickly find, if it happened, a 'fine' incidence
-
-    :return:
-    '''
-    # obs: payments list must be IN ORDER OF PAYDATE
-    amount_paid_on_date = 0
-    for payment_obj in self.payments:
-      if payment_obj.paydate <= self.duedate:
-        amount_paid_on_date += payment_obj.paid_amount
-    if amount_paid_on_date < self.inmonthpluspreviousdebts:
-      amount_to_fine = self.inmonth_due_amount - amount_paid_on_date
-      multa_amount = amount_to_fine * 0.1
-      # Accounting-like accounts debt/credit
-      self.multa_account += multa_amount
-      self.debt_account  += multa_amount
-
-  def process_payment(self):
-    '''
-    This method should be run after setting the self.payment_objs list of Payments
-
-    Before calculing bill, it must know whether or not to aply fine.
-
-    The fine happens over the monthly amount that is late.
-    The fine does not cover an amount that has been carried up, ie, older debt.
-    So the TWO things are necessary to apply fine:
-      1) even if some payment has been done on time,
-        it must satisfy the complete bill's amount,
-        if not, the contract fine applies to the amount
-        that would complete the monthly bill;
-      2) once 1) above happens, it must separate the monthly amount
-        from any carrying-up's from older months,
-        because fines do not apply to carrying-up's.
-
-    :return:
-    '''
-    self.apply_multa_if_payment_is_incomplete()
-    for payment_obj in self.payments:
-      if payment_obj.paydate <= self.duedate:
-        self.pay(payment_obj)
-      else:
-        #self.pay_late(payment_obj)
-        self.late_payments.append(payment_obj)
-
-    self.batch_late_payments()
-
-  def batch_late_payments(self, ongoingmonthrefdate=None):
-
-    first_increase = True # boolean signal to add fine_account
-    if ongoingmonthrefdate is None:
-      ongoingmonthrefdate = self.monthrefdate + relativedelta(months=+1)
-
-    while len(self.late_payments) > 0:
-      payment_obj = self.late_payments.pop()
-      monthrefOfPayDate = payment_obj.paydate.replace(day=1)
-      if monthrefOfPayDate > ongoingmonthrefdate:
-        # apply interest for full month
-        if first_increase:
-          self.debt_account += self.debt_account * (0.01 + Juros.fetch_corrmonet_for_month(ongoingmonthrefdate))
-          self.debt_account += self.multa_account
-          first_increase = False # boolean signal to add fine_account
-          self.date_of_last_interest_applied = ongoingmonthrefdate + relativedelta(months=+1)
-      elif monthrefOfPayDate == ongoingmonthrefdate:
-        self.pay_late(payment_obj)
-      else:
-        ongoingmonthrefdate = ongoingmonthrefdate + relativedelta(months=+1)
-
-
-
-  def pay(self, payment_obj):
-    '''
-    This method is for payment on time, not late-mora payments.
-    Consider this as a private method.
-    Also that it works as a credit / debit operation.
-    It can only be called from inside the 'if' that checks this pay is on date
-    :param payment_obj:
-    :return:
-    '''
-    self.credit_debit_payment(payment_obj.paid_amount)
-
-  def pay_late(self, payment_obj):
-    '''
-    The interest startdate is not duedate, it takes on two possible values, ie:
-      1) for the first late payment, it's monthref plus ONE month.
-      2) for the a late payment, it's date of last payment plus one.
-
-    Example [for 1) above]: if monthref is (01)Jan2018, interest_startdate is 01Feb2018.
-    However, the corr-monet index is taken M-1, ie, it's the index of its
-      previous month. Example: 15 days late in February are calculated with
-      January's interest rate.
-      * This is so because a month's index is only known M+1,
-        example: the February corr-monet. index is only know in March.
-
-
-    :param payment_obj:
-    :return:
-    '''
-
-    # 1st hypothesis: a payment happened without no debt at all, simplily 'debit' it to cred_account
-    if self.debt_account <= 0:
-      self.cred_account    += payment_obj.paid_amount
-      self.payment_account += payment_obj.paid_amount
-      return
-
-    if self.date_of_last_interest_applied is not None:
-      interest_startdate = self.date_of_last_interest_applied
-    else:
-      interest_startdate = self.monthrefdate + relativedelta(months=+1)
-
-    mo_by_mo_days = self.datecalculator.calc_mo_by_mo_days_between_dates(
-      interest_startdate,
-      payment_obj.paydate
-    )
-    '''
-    if len(mo_by_mo_days) == 0:
-      return
-    '''
-
-    monthfractions = self.datecalculator.transform_monthdays_into_monthfractions(
-      mo_by_mo_days,
-      interest_startdate
-    )
-    print ('******************************')
-    print ('monthfractions:', str(monthfractions))
-    interestarray = [0.01] * len(monthfractions)
-    mo_by_mo_interest_plus_corrmonet_times_fraction_array = Juros \
-      .gen_mo_by_mo_interest_plus_corrmonet_times_fraction_array(
-      interest_startdate,
-      interestarray,
-      monthfractions
-    )
-    print ('******************************')
-    print ('mo_by_mo_interest_plus_corrmonet_times_fraction_array:', str(mo_by_mo_interest_plus_corrmonet_times_fraction_array))
-    self.pay_applying_correctionfractions_array(
-      payment_obj,
-      mo_by_mo_interest_plus_corrmonet_times_fraction_array
-    )
-
-  def is_pay_moment_later_than_mplus1(self, payment_obj):
-    '''
-    This method regulates which basevalue to be used to calculate interest plus corr.monet.
-    Example:
-      Suppose monthrefdate is 2018-01-01
-      Suppose also duedate is 2018-01-10 (reminding that duedate is checked before entering pay_late()
-      Under these 2 hypotheses:
-        case 1) window moment from 2018-02-11 to 2018-02-28 (or 29 in leap years)
-          takes basevalue as debt_account minus fine_amount
-        case 2) window moment beyond 2018-02-28 as the whole debt_account applying days down to last interest-corr.monet. calculation
-    :param payment_obj:
-    :return:
-    '''
-    date_later_than_mplus1 = self.monthrefdate + relativedelta(months=+2) # monthrefdate is always day 1
-    if payment_obj.paydate < date_later_than_mplus1:
-      return False
-    return True
-
-  def pay_applying_correctionfractions_array(
-      self,
-      payment_obj,
-      mo_by_mo_interest_plus_corrmonet_times_fraction_array
-    ):
-    if self.base_for_i_n_cm_account == 0:
-      return self.pay(payment_obj)
-
-    for factor in mo_by_mo_interest_plus_corrmonet_times_fraction_array:
-      # notice that self.base_for_i_n_cm_account is DYNAMIC, ie, it depends on debt_account
-      if self.is_pay_moment_later_than_mplus1(payment_obj):
-        basevalue = self.debt_account
-      else:
-        basevalue = self.base_for_i_n_cm_account
-      moraincrease = basevalue * factor
-      self.debt_account          += moraincrease
-      self.interest_n_cm_account += moraincrease
-      debt_factor_moraincrease_triple = (basevalue, factor, moraincrease, self.base_for_i_n_cm_account)
-      self.debt_factor_mora_increasedvalue_quadlist.append(debt_factor_moraincrease_triple)
-
-    self.credit_debit_payment(payment_obj.paid_amount)
-    self.date_of_last_interest_applied = payment_obj.paydate + relativedelta(days=+1)
-
-  '''
-  def add_payment_obj(self, payment_obj):
-    self.payments.append(payment_obj)
-  '''
-
   def add_contracts_billing_items_to_self(self, contract_obj):
     '''
     billing_items will be a list of dict for the time being
@@ -391,20 +340,22 @@ class Bill:
 
   def pretty_print_bill(self):
     text = '\n'
-    line = 'Monthly Bill Invoice\n'
+    line = 'Boleta de Cobrança do Aluguel e Encargos:\n'
     text += line
     line = '====================\n'
     text += line
-    line = 'Monthref ------- % s\n' %(self.monthrefdate)
+    line = 'Mês ref ------- % s\n' %(self.monthrefdate)
     text += line
-    line = 'Due Date ------- % s\n' %(self.duedate)
+    line = 'Data de venc. ------- % s\n' %(self.duedate)
     text += line
     line = '-------------------\n'
+    text += line
+    line = 'Itens: ------- % s\n' %(self.duedate)
     text += line
     for i, billingitem in enumerate(self.billingitems):
       line = '%d -> %s  ----------  %s\n' %(i, billingitem[self.REFTYPE_KEY], str(billingitem['value']))
       text += line
-    line = "Previous Months Carryingup's  %s\n" % (str(self.previousmonthsdebts))
+    line = "Valor em débito do mês ant. %s\n" % (str(self.previousmonthsdebts))
     text += line
     line = '-------------------\n'
     text += line
@@ -414,20 +365,18 @@ class Bill:
     text += line
     line = 'Payments:\n'
     text += line
-    for payment_obj in self.payments:
-      line = '    Payment: %s   %.2f \n' % (payment_obj.paydate, payment_obj.paid_amount)
-      text += line
-    line = 'Payment done (account) %.2f\n' % (self.payment_account)
+    line = 'Pagamento(s) no prazo:  %.2f\n' % (self.amount_paid_ontime)
     text += line
+    line = 'Valor sob mora:  %.2f\n' % (self.valor_sob_mora)
+    text += line
+    if self.latepaysprocessor is not None:
+      for ait in self.latepaysprocessor.increase_trails:
+        text += str(ait)
     if self.multa_account > 0:
       line = 'Multa incidência de atraso ----  %.2f\n' % (self.multa_account)
       text += line
     if self.interest_n_cm_account > 0:
       line = 'Juro e Corr. Monet. relat. tempo-atraso %.2f\n' %(self.interest_n_cm_account)
-      text += line
-    for debt_factor_mora_increasedvalue_quadlist in self.debt_factor_mora_increasedvalue_quadlist:
-      basevalue, factor, moraincrease, debt = debt_factor_mora_increasedvalue_quadlist
-      line = '   value | factor | increase | debt ----%.2f | %.4f | %.2f | %.2f\n' %(basevalue, factor, moraincrease, debt)
       text += line
     line = 'Total (Mês) ----  %.2f\n' % (self.inmonthpluspreviousdebts)
     text += line
@@ -464,7 +413,8 @@ def create_adhoctest_bill():
 def adhoctest():
   invoicebill = create_adhoctest_bill()
   payments = create_payments()
-  invoicebill.setPayments(payments)
+  invoicebill.set_payments(payments)
+  print (invoicebill)
   invoicebill.process_payment()
   print (invoicebill)
 

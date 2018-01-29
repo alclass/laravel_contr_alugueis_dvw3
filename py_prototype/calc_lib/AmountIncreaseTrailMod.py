@@ -23,15 +23,26 @@ class AmountIncreaseTrail:
   def __init__(self,
       montant_ini,
       monthrefdate,
-      restart_timerange_date,
-      end_timerange_date,
+      restart_timerange_date, # not to be confused with restart_mora_date
+      end_timerange_date,     # ie restart_mora_date is end_timerange_date + 1 day
       interest_rate,
       corrmonet_in_month,
       paid_amount = None,
-      finevalue   = None
-    ):
+      finevalue   = None,
+      monthseqnumber = 1,
+      contract_id = None
+  ):
     '''
     Dynamic properties, ie derived fields, depend on other (original) fields (above)
+
+      uptodate
+      restart_mora_date
+      was_fine_applied
+      daysinmonth
+      increaseamount
+      updatedvalue
+      balance
+
       self.uptodate
         => the same as end_timerange_date
       self.restart_mora_date
@@ -50,10 +61,11 @@ class AmountIncreaseTrail:
         => it's the net result of bill minus payment and possibly financial increases if payment is late
            balance is also called forwardvalue, for, when it's not zero, it becomes either
            previousdebts or cred_amount in the following bill.
-
     '''
-    self.montant_ini  = montant_ini
-    self.monthrefdate = monthrefdate # this is never changed across an Amount Increase Trail list that shows the updating of a debt_account according to late payments!
+    self.montant_ini    = montant_ini
+    self.monthrefdate   = monthrefdate # this is never changed across an Amount Increase Trail list that shows the updating of a debt_account according to late payments!
+    self.monthseqnumber = monthseqnumber
+    self.contract_id    = contract_id
     self.restart_timerange_date = restart_timerange_date
     self.end_timerange_date     = end_timerange_date
     self.interest_rate          = interest_rate

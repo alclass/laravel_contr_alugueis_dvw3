@@ -15,15 +15,15 @@ class CreatePaymentsTable extends Migration {
 		Schema::create('payments', function(Blueprint $table)
 		{
 			$table->increments('id');
-			$table->decimal('amount', 8, 2);
-
-			$table->tinyInteger('bankaccount_id', 3)->nullable();
+			$table->decimal('paid_amount', 9, 2);
+			$table->date('paydate');
+			$table->date('monthrefdate');
+			$table->tinyInteger('monthseqnumber')->unsigned()->default(1);
+			$table->integer('contract_id', 3)->unsigned()->nullable();
 			// add foreign key to bankaccount_id
+			// $table->tinyInteger('bankdeposit_id', 3)->nullable();
 
-			$table->date('deposit_date');
-			$table->string('bankrefstring', 50)->nullable();
-
-			$table->integer('user_id')->unsigned()->index();
+			// $table->integer('user_id')->unsigned()->index();
 			// add foreign key to user_id
 
 			$table->integer('contract_id')->unsigned()->index()->nullable();

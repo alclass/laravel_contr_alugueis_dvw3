@@ -54,49 +54,17 @@ class Cobranca extends Model {
 	 */
 
  protected $dates = [
-   'monthyeardateref',
+   'monthrefdate',
    'duedate',
    //'created_at',
    //'updated_at',
  ];
 
 	protected $fillable = [
-		'monthyeardateref', 'n_seq_from_dateref', 'duedate',
-    'discount',  'price_increase_if_any',
-    'lineinfo_discount_or_increase', 'tot_adic_em_tribs',
-    'n_parcelas', 'are_parcels_monthly', 'parcel_n_days_interval',
-    'has_been_paid',
+		'monthrefdate', 'monthseqnumber', 'duedate',
+    'contract_id',  'bankaccount_id',
+    'has_been_closed',
 	];
-
-  // contract_id is in DB Schema, but connected below with a belongsTo() method
-
-
-  /*
-    These (5) instance methods are 'brigde-methods' to static methods in CobrancaTipo:
-
-      get_cobrancatipo_with_its_4charrepr()
-      get_cobrancatipo_via_its_4charrepr_sqllikeword()
-      get_exact_4charrepr_via_sqllikeword()
-      get_4charrepr_via_cobrancatipo_id()
-      get_collection_cobrancatipos()
-
-  */
-
-  public function get_cobrancatipo_with_its_4charrepr($char4id) {
-    return CobrancaTipo::get_cobrancatipo_with_its_4charrepr($char4id);
-  }
-
-  public function get_cobrancatipo_via_its_4charrepr_sqllikeword($sqllikeword) {
-    return CobrancaTipo::get_cobrancatipo_via_its_4charrepr_sqllikeword($sqllikeword);
-  }
-
-  public function get_exact_4charrepr_via_sqllikeword($sqllikeword) {
-    return CobrancaTipo::get_exact_4charrepr_via_sqllikeword($sqllikeword);
-  }
-
-  public function get_4charrepr_via_cobrancatipo_id($cobrancatipo_id) {
-    return CobrancaTipo::get_4charrepr_via_cobrancatipo_id($cobrancatipo_id);
-  }
 
   public function get_collection_cobrancatipos() {
     return CobrancaTipo::all();
@@ -107,16 +75,20 @@ class Cobranca extends Model {
   */
 
   public function is_iptu_ano_quitado() {
+
     if ($this->contract->imovel == null) {
       return false;
     }
+
     $iptutabela = IPTUTabela
       ::where('imovel_id'  , $this->contract->imovel->id)
       ->where('ano'        , $this->monthyeardateref->year)
       ->first();
+
     if ($iptutabela != null && $iptutabela->ano_quitado == true) {
       return true;
     }
+
     return false;
   } // ends is_iptu_ano_quitado()
 
@@ -160,18 +132,6 @@ class Cobranca extends Model {
 
   }
 
-  public function get_total_items() {
-    return count($this->billingitems);
-  }
-  public function billingitems() {
-    return $this->hasMany('App\Models\Billing\BillingItem');
-  }
-  public function bankaccount() {
-    return $this->belongsTo('App\Models\Finance\BankAccount');
-  }
-  public function contract() {
-    return $this->belongsTo('App\Models\Immeubles\Contract');
-  }
 
   public function get_imovel() {
     if ($this->contract == null) {
@@ -443,5 +403,28 @@ class Cobranca extends Model {
     // $outstr .= $this->billingitemsinjson;
     return $outstr;
   } // public function __toString()
+
+
+  public function bankaccount() {
+    return $this->belongsTo('App\Models\Finance\BankAccount');
+  }
+  public function contract() {
+    return $this->belongsTo('App\Models\Immeubles\Contract');
+  }
+
+  public function get_total_items() {
+    return count($this->billingitems);
+  }
+  public function billingitems() {
+    return $this->hasMany('App\Models\Billing\BillingItem');
+  }
+
+  public function payments() {
+    return $this->hasMany('App\Models\Billing\Payment');
+  }
+
+  public function amountincreasetrails() {
+    return $this->hasMany('App\Models\Billing\AmountIncreaseTrail');
+  }
 
 } // ends class Cobranca extends Model

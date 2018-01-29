@@ -49,7 +49,7 @@ class TestBill(unittest.TestCase):
     firstpaymentontime = 1900 + 600 + 250
     payment_obj = Payment(paid_amount=firstpaymentontime, paydate=paydate_ontime)
     payments.append(payment_obj)
-    bill_obj.setPayments(payments)
+    bill_obj.set_payments(payments)
     bill_obj.process_payment()
 
     # inmonth_due_amount
@@ -117,7 +117,7 @@ class TestBill(unittest.TestCase):
     secondpaymentlate = 500
     payment_obj = Payment(paid_amount=secondpaymentlate, paydate=paydate_late)
     payments.append(payment_obj)
-    bill_obj.setPayments(payments)
+    bill_obj.set_payments(payments)
     bill_obj.process_payment()
 
     # inmonth_due_amount
@@ -186,7 +186,7 @@ class TestBill(unittest.TestCase):
     #paydate = date(2018, 1, 27)
     payment_obj = Payment(paid_amount=1600, paydate=paydate)
     payments.append(payment_obj)
-    bill_obj.setPayments(payments)
+    bill_obj.set_payments(payments)
     bill_obj.process_payment()
 
     # inmonth_due_amount
@@ -216,7 +216,7 @@ class TestBill(unittest.TestCase):
     if payment_missing < 0:
       overpaid -= payment_missing
       payment_missing = 0
-    self.assertEqual(bill_obj.debt_account, payment_missing)
+    self.assertEqual(bill_obj.payment_missing, payment_missing)
 
     # cred_account (overpaid is simmetric of payment_missing if latter is negative, otherwise, it's zero)
     self.assertEqual(bill_obj.cred_account, overpaid)
@@ -253,7 +253,7 @@ class TestBill(unittest.TestCase):
     secondpaylateamount = 100
     payment_obj = Payment(paid_amount=secondpaylateamount, paydate=paydatelate)
     payments.append(payment_obj)
-    bill_obj.setPayments(payments)
+    bill_obj.set_payments(payments)
     bill_obj.process_payment()
 
     # inmonth_due_amount
@@ -286,7 +286,7 @@ class TestBill(unittest.TestCase):
     if payment_missing < 0:
       overpaid -= payment_missing
       payment_missing = 0
-    self.assertEqual(bill_obj.debt_account, payment_missing)
+    self.assertEqual(bill_obj.payment_missing, payment_missing)
 
     # cred_account (overpaid is simmetric of payment_missing if latter is negative, otherwise, it's zero)
     self.assertEqual(bill_obj.cred_account, overpaid)
@@ -330,7 +330,8 @@ class TestBill(unittest.TestCase):
     paid_amount += payamount3
     payment_obj = Payment(paid_amount=payamount3, paydate=paydate3)
     payments.append(payment_obj)
-    bill_obj.setPayments(payments)
+
+    bill_obj.set_payments(payments)
     bill_obj.process_payment()
 
     # inmonth_due_amount
@@ -392,7 +393,7 @@ class TestBill(unittest.TestCase):
     if payment_missing < 0:
       overpaid -= payment_missing
       payment_missing = 0
-    self.assertEqual(bill_obj.debt_account, payment_missing)
+    self.assertEqual(bill_obj.payment_missing, payment_missing)
 
     # cred_account (overpaid is simmetric of payment_missing if latter is negative, otherwise, it's zero)
     self.assertEqual(bill_obj.cred_account, overpaid)

@@ -14,8 +14,10 @@ import calendar # calendar.monthrange(year, month)
 
 try:
   from .AmountIncreaseTrailMod import AmountIncreaseTrail
+  from .juros_calculator import Juros
 except SystemError:
   from AmountIncreaseTrailMod import AmountIncreaseTrail
+  from juros_calculator import Juros
 
 # =======================
 # DATA AREA
@@ -60,17 +62,55 @@ def extract_lastmonthsdate_from(fromdate):
 class PaymentTimeProcessor:
 
   def __init__(self):
-    self.debt_account      = 0
-    self.restart_mora_date = None # its first value is monthrefdate + 1month
-    self.add_multa_first_time = True
-    self.seq = 0
+    self.debt_account         = 0
+    self.restart_mora_date    = None # its first value is monthrefdate + 1month
+    self.add_multa_first_time = True # this can -- and should -- be changed from outside
+    self.seq             = 0
     self.increase_trails = []
+    self.payments_list = []
 
-  def set_payment_tuplelist(self, payments_list):
+  def reinit_with_stored_increase_trails(self, increase_trails, bill_dict, new_payments=[]):
+    if increase_trails is None:
+      return
+    if len(increase_trails) == 0:
+      return self.__init__()
+
+    last_trail = increase_trails[-1]
+    self.debt_account      = last_trail.balance
+    self.restart_mora_date = last_trail.restart_mora_date
+    self.add_multa_first_time = False # this can -- and should -- be changed from outside
+    self.seq = len(increase_trails)
+    self.increase_trails   = increase_trails
+    self.payments_list     = new_payments
+    self.bill_dict = bill_dict # it has monthrefdate, duedate, inmonth_due_amount, previousmonthsdebts, monthseqnumber & contract_id
+
+  def set_payment_tuplelist_via_paymentinstances(self, payments):
+    payments_list = []
+    for payinstance in payments:
+      paydate     = payinstance.paydate
+      paid_amount = payinstance.paid_amount
+      tupl = (paydate, paid_amount)
+      payments_list.append(tupl)
+    self.set_payment_tuplelist(payments_list)
+
+  def set_payment_tuplelist(self, payments):
     self.payments_list = payments_list
+
+  def set_bill_dict_via_billobj(self, bill_obj):
+    bill_dict = {}
+    bill_dict['monthrefdate']   = bill_obj.monthrefdate
+    bill_dict['duedate']        = bill_obj.duedate
+    bill_dict['inmonthdue']     = bill_obj.inmonth_due_amount
+    bill_dict['previousdebts']  = bill_obj.previousmonthsdebts
+    bill_dict['monthseqnumber'] = bill_obj.monthseqnumber
+    bill_dict['contract_id']    = bill_obj.contract_id
+    self.set_bill_dict(bill_dict)
 
   def set_bill_dict(self, bill_dict):
     '''
+
+      bill_dict is not equivalent to an instance of Bill class, it has just the attributes below:
+
       'inmonthdue': 3700,
       'previousdebts': 3000,
       'monthrefdate': date(2017, 1, 1),
@@ -100,7 +140,6 @@ class PaymentTimeProcessor:
 
     while len(self.payments_list) > 0:
       paytuple = self.payments_list[0]
-      del self.payments_list[0]
       print('paytuple => ', paytuple)
       print('debt_account => ', self.debt_account)
 
@@ -109,19 +148,20 @@ class PaymentTimeProcessor:
       # paydates must loop in cronological ascending order or inconsistencies will arise
       if paydate <= self.bill_dict['duedate']:
         self.debt_account -= paid_amount
+        del self.payments_list[0]
       else:
         break
     # at this point in program flow, all payments are late (this is because payments are ordered by date ascending)
     self.restart_mora_date = self.original_monthrefdate + relativedelta(months=+1)
     while len(self.payments_list) > 0:
       paytuple = self.payments_list[0]
-      del self.payments_list[0]
       print('paytuple => ', paytuple)
       print('debt_account => ', self.debt_account)
 
       paydate = paytuple[0]
       paid_amount = paytuple[1]
       self.pay_late_generating_ait_records(paydate, paid_amount)
+      del self.payments_list[0]
     print('END of process payments.')
 
   def are_dates_in_the_same_yearmonth(self, restart_mora_date, paydate):
@@ -178,7 +218,7 @@ class PaymentTimeProcessor:
     ongoing_monthrefdate = end_timerange_date.replace(day=1)
     # the monetary correction index is the M-1 one
     corrmonet_monthrefdate = ongoing_monthrefdate - relativedelta(months=+1)
-    corrmonet   = corr_monet_month_dict[corrmonet_monthrefdate]
+    corrmonet   = Juros.fetch_corrmonet_for_month(corrmonet_monthrefdate)
     montant_ini = self.debt_account
     multa_value_for_trail = None
     if self.add_multa_first_time:
