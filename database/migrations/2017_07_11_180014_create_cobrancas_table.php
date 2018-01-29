@@ -17,11 +17,15 @@ class CreateCobrancasTable extends Migration {
 			$table->increments('id');
 			$table->date('monthrefdate');
 			$table->tinyInteger('monthseqnumber')->default(1);
-			$table->date('duedate')->nullable();
 			$table->integer('contract_id')->nullable();
 			$table->integer('bankaccount_id')->nullable();
-			$table->integer('bankdeposit_id')->nullable();
-			$table->boolean('has_been_closed')->default(0);
+			$table->date('duedate')->nullable();
+			$table->decimal('total_amount_paid', 9, 2)->nullable();
+			$table->decimal('amount_paid_ontime', 9, 2)->nullable();
+			$table->decimal('debt_to_next_bill', 9, 2)->nullable();
+			$table->date('lastprocessingdate')->nullable();
+			$table->text('amountincreasetrailsjson')->nullable();
+			$table->boolean('closed')->default(0);
 			$table->nullableTimestamps();
 		});
 	}

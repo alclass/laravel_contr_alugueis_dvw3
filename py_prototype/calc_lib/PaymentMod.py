@@ -78,19 +78,28 @@ class Payment:
 
     return consolidated_paymentlists
 
-  def __init__(
-      self, paid_amount, paydate,
+  def __init__(self, paid_amount, paydate, cobranca=None
             monthrefdate=None, monthseqnumber=1,
-            contract_id=None, bank_deposit_objlist=[]
+            contract_id=None
               ):
+    '''
 
+    When more than one payment is done on a single day, the Payment object is integrated.
+    However, individual payments are registered inside a JSON field. This field is attribute 'bankrecordsjson'.
+
+    This json is strutured as follows:
+      {'paydate':<date>, 'paid_amount':<value>, 'bankaccount_id':<bid>,
+       'seqorder_onday': <seq>, 'bankdocline': <banksdocstring>,
+       'payeesname': <name>, 'paytype': <transfer|dep-money|dep-cheque>}
+      */
+
+    There is no need for 'contract_id' in the above JSON, because contract_id belongs to self, below.
+    '''
     self.paid_amount     = paid_amount
     self.paydate         = paydate
     # monthrefdate, monthseqnumber & contract_id are keys to find corresponding bill for which payment was done
-    self.monthrefdate   = monthrefdate
-    self.monthseqnumber = monthseqnumber
-    self.contract_id    = contract_id
-    self.bank_deposit_objlist = bank_deposit_objlist
+    self.cobranca        = cobranca
+    self.bankrecordsjson = None
     # OBS: the person who pays is stored in the bank_deposit object, not here
     # the bank_deposit objects should be stored in the above list and the should be an NxM bridge table on database
     # ie, the deposit record complements: user and amount to this payment if a deposit has
@@ -98,6 +107,19 @@ class Payment:
 
     # This physical_money_payment below, if True, must be to set after object construction
     # self.physical_money_payment = False
+
+
+  @property
+  def monthrefdate(self):
+    return self.cobranca.monthrefdate
+
+  @property
+  def monthseqnumber(self):
+    return self.cobranca.monthseqnumber
+
+  @property
+  def contract_id(self):
+    return self.cobranca.contract_id
 
 
   def __str__(self):

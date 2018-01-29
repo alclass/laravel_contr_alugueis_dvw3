@@ -3,6 +3,7 @@ from copy import copy
 from datetime import date
 # from datetime import timedelta
 from dateutil.relativedelta import relativedelta
+import json
 import sys
 # import calendar # calendar.monthrange(year, month)
 # from .DateBillCalculatorMod import DateBillCalculator
@@ -108,6 +109,8 @@ class Bill:
     self.previous_bill = None
     if previous_bill is not None:
       self.previous_bill = previous_bill
+
+    self.aits_as_json = None
 
   @property
   def multa_account(self):
@@ -319,6 +322,30 @@ class Bill:
     else:
       self.cred_account += paid_amount
 
+  def generate_aits_as_json(self):
+    '''
+
+    :return:
+    '''
+    aits = self.latepaysprocessor.increase_trails
+    list_of_jsons = []
+    for ait in aits:
+      jsonrepr = ait.to_json()
+      list_of_jsons.append(jsonrepr)
+    jsondump = json.dumps(list_of_jsons)
+    self.amountincreasetrailsjson = jsondump
+    return jsondump
+
+  def recover_aits_from_json(self, jsonlistdump=None):
+    list_of_jsons = json.loads(jsonlistdump)
+    aits = []
+    for jsonelem in list_of_jsons:
+      ait = json.loads(jsonelem)
+      aits.append(ait)
+    return aits
+
+  def decode_to__aits_from_json(self, jsonlistdump=None):
+
 
   def add_contracts_billing_items_to_self(self, contract_obj):
     '''
@@ -414,9 +441,12 @@ def adhoctest():
   invoicebill = create_adhoctest_bill()
   payments = create_payments()
   invoicebill.set_payments(payments)
-  print (invoicebill)
   invoicebill.process_payment()
   print (invoicebill)
+  jsonlistdump = invoicebill.generate_aits_as_json()
+  print ('jsonlistdump =>', jsonlistdump)
+  aits = invoicebill.recover_aits_from_json(jsonlistdump)
+  print ('aits =>', aits  )
 
 if __name__ == '__main__':
   adhoctest()

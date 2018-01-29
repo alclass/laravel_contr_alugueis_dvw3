@@ -8,8 +8,27 @@ See docstring for class AmountIncreaseTrail
 from dateutil.relativedelta import relativedelta
 from datetime import date
 import calendar # for calendar.monthrange(year, month)
+import json
 # import sys
 
+
+def treat_date(p_date):
+  if p_date is None:
+    return None
+  if type(p_date) == date:
+    return p_date
+  p_date = str(p_date)
+  pp = p_date.split('-')
+  if len(pp) < 3:
+    return None
+  try:
+    year  = int(pp[0])
+    month = int(pp[1])
+    day   = int(pp[2])
+    return date(year, month, day)
+  except ValueError:
+    pass
+  return None
 
 class AmountIncreaseTrail:
   '''
@@ -63,13 +82,18 @@ class AmountIncreaseTrail:
            previousdebts or cred_amount in the following bill.
     '''
     self.montant_ini    = montant_ini
+    monthrefdate = treat_date(monthrefdate)
     self.monthrefdate   = monthrefdate # this is never changed across an Amount Increase Trail list that shows the updating of a debt_account according to late payments!
     self.monthseqnumber = monthseqnumber
     self.contract_id    = contract_id
+    restart_timerange_date = treat_date(restart_timerange_date)
     self.restart_timerange_date = restart_timerange_date
+    end_timerange_date = treat_date(end_timerange_date)
     self.end_timerange_date     = end_timerange_date
     self.interest_rate          = interest_rate
     self.corrmonet_in_month     = corrmonet_in_month
+    self.paid_amount = paid_amount # if not None, end_timerange_date equals semantically paydate
+    self.finevalue   = finevalue
 
     if self.restart_timerange_date is None:
       self.restart_timerange_date = self.monthrefdate + relativedelta(months=+1)
@@ -80,8 +104,7 @@ class AmountIncreaseTrail:
       self.end_timerange_date = self.restart_timerange_date.replace(day=lastdayinmonth)
     self.check_ini_n_end_dates_n_raise_if_consistent()
 
-    self.paid_amount    = paid_amount # if not None, end_timerange_date equals semantically paydate
-    self.finevalue      = finevalue
+
 
   @property
   def daysininterest(self):
@@ -158,6 +181,51 @@ class AmountIncreaseTrail:
     lastdayofmonthdate = self.end_timerange_date.replace(day=lastdayinmonth)
     return lastdayofmonthdate
 
+  @staticmethod
+  def staticmethod_to_adjusted_dict_for_jsondump(obj):
+    if obj is None:
+      return None
+    if type(obj) != AmountIncreaseTrail:
+      return None
+    return obj.to_adjusted_dict_for_jsondump()
+
+
+  def to_json(self):
+    # return json.dump(self, default=AmountIncreaseTrail.staticmethod_to_adjusted_dict_for_jsondump)
+    return json.dumps(self.to_adjusted_dict_for_jsondump())
+
+  def to_adjusted_dict_for_jsondump(self):
+    '''
+    adjusted here means date(yyyy, mm, dd) becomes 'yyyy-mm-dd', ie, from date type to string type
+
+    self.montant_ini
+    self.monthrefdate
+    self.monthseqnumber
+    self.contract_id
+    self.restart_timerange_date
+    self.end_timerange_date
+    self.interest_rate
+    self.corrmonet_in_month
+    self.paid_amount
+    self.finevalue
+
+    :return:
+    '''
+    objsdict = self.__dict__
+    # treat the 3 dates (monthrefdate ^ restart_timerange_date ^ end_timerange_date)
+    monthrefdate = str(self.monthrefdate)
+    objsdict['monthrefdate'] = monthrefdate
+    restart_timerange_date = str(self.restart_timerange_date)
+    objsdict['restart_timerange_date'] = restart_timerange_date
+    end_timerange_date = str(self.end_timerange_date)
+    objsdict['end_timerange_date'] = end_timerange_date
+    return objsdict
+
+  @staticmethod
+  def from_json(jsonstr):
+    objsdict = json.loads(jsonstr) #, encoding='utf-8', cls=AmountIncreaseTrail)
+    return AmountIncreaseTrail(**objsdict)
+
   def __str__(self):
     fieldlist = [
       'montant_ini', 'interest_rate', 'corrmonet_in_month',
@@ -225,6 +293,13 @@ def adhoctest():
     finevalue          = None,
   )
   print (ait)
+  print (ait.to_json())
+  '''
+  jsonrepr = json.dumps(ait, default=AmountIncreaseTrail.staticmethod_to_adjusted_dict_for_jsondump)
+  print('jsonrepr =>', jsonrepr)
+  obj = AmountIncreaseTrail.from_json(jsonrepr)
+  print(obj)
+  '''
 
 
 if __name__ == '__main__':
