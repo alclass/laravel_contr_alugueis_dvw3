@@ -42,6 +42,7 @@ class CreatePaymentsTable extends Migration {
 		   'payeesname': <name>, 'paytype': <transfer|dep-money|dep-cheque>}
 			*/
 			$table->text('bankrecordsjson')->nullable();
+			$table->string('bankrefstring', 50)->nullable(); // null when bankrecordsjson is used
 
 			/*
 			Special Cases
@@ -61,8 +62,9 @@ class CreatePaymentsTable extends Migration {
 			$table->decimal('complete_paid_amount', 9, 2)->nullable();
 			$table->integer('linked_to_payment_id')->unsigned()->nullable();
 
-			$table->tinyInteger('bankaccount_id', 3)->nullable(); // foreign key
+			$table->tinyInteger('bankaccount_id')->unsigned()->nullable(); // foreign key
 			$table->integer('user_id')->unsigned()->index(); // payee, foreign key
+			$table->integer('contract_id')->unsigned()->nullable(); // foreign key
 			$table->nullableTimestamps();
 			/*
 			$table->foreign('user_id')

@@ -78,7 +78,7 @@ class Payment:
 
     return consolidated_paymentlists
 
-  def __init__(self, paid_amount, paydate, cobranca=None
+  def __init__(self, paid_amount, paydate, cobranca=None,
             monthrefdate=None, monthseqnumber=1,
             contract_id=None
               ):

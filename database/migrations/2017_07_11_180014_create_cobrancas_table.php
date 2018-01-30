@@ -25,6 +25,7 @@ class CreateCobrancasTable extends Migration {
 			$table->decimal('debt_to_next_bill', 9, 2)->nullable();
 			$table->date('lastprocessingdate')->nullable();
 			$table->text('amountincreasetrailsjson')->nullable();
+			$table->text('obsinfo')->nullable();
 			$table->boolean('closed')->default(0);
 			$table->nullableTimestamps();
 		});

@@ -204,7 +204,7 @@ class Bill:
   @property
   def payment_missing(self):
     if self.debt_account > 0:
-      self.debt_account
+      return self.debt_account
     return 0
 
   def set_payments(self, payments):

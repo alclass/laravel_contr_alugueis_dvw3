@@ -26,19 +26,14 @@ class CreateBillingitemsTable extends Migration {
 			$table->tinyInteger('partnumber')->unsigned()->nullable();
 			$table->tinyInteger('totalparts')->unsigned()->nullable();
 
-			$table->decimal('value', 9, 3);
-
-			$table->tinyInteger('variation_in_perc_if_any')->unsigned()->nullable();
-			$table->decimal('variation_value_if_any', 8, 3)->unsigned()->nullable();
-			$table->decimal('origvalue', 9, 3)->nullable();
-
-			$table->boolean('was_original_value_modified')->default(false);
+			$table->decimal('value', 9, 2);
+			$table->decimal('original_value', 9, 2)->nullable();
+			$table->boolean('was_original_value_modified')->default(false)->nullable();
 			$table->string('brief_description_for_modifier', 30)->nullable();
-			$table->decimal('original_value', 9, 3)->nullable();
 			// The field below is smallint because it may be negative
 			$table->smallInteger('modifying_percent')->nullable();
-			$table->decimal('modifying_amount', 8, 3)->nullable();
-			$table->text('obsinfo')->nullable();
+			$table->decimal('modifying_amount', 8, 2)->nullable();
+			$table->string('obsinfo', 144)->nullable();
 			$table->nullableTimestamps();
 		});
 	}
