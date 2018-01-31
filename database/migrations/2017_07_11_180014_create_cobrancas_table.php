@@ -15,6 +15,8 @@ class CreateCobrancasTable extends Migration {
 		Schema::create('cobrancas', function(Blueprint $table)
 		{
 			$table->increments('id');
+			$table->integer('previous_bill_id')->unsigned()->nullable();
+			// $table->increments('next_bill_id');
 			$table->date('monthrefdate');
 			$table->tinyInteger('monthseqnumber')->default(1);
 			$table->integer('contract_id')->nullable();

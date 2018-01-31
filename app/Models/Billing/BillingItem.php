@@ -10,13 +10,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class BillingItem extends Model {
 
-  const K_REF_TYPE_IS_DATE   = 'D';
-  const K_REF_TYPE_IS_PARCEL = 'P';
-  const K_REF_TYPE_IS_BOTH_DATE_N_PARCEL = 'B';
-
-  const K_FREQ_USED_IS_WEEKLY  = 'W';
-  const K_FREQ_USED_IS_MONTHLY = 'D';
-  const K_FREQ_USED_IS_YEARLY  = 'Y';
 
   protected $table = 'billingitems';
 
@@ -39,38 +32,43 @@ class BillingItem extends Model {
     'obsinfo',
 	];
 
+  protected $attributes = ['reftype', 'freqtype', 'imovel'];
+
   public function generate_ref_repr_for_cota_column() {
-    if ($this->ref_type == self::K_REF_TYPE_IS_DATE) {
-      return "1";
+    $numberpart = 1; $totalparts = 1;
+    if (empty($this->numberpart)) {
+      $numberpart = $this->numberpart;
     }
-    $outstr = "$this->n_cota_ref/$this->total_cotas_ref";
+    if (empty($this->totalparts)) {
+      $totalparts = $this->totalparts;
+    }
+    $outstr = "$numberpart/$totalparts";
     return $outstr;
   }
 
   public function copy() {
     /*
-    'brief_description', 'charged_value', 'ref_type', 'freq_used_ref',
-    'monthyeardateref', 'n_cota_ref', 'total_cotas_ref',
-    'was_original_value_modified', 'brief_description_for_modifier_if_any',
-    'original_value_if_needed', 'percent_in_modifying_if_any',
-    'money_amount_in_modifying_if_any',
-    'obs',
+    'brief_description', 'value', 'monthrefdate',
+    'use_partnumber', 'numberpart', 'totalparts',
+    'was_original_value_modified', 'brief_description_for_modifier',
+    'original_value', 'modifying_percent', 'modifying_amount',
+    'obsinfo',
     */
-    $bi = new BillingItem;
-    $bi->brief_description = $this->brief_description;
-    $bi->charged_value = $this->charged_value;
-    $bi->ref_type = $this->ref_type;
-    $bi->freq_used_ref = $this->freq_used_ref;
-    if ($this->monthyeardateref != null) {
-      $bi->monthyeardateref = $this->monthyeardateref->copy();
+    $bi_copy = new BillingItem;
+    $bi_copy->brief_description = $this->brief_description;
+    $bi_copy->value = $this->value;
+    if ($this->monthrefdate != null) {
+      $bi_copy->monthrefdate = $this->monthrefdate->copy();
     }
-    $bi->n_cota_ref = $this->n_cota_ref;
-    $bi->total_cotas_ref = $this->total_cotas_ref;
-    $bi->was_original_value_modified = $this->was_original_value_modified;
-    $bi->brief_description_for_modifier_if_any = $this->brief_description_for_modifier_if_any;
-    $bi->original_value_if_needed = $this->original_value_if_needed;
-    $bi->percent_in_modifying_if_any = $this->percent_in_modifying_if_any;
-    $bi->money_amount_in_modifying_if_any = $this->money_amount_in_modifying_if_any;
+    $bi_copy->numberpart     = $this->numberpart;
+    $bi_copy->use_partnumber = $this->use_partnumber;
+    $bi_copy->totalparts = $this->totalparts;
+    $bi_copy->was_original_value_modified = $this->was_original_value_modified;
+    $bi_copy->brief_description_for_modifier = $this->brief_description_for_modifier;
+    $bi_copy->original_value = $this->original_value;
+    $bi_copy->modifying_percent = $this->modifying_percent;
+    $bi_copy->modifying_amount = $this->modifying_amount;
+    return $bi_copy;
 
   } // ends copy()
 
@@ -81,17 +79,51 @@ class BillingItem extends Model {
 
     $outstr  = '[BillingItem object]' . "\n";
     $outstr .= '====================' . "\n";
-    $outstr .= 'id                = ' . $this->id                . "\n";
-    $outstr .= 'brief_description = ' . $this->brief_description . "\n";
-    $outstr .= 'date ref          = ' . $this->monthyeardateref  . "\n";
-    $outstr .= 'charged_value     = ' . $this->charged_value     . "\n";
-    $outstr .= 'ref type          = ' . $this->ref_type          . "\n";
-    $outstr .= 'freq_used_type    = ' . $this->freq_used_type    . "\n";
+    $outstr .= 'id       = ' . $this->id . "\n";
+    $outstr .= 'breve des= ' . $this->brief_description . "\n";
+    $outstr .= 'reftipo  = ' . $this->reftype     . "\n";
+    $outstr .= 'freqtipo = ' . $this->freqtype    . "\n";
+    $outstr .= 'valor    = ' . $this->value       . "\n";
+    $outstr .= 'mês ref. = ' . $this->monthrefdate . "\n";
+    $outstr .= 'parte n. = ' . $this->numberpart . "\n";
+    $outstr .= 'partes   = ' . $this->totalparts . "\n";
+    $outstr .= 'cobr. id = ' . $this->cobranca_id . "\n";
+    $imovel_apelido = 'n/a';
+    if ($this->imovel != null) {
+      $imovel_apelido = $this->imovel->apelido;
+    }
+    $outstr .= 'sigla imv= ' . $imovel_apelido . "\n";
     $outstr .= '====================' . "\n";
 
     return $outstr;
 
   } // ends toString()
+
+  public function getReftypeAttribute() {
+    $reftype = 'n/a';
+    if ($this->cobrancatipo != null) {
+      $reftype = $this->cobrancatipo->reftype;
+    }
+    return $reftype;
+  }
+
+  public function getFreqtypeAttribute() {
+    $freqtype = 'n/a';
+    if ($this->cobrancatipo != null) {
+      $freqtype = $this->cobrancatipo->freqtype;
+    }
+    return $freqtype;
+  }
+
+  public function getImovelAttribute() {
+    $imovel = null;
+    if ($this->contract != null) {
+      if ($this->contract->imovel != null) {
+        $imovel = $this->contract->imovel;
+      }
+    }
+    return $imovel;
+  }
 
   public function cobranca() {
     $this->belongsTo('App\Models\Billing\Cobranca');

@@ -59,6 +59,11 @@
                       $tipocobrancastr = $cobrancatipobriefdescr . ' (' . $cobrancatipochar4id . ')';
                     ?>
                     <em>{{ $tipocobrancastr }}</em>
+                    @if($cobrancatipo != null && $cobrancatipo->is_carr() == true && $cobranca->$previous_bill_id != null)
+                      <a href="{{ route('$billingitemroute', $cobranca->get_routeparams_toformerbill_asarray()) }}">
+                        Cobr. Anterior
+                      </a>
+                    @endif
                   </td>
                   <td class="col-md-1" style="text-align: center">
                     {{ $billingitem->generate_ref_repr_for_cota_column() }}

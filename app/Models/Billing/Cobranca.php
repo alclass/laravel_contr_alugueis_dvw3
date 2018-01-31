@@ -61,11 +61,18 @@ class Cobranca extends Model {
  ];
 
 	protected $fillable = [
+    'previous_bill_id',
 		'monthrefdate', 'monthseqnumber', 'duedate',
     'contract_id',  'bankaccount_id',
     'value', 'numberpart', 'totalparts',
     'closed', 'obsinfo',
 	];
+
+  /*
+    Dynamic Attributes (those from get<[N]ame>Attributes())
+      ->imovel [from getImovelAttribute()]
+      ->urlrouteparamsasarray [from getUrlrouteparamsasarrayAttribute()]
+  */
 
   public function get_collection_cobrancatipos() {
     return CobrancaTipo::all();
@@ -132,12 +139,11 @@ class Cobranca extends Model {
     return $copied_cobranca;
   }
 
-  public function get_imovel() {
+  public function getImovelAttribute() {
     if ($this->contract == null) {
       return null;
     }
-    $imovel = $this->contract->imovel;
-    return $imovel;
+    return $this->contract->imovel;
   }
 
   public function get_users() {
@@ -147,6 +153,103 @@ class Cobranca extends Model {
     }
     return null;
   }
+
+  public function getUrlrouteparamsasarrayAttribute() {
+    /*
+      This method maps to dynamic attribute:
+        ->urlrouteparamsasarray
+
+      This method is for the url-route option that receives:
+        (year, month, imovel_char4id, monthseqnumber)
+
+      The simpler url-route only needs the id
+    */
+    $imovelapelido = '';
+    if ($this->imovel != null) {
+      $imovelapelido = $this->imovel->apelido;
+    }
+    return [
+      $this->monthrefdate->year,
+      $this->monthrefdate->month,
+      $imovelapelido,
+      $this->monthseqnumber
+    ];
+  }
+
+  public function search_monthly_focused_previous_bill($targetmonthrefdate, $firstevermonthrefdate=null) {
+
+    // Protect against infinite recursion
+    if (Cobranca::count()==0) {
+      return null;
+    }
+
+    if ($firstevermonthrefdate==null) {
+      // At this point, at least ONE RECORD exists!
+      $firsteverbill = Cobranca
+        ->order_by('monthrefdate', 'asc')
+        ->order_by('monthseqnumber', 'asc')
+        ->first();
+      $firstevermonthrefdate = $firsteverbill->monthrefdate;
+    }
+    $previousmonthsloopingbill = Cobranca
+      ::where('monthrefdate', $targetmonthrefdate)
+      ->order_by('monthseqnumber', 'desc')
+      ->first();
+    if ($previousmonthsloopingbill != null) {
+      // Here ends recursion
+      return $previousmonthsloopingbill;
+    }
+    if ($targetmonthrefdate > $firstevermonthrefdate) {
+      $targetmonthrefdate = $targetmonthrefdate->addMonths(-1);
+      // Nothing found, recurse one month less
+      return $this->search_monthly_focused_previous_bill($targetmonthrefdate, $firstevermonthrefdate);
+    }
+    // Anyways... (this point may never be logically reached...)
+    return null;
+  }
+
+  public function get_previous_bill() {
+    /*
+      If there is no previous bill, this method returns null
+
+      Search is done by TWO steps:
+        1) monthseqnumber is sounded, then
+        2) monthrefdate is sounded
+    */
+    $firsteverbill = $this;
+      ::order_by('monthrefdate', 'asc')
+      ->order_by('monthseqnumber', 'asc')
+      ->first();
+    if ($firsteverbill == $this) {
+      return null;
+    }
+    $previousbill = null;
+    if ($this->monthseqnumber > 1) {
+      $previousbill = Cobranca
+        ::where('monthrefdate', $this->monthrefdate)
+        ->where('monthseqnumber', '<',  $this->monthseqnumber)
+        ::order_by('monthrefdate', 'desc')
+        ->first();
+    }
+    if ($previousbill != null) {
+      return $previousbill;
+    }
+    $targetmonthrefdate = $this->monthrefdate->copy()->addMonths(-1);
+    $firstevermonthrefdate = $firsteverbill->monthrefdate;
+    return $this->search_monthly_focused_previous_bill($targetmonthrefdate, $firsteverbill);
+  }
+
+  public function get_routeparams_toformerbill_asarray() {
+    /*
+      Params are:
+        year, month, imovel_char4id & monthseqnumber
+    */
+    $previous_bill = $this->get_previous_bill();
+    if ($previous_bill == null) {
+      return null;
+    }
+    return $previous_bill->urlrouteparamsasarray;
+  } // ends get_routeparams_toformerbill_asarray()
 
   public function createOrFindNextMonthCobranca($n_seq_from_dateref=1) {
     $next_monthyeardateref = $this->monthyeardateref->copy()->addMonths(1);
