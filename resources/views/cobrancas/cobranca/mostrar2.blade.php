@@ -24,8 +24,9 @@
       </div>
       <div class="col-xs-6 col-sm-6 col-md-6 text-right">
           <p>
-            <p style="font-size:11px"> Rio de Janeiro, {{ $today->format('d M Y') }} </p>
-            Ref.: <strong>{{ $cobranca->monthyeardateref->format('M/Y') }}</strong>
+            <p style="font-size:11px"> Rio de Janeiro,
+              {{ $today->format('d M Y') }} </p>
+            Ref.: <strong>{{ $cobranca->monthrefdate->format('M/Y') }}</strong>
           </p>
       </div>
   </div>  <!-- ends class row-->
@@ -46,17 +47,37 @@
           <tbody>
             @foreach ($cobranca->billingitems()->get() as $billingitem)
               <tr>
-                  <td class="col-md-9"><em>{{ $billingitem->brief_description }}</em></h4></td>
-                  <td class="col-md-1" style="text-align: center"> {{ $billingitem->generate_ref_repr_for_cota_column() }} </td>
-                  <td class="col-md-1 text-center">{{ $billingitem->monthyeardateref->format('m-Y') }}</td>
-                  <td class="col-md-1 text-center">{{ $billingitem->charged_value }}</td>
+                  <td class="col-md-9">
+                    <?php
+                      $cobrancatipochar4id = 'n/a';
+                      $cobrancatipobriefdescr = 'descr.';
+                      $cobrancatipo = $billingitem->get_cobrancatipo();
+                      if ($cobrancatipo != null) {
+                        $cobrancatipochar4id = $cobrancatipo->char4id;
+                        $cobrancatipobriefdescr = $cobrancatipo->brief_description;
+                      }
+                      $tipocobrancastr = $cobrancatipobriefdescr . ' (' . $cobrancatipochar4id . ')';
+                    ?>
+                    <em>{{ $tipocobrancastr }}</em>
+                  </td>
+                  <td class="col-md-1" style="text-align: center">
+                    {{ $billingitem->generate_ref_repr_for_cota_column() }}
+                  </td>
+                  <td class="col-md-1 text-center">{{ $billingitem->monthrefdate->format('m-Y') }}</td>
+                  <td class="col-md-1 text-center">{{ $billingitem->value }}</td>
               </tr>
               @endforeach
               <tr>
                   <td>   </td>
                   <td>   </td>
                   <td class="text-right"><h4><strong>Total: </strong></h4></td>
-                  <td class="text-center text-danger"><h4><strong>{{ number_format(floor($cobranca->get_total_value()),2) }}</strong></h4></td>
+                  <td class="text-center text-danger">
+                    <h4>
+                      <strong>
+                        {{ number_format(floor($cobranca->get_total_value()),2) }}
+                      </strong>
+                    </h4>
+                  </td>
               </tr>
 
               <tr>
@@ -73,17 +94,27 @@
 
           </tbody>
       </table>
+
+      <?php
+        if ($bankaccount == null) {
+          $bankaccount = \App\Models\Finance\BankAccount::get_default();
+        }
+      ?>
+
+    @if(!empty($bankaccount))
       <button type="button" class="btn btn-success btn-lg btn-block">
           <span class="glyphicon glyphicon-chevron-right">Dados para Depósito/Transferência</span>
       </button>
+
 
       <p  class="text-center">
         <strong> {{ $bankaccount->bankname }} </strong><br>
         Agência: {{ $bankaccount->agency }}<br>
         Conta-corrente: {{ $bankaccount->account }}<br>
-        A: Luiz Ferreira<br>
-        CPF 004651567-46<br>
+        A: {{ $bankaccount->customer }} <br>
+        CPF {{ $bankaccount->cpf }} <br>
       </p>
+    @endif
 
   </div>
   </div>

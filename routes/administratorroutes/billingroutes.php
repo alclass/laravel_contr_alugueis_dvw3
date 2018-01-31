@@ -84,6 +84,11 @@ Route::prefix('/sa')->group( function() {
       'uses' => 'Billing\CobrancaController@show'
     ]);
 
+    Route::get('ref/{year}/{month}/{imovel4char}', [
+      'as'   => 'cobranca.mostrar',
+      'uses' => 'Billing\CobrancaController@show_by_year_month_imovel4char'
+    ]);
+
     //===>>> sa/billing/showviaref/{contract_id}/{year}/{month}
     Route::get('showviaref/{contract_id}/{year}/{month}', [
       'as'   => 'cobranca.mostrarviaref',

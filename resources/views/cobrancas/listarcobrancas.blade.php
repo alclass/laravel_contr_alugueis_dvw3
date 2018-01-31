@@ -31,11 +31,11 @@
       }
       // parameters for route('cobranca.mostrar'...)
       $contract_id = $cobranca->contract->id;
-      $year_ref    = $cobranca->monthyeardateref->year;
-      $month_ref   = $cobranca->monthyeardateref->month;
+      $year_ref    = $cobranca->monthrefdate->year;
+      $month_ref   = $cobranca->monthrefdate->month;
       $cobranca_formatstrduedate = 'n/a';
-      if ($cobranca->monthyeardateref != null) {
-        $cobranca_formatstrmonthyeardateref = $cobranca->monthyeardateref->format('d/M/Y');
+      if ($cobranca->monthrefdate != null) {
+        $cobranca_formatstrmonthyeardateref = $cobranca->monthrefdate->format('d/M/Y');
       }
       if ($cobranca->duedate != null) {
         $cobranca_formatstrduedate = $cobranca->duedate->format('d/M/Y');

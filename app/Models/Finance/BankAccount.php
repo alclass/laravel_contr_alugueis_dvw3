@@ -11,7 +11,14 @@ class BankAccount extends Model {
   const K_BANK_4CHAR_CAIX = 'CAIX'; // CEF
   const K_BANK_4CHAR_ITAU = 'ITAU'; // Itaú
 
-  public static function get_bankaccount_default_or_first_or_null() {
+  public static function get_default() {
+    /*
+      This method is just a second simpler name for the one called below:
+    */
+    return self::get_defaultindb_or_firstindb_or_env_or_hardcoded();
+  }
+
+  public static function get_defaultindb_or_firstindb_or_env_or_hardcoded() {
     /*
       1st case => default comes from const or configfile and is in database
       --------------------------------------------------------------------
@@ -45,11 +52,26 @@ class BankAccount extends Model {
     }
     // 2nd case => default is not in database, default to the first record there
     //--------------------------------------------------------------------
-    return self::first(); // if it's null, that's the 3rd case in the docstring above
+    $bankaccount_obj = self::first(); // if it's null, that's the 3rd case in the docstring above
+    if ($bankaccount_obj == null) {
+      /*
+        The first default was given by K_BANK_4CHAR_BBRA and searched in db
+        The second default is either in .env or hardcoded here
 
+      Because the last try is the hardcoded one, in fact,
+        this method will not really return null as its name implies
+      */
+      $bankaccount_obj = new self();
+      $bankaccount_obj->bankname = env(BANKNAME_DEFAULT, 'Itaú');
+      $bankaccount_obj->agency   = env(BANKAGENCY_DEFAULT, '8112');
+      $bankaccount_obj->account  = env(BANKACCOUNT_DEFAULT, '07977-0');
+      $bankaccount_obj->customer = env(BANKSCUSTOMER, 'LET Ferreira');
+      $bankaccount_obj->cpf = env(BANKHOLDERSCPF_DEFAULT, '465156746');
+    }
+    return $bankaccount_obj;
   } // ends [static] get_bankaccount_default_or_first_or_null()
 
-  public static function bankaccount_id_or_default_or_null($bankaccount_id) {
+  public static function return_samebankaccountid_or_adefaultid($bankaccount_id) {
     /*
         Return the same $bankaccount_id if it exists.
         If not, pick up the default.  See doctring for the default above.
@@ -57,12 +79,12 @@ class BankAccount extends Model {
           (Two hypotheses for getting null is empty data or database connection failure.)
     */
 
-    if (self::get($bankaccount_id)->exists()) {
+    if (self::where('id', $bankaccount_id)->exists()) {
       return $bankaccount_id;
     }
-    $first_bankaccount_obj = self::get_bankaccount_default_or_first_or_null();
+    $bankaccount_default = self::get_defaultindb_or_firstindb_or_env_or_hardcoded();
 
-    return ($first_bankaccount_obj != null ? $first_bankaccount_obj->bankaccount_id : null);
+    return ($bankaccount_default != null ? $$bankaccount_default->id : null);
 
   } // ends [static] bankaccount_id_or_default_or_null()
 
@@ -76,7 +98,8 @@ class BankAccount extends Model {
 	 */
 
 	protected $fillable = [
-		'banknumber', 'bank_4char', 'bankname', 'agency', 'account', 'customer', 'cpf',
+		'banknumber', 'bank_4char',
+    'bankname', 'agency', 'account', 'customer', 'cpf',
   ];
 
   public function user() {

@@ -21,7 +21,7 @@ class BillingItem extends Model {
   protected $table = 'billingitems';
 
   protected $dates = [
-   'monthyeardateref',
+   'monthrefdate',
    //'created_at',
    //'updated_at',
  ];
@@ -32,12 +32,11 @@ class BillingItem extends Model {
   * @var array
   */
 	protected $fillable = [
-		'brief_description', 'charged_value', 'ref_type', 'freq_used_ref',
-    'monthyeardateref', 'n_cota_ref', 'total_cotas_ref',
-    'was_original_value_modified', 'brief_description_for_modifier_if_any',
-    'original_value_if_needed', 'percent_in_modifying_if_any',
-    'money_amount_in_modifying_if_any',
-    'obs',
+		'brief_description', 'value', 'monthrefdate',
+    'use_partnumber', 'numberpart', 'totalparts',
+    'was_original_value_modified', 'brief_description_for_modifier',
+    'original_value', 'modifying_percent', 'modifying_amount',
+    'obsinfo',
 	];
 
   public function generate_ref_repr_for_cota_column() {
@@ -98,5 +97,15 @@ class BillingItem extends Model {
     $this->belongsTo('App\Models\Billing\Cobranca');
   }
 
+  //=========================================================
+  // TO-DO: make cobrancatipo work with Eloquent-ORM
+  //=========================================================
+  public function get_cobrancatipo() {
+    return CobrancaTipo::find($this->cobrancatipo_id);
+  }
+  public function cobrancatipo() {
+    $this->belongsTo('App\Models\Billing\CobrancaTipo');
+  }
+  //=========================================================
 
 } // ends class BillingItem extends Model

@@ -153,8 +153,4 @@ class CobrancaTipo extends Model {
     'long_description ',
   ];
 
-  public function cobranca() {
-    return $this->belongsTo('App\Models\Billing\Cobranca');
-  }
-
 } // class CobrancaTipo extends Model

@@ -63,7 +63,8 @@ class Cobranca extends Model {
 	protected $fillable = [
 		'monthrefdate', 'monthseqnumber', 'duedate',
     'contract_id',  'bankaccount_id',
-    'has_been_closed',
+    'value', 'numberpart', 'totalparts',
+    'closed', 'obsinfo',
 	];
 
   public function get_collection_cobrancatipos() {
@@ -95,7 +96,7 @@ class Cobranca extends Model {
   public function get_total_value() {
     $total_value = 0;
     foreach ($this->billingitems()->get() as $billingitem) {
-      $total_value += $billingitem->charged_value;
+      $total_value += $billingitem->value;
     }
     return $total_value;
   }
@@ -129,9 +130,7 @@ class Cobranca extends Model {
     $copied_cobranca->has_been_paid  = $this->has_been_paid;
 
     return $copied_cobranca;
-
   }
-
 
   public function get_imovel() {
     if ($this->contract == null) {
@@ -184,13 +183,12 @@ class Cobranca extends Model {
   }
 
   public function createIfNeededBillingItemFor(
+      $cobranca,
       $cobrancatipo,
+      $monthrefdate,
       $value,
-      $ref_type = null,
-      $freq_used_type = null,
-      $monthyeardateref=null,
-      $n_cota_ref = null,
-      $total_cotas_ref = null
+      $numberpart = null,
+      $totalparts = null
     ) {
 
     // Defaults to ref_type, freq_used_type etc
@@ -245,21 +243,20 @@ class Cobranca extends Model {
       case CobrancaTipo::K_REF_TYPE_IS_DATE: {
         $billingitem = $this->billingitems
           ->where('cobrancatipo_id',  $cobrancatipo->id)
-          ->where('charged_value',    $value)
-          ->where('monthyeardateref', $monthyeardateref)
-          ->where('ref_type',         $ref_type)
-          ->where('freq_used_type',   $freq_used_type)
+          ->where('value',    $value)
+          ->where('monthrefdate', $monthyeardateref)
+          ->where('numberpart',   $freq_used_type)
           ->first();
         break;
       } // ends case
       case CobrancaTipo::K_REF_TYPE_IS_PARCEL: {
         $billingitem = $this->billingitems
-          ->where('cobrancatipo_id',  $cobrancatipo->id)
-          ->where('charged_value',    $value)
-          ->where('n_cota_ref',       $n_cota_ref)
-          ->where('total_cotas_ref',  $n_cota_ref)
-          ->where('ref_type',         $ref_type)
-          ->where('freq_used_type',   $freq_used_type)
+          ->where('cobrancatipo_id', $cobrancatipo->id)
+          ->where('value', $value)
+          ->where('monthrefdate', $monthyeardateref)
+          ->where('numberpart', $numberpart)
+          ->where('totalparts', $totalparts)
+          ->where('reftype', $ref_type)
           ->first();
         break;
       } // ends case
@@ -287,11 +284,10 @@ class Cobranca extends Model {
 
   public function createIfNeededBillingItemForCredito(
       $value,
-      $ref_type = null,
-      $freq_used_type = null,
-      $monthyeardateref = null,
-      $n_cota_ref = null,
-      $total_cotas_ref = null
+      $reftype = null,
+      $monthrefdate = null,
+      $numberpart = null,
+      $totalparts = null
     ) {
     // Fetch crédito's $cobrancatipo :: K_4CHAR_CRED
     $cobrancatipo = CobrancaTipo
@@ -299,33 +295,31 @@ class Cobranca extends Model {
     return $this->createIfNeededBillingItemFor(
       $cobrancatipo,
       $value,
-      $ref_type,
-      $freq_used_type,
-      $monthyeardateref,
-      $n_cota_ref,
-      $total_cotas_ref
+      $reftype,
+      $monthrefdate,
+      $numberpart,
+      $totalparts
     );
   }
 
   public function createIfNeededBillingItemForMora(
+      $cobranca,
+      $cobrancatipo,
+      $monthrefdate,
       $value,
-      $ref_type = null,
-      $freq_used_type = null,
-      $monthyeardateref=null,
-      $n_cota_ref = null,
-      $total_cotas_ref = null
-      ) {
+      $numberpart = null,
+      $totalparts = null
+    ) {
     // Fetch mora's $cobrancatipo :: K_4CHAR_MORA
     $cobrancatipo = CobrancaTipo
       ::get_cobrancatipo_with_its_4char_repr(CobrancaTipo::K_4CHAR_MORA);
     return $this->createIfNeededBillingItemFor(
+      $cobranca,
       $cobrancatipo,
+      $monthrefdate,
       $value,
-      $ref_type,
-      $freq_used_type,
-      $monthyeardateref,
-      $n_cota_ref,
-      $total_cotas_ref
+      $numberpart,
+      $totalparts
     );
   }
 

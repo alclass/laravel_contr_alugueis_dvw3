@@ -3,6 +3,8 @@
 use App\Models\Billing\Cobranca;
 use App\Models\Billing\CobrancaTipo;
 use App\Models\Billing\MoraDebito;
+use App\Models\Immeubles\Contract;
+use App\Models\Immeubles\Imovel;
 use App\Models\Utils\DateFunctions;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
@@ -112,9 +114,9 @@ class CobrancaController extends Controller {
 
 	public function onref($year=null, $month=null)	{
 		//return 'hi';
-		$monthyeardateref = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($year, $month);
+		$monthrefdate = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($year, $month);
 		$cobrancas = Cobranca
-			::where('monthyeardateref', $monthyeardateref)
+			::where('monthrefdate', $monthrefdate)
 			->get();
 		$cobrancas->load('contract');
 		return view('cobrancas/listarcobrancas', ['cobrancas'=>$cobrancas, 'category_msg'=>'On Ref.']);
@@ -122,9 +124,9 @@ class CobrancaController extends Controller {
 
 	public function onlyrent_onref($year=null, $month=null)	{
 		//return 'hi';
-		$monthyeardateref = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($year, $month);
+		$monthrefdate = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($year, $month);
 		$cobrancas = Cobranca
-			::where('monthyeardateref', $monthyeardateref)
+			::where('monthrefdate', $monthrefdate)
 			->get();
 		$cobrancas->load('contract');
 		$cobrancatipo = CobrancaTipo
@@ -155,7 +157,7 @@ class CobrancaController extends Controller {
 
 		// return 'hi';
 		$cobrancas = Cobranca
-			::where('has_been_paid', false)
+			::where('closed', false)
 			->get();
 		$cobrancas->load('contract');
 		$today = Carbon::now();
@@ -171,17 +173,61 @@ class CobrancaController extends Controller {
 
 
 	public function mostrarmesref($contract, $year, $month)	{
-		$monthyeardateref = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($year, $month);
-		$monthyeardateref = Carbon::createFromDate($year, $month, 1);
-		$monthyeardateref->setTime(0,0,0);
+		$monthrefdate = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($year, $month);
+		$monthrefdate = Carbon::createFromDate($year, $month, 1);
+		$monthrefdate->setTime(0,0,0);
 		$cobrancas = Cobranca
 			::where('contract_id', $contract_id)
-			->where('monthyeardateref', $monthyeardateref)
+			->where('monthrefdate', $monthrefdate)
 			->get();
 		// return var_dump($monthyeardateref->toDayDateTimeString());
 		return view('cobrancas.cobranca.mostrar', ['cobrancas'=>$cobrancas]);
 	}
 
+
+	public function show_by_year_month_imovel4char($year, $month, $p_imovel4char, $monthseqnumber=1) {
+		/*
+		The 4th param (monthseqnumber) is optional
+		*/
+		$imovel4char = strtoupper($p_imovel4char);
+		$imovel = Imovel
+			::where('apelido', $imovel4char)
+			->first();
+		if ($imovel == null) {
+			return 'Imóvel não encontrado.';
+		}
+		$contract = Contract
+			::where('imovel_id', $imovel->id)
+			->where('is_active', true)
+			->first();
+		if ($imovel == null) {
+			$page_msg = 'Imóvel '. $imovel->apelido . ' não tem contrato ativo.';
+			return $page_msg;
+		}
+		$monthrefdatestr = "$year-$month-01";
+		$monthrefdate = new Carbon($monthrefdatestr);
+		$cobranca = Cobranca
+			::where('monthrefdate',   $monthrefdate)
+			->where('monthseqnumber', $monthseqnumber)
+			->where('contract_id',    $contract->id)
+			->first();
+		if ($cobranca == null) {
+			$page_msg = 'Cobrança não existe. Dados: Ref.: ' . $year . '/' . $month . '; imóvel ' . $imovel4char . '; contrato: ' . $contract->id . '; dt=' . $monthrefdate;
+			return $page_msg;
+		}
+		$bankaccount = $contract->bankaccount;
+		$today = Carbon::today();
+		return view('cobrancas.cobranca.mostrar2', [
+			'cobranca'=>$cobranca,
+			'contract'=>$contract,
+			'bankaccount'=>$bankaccount,
+			'imovel'=>$imovel,
+			// 'user'=>$user,
+			'today'=>$today,
+		]); // alt.:cobrancas.cobranca.mostrarcobranca
+
+
+	} // ends show_by_year_month_imovel4char()
 
 	/**
 	 * Display the specified resource.
@@ -233,7 +279,10 @@ class CobrancaController extends Controller {
 		 $cobranca = Cobranca
  			::fetch_cobranca_with_triple_contract_id_year_month($contract_id, $year, $month);
 
-		return view('cobrancas.cobranca.editaritensdecobranca', ['cobranca'=>$cobranca]);
+		return view(
+			'cobrancas.cobranca.editaritensdecobranca',
+			['cobranca'=>$cobranca]
+		);
  	} // ends edit_via_httppost()
 
 	/**
@@ -252,27 +301,26 @@ class CobrancaController extends Controller {
 		// -------------------------------------
 		$cobrancatipo_id = $request->input('cobrancatipo_id');
 		$cobrancatipo  = CobrancaTipo::findOrFail($cobrancatipo_id);
-		$monthyeardateref = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($yearref, $monthref);
+		$monthrefdate = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($yearref, $monthref);
 		// -------------------------------------
-		$charged_value   = $request->input('charged_value');
-		$ref_type        = $request->input('ref_type');
-		$freq_used_ref   = $request->input('freq_used_ref');
-		$n_cota_ref      = $request->input('reftype');
-		$total_cotas_ref = $request->input('total_cotas_ref');
+		$value   = $request->input('value');
+		$ref_type        = $request->input('reftype');
+		$numberpart      = $request->input('numberpart');
+		$totalparts = $request->input('totalparts');
 		// -------------------------------------
 		$bi_generator = BillingItemGenerator($cobranca);
+
 		$billingitem = $bi_generator->createIfNeededBillingItemFor(
+			$cobranca,
       $cobrancatipo,
-      $charged_value, // $value,
-      $ref_type,
-      $freq_used_ref,
-      $monthyeardateref,
-      $n_cota_ref,
-      $total_cotas_ref
+      $monthrefdate,
+			$value,
+      $numberpart,
+      $totalparts
 		);
-		$obs = $request->input('obs');
-		if ($obs != null) {
-			$billingitem->$obs = $obs;
+		$obsinfo = $request->input('obsinfo');
+		if (!empty($obsinfo)) {
+			$billingitem->$obsinfo = $obsinfo;
 			$billingitem->save();
 		}
 		return view('cobrancas.cobranca.mostrarcobranca', ['cobranca'=>$cobranca]);

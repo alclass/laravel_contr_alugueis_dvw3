@@ -11,13 +11,12 @@ class BillingItemGenerator {
   }
 
   public function createIfNeededBillingItemFor(
+      $cobranca,
       $cobrancatipo,
+      $monthrefdate,
       $value,
-      $ref_type = null,
-      $freq_used_ref = null,
-      $monthyeardateref=null,
-      $n_cota_ref = null,
-      $total_cotas_ref = null
+      $numberpart=null,
+      $totalparts=null
     ) {
 
     // Defaults to ref_type, freq_used_ref etc
@@ -128,14 +127,13 @@ class BillingItemGenerator {
     $cobrancatipo = CobrancaTipo
       ::get_cobrancatipo_with_its_4char_repr(CobrancaTipo::K_4CHAR_CRED);
     return $this->createIfNeededBillingItemFor(
+      $cobranca,
       $cobrancatipo,
+      $monthrefdate,
       $value,
-      $ref_type,
-      $freq_used_ref,
-      $monthyeardateref,
-      $n_cota_ref,
-      $total_cotas_ref
-    );
+      $numberpart,
+      $totalparts
+		);
   } // ends createIfNeededBillingItemForCredito()
 
   public function createIfNeededBillingItemForMora(
