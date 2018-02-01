@@ -21,18 +21,28 @@ class Cobranca extends Model {
       Beginning of Static Methods
     =================================
   */
-  public static function fetch_cobranca_with_triple_contract_id_year_month(
+  public static function fetch_cobranca_with_year_month_contractid_n_seq(
+      $year,
+      $month,
       $contract_id,
-      $year = null,
-      $month = null
+      $monthseqnumber=1
     )	{
     if ($contract_id == null) {
       return null;
     }
-		$monthyeardateref = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($year, $month);
+    $today = Carbon::today();
+    if ($year == null) {
+      $year = $today->year;
+    }
+    if ($month == null) {
+      $month = $today->month;
+    }
+
+		$monthrefdate = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($year, $month);
 		$cobranca = Cobranca
 			::where('contract_id', $contract_id)
-			->where('monthyeardateref', $monthyeardateref)
+			->where('monthrefdate', $monthrefdate)
+      ->where('monthseqnumber', $monthseqnumber)
 			->first();
 		// Notice $cobranca may be null from here
 		return $cobranca;
@@ -74,15 +84,15 @@ class Cobranca extends Model {
       ->urlrouteparamsasarray [from getUrlrouteparamsasarrayAttribute()]
   */
 
-  public function get_collection_cobrancatipos() {
-    return CobrancaTipo::all();
-  }
-
   /*
     End of the (5) instance methods that are 'brigde-methods' to static methods in CobrancaTipo:
   */
 
   public function is_iptu_ano_quitado() {
+
+    if ($this->contract == null) {
+      return false;
+    }
 
     if ($this->contract->imovel == null) {
       return false;
@@ -111,30 +121,28 @@ class Cobranca extends Model {
   public function copy_without_billingitems() {
     /*
       This method copies an instance partially.
-      Basically, the id will not be copied, for it belongs to the instance in place, used as mold
-      The billing items, if any, will not be copied, for it's the purpose of the method here.
+      Basically, the id will not be copied, for it belongs to the instance
+        in place, used as mold
+      The billing items, if any, will not be copied,
+        for it's the purpose of the method here.
     */
     $copied_cobranca = new Cobranca;
     // ->id stays empty, for it's established by the Eloquent engine so to say
-    if ($this->monthyeardateref != null) {
-      $copied_cobranca->monthyeardateref = $this->monthyeardateref->copy();
+    if ($this->monthrefdate != null) {
+      $copied_cobranca->monthrefdate = $this->monthrefdate->copy();
     }
-    $copied_cobranca->n_seq_from_dateref = $this->n_seq_from_dateref;
+    $copied_cobranca->monthseqnumber = $this->monthseqnumber;
     if ($this->duedate != null) {
       $copied_cobranca->duedate = $this->duedate->copy();
     }
-    $copied_cobranca->discount = $this->discount;
 
-    $copied_cobranca->price_increase_if_any = $this->price_increase_if_any;
-    $copied_cobranca->lineinfo_discount_or_increase = $this->lineinfo_discount_or_increase;
- 	  $copied_cobranca->tot_adic_em_tribs = $this->tot_adic_em_tribs;
+    $copied_cobranca->modifying_amount = $this->modifying_amount;
+    $copied_cobranca->obsinfo = $this->obsinfo;
 
     $copied_cobranca->contract_id = $this->contract_id;
     $copied_cobranca->bankaccount_id = $this->bankaccount_id;
-    $copied_cobranca->n_parcelas = $this->n_parcelas;
-    $copied_cobranca->are_parcels_monthly = $this->are_parcels_monthly;
-    $copied_cobranca->parcel_n_days_interval = $this->parcel_n_days_interval;
-    $copied_cobranca->has_been_paid  = $this->has_been_paid;
+    $copied_cobranca->totalparts = $this->totalparts;
+    // $copied_cobranca->closed = $this->closed;
 
     return $copied_cobranca;
   }
@@ -143,6 +151,7 @@ class Cobranca extends Model {
     if ($this->contract == null) {
       return null;
     }
+    // null may be returned
     return $this->contract->imovel;
   }
 
@@ -151,7 +160,7 @@ class Cobranca extends Model {
       // the returning users()->get() is a Collection
       return $this->contract->users()->get();
     }
-    return null;
+    return [];
   }
 
   public function getUrlrouteparamsasarrayAttribute() {
@@ -176,23 +185,34 @@ class Cobranca extends Model {
     ];
   }
 
-  public function search_monthly_focused_previous_bill($targetmonthrefdate, $firstevermonthrefdate=null) {
+  public function search_monthly_focused_previous_bill(
+      $targetmonthrefdate,
+      $firstevermonthrefdate=null
+    ) {
+    /*
+
+      This method is recursive.
+      In a nutshell, it searches 'backward', as soon as
+        a previous bill is found, that one is returned.
+    */
 
     // Protect against infinite recursion
-    if (Cobranca::count()==0) {
+    if (self::count()==0) {
       return null;
     }
 
     if ($firstevermonthrefdate==null) {
-      // At this point, at least ONE RECORD exists!
-      $firsteverbill = Cobranca
+      // At this point, at least ONE RECORD exists, for, above, count() is >0
+      $firsteverbill = self
+        ::where('contract_id', $this->contract_id)
         ->order_by('monthrefdate', 'asc')
         ->order_by('monthseqnumber', 'asc')
         ->first();
       $firstevermonthrefdate = $firsteverbill->monthrefdate;
     }
-    $previousmonthsloopingbill = Cobranca
-      ::where('monthrefdate', $targetmonthrefdate)
+    $previousmonthsloopingbill = self
+      ::where('contract_id', $this->contract_id)
+      ->where('monthrefdate', $targetmonthrefdate)
       ->order_by('monthseqnumber', 'desc')
       ->first();
     if ($previousmonthsloopingbill != null) {
@@ -202,7 +222,10 @@ class Cobranca extends Model {
     if ($targetmonthrefdate > $firstevermonthrefdate) {
       $targetmonthrefdate = $targetmonthrefdate->addMonths(-1);
       // Nothing found, recurse one month less
-      return $this->search_monthly_focused_previous_bill($targetmonthrefdate, $firstevermonthrefdate);
+      return $this->search_monthly_focused_previous_bill(
+        $targetmonthrefdate,
+        $firstevermonthrefdate
+      );
     }
     // Anyways... (this point may never be logically reached...)
     return null;
@@ -216,8 +239,9 @@ class Cobranca extends Model {
         1) monthseqnumber is sounded, then
         2) monthrefdate is sounded
     */
-    $firsteverbill = $this;
-      ::order_by('monthrefdate', 'asc')
+    $firsteverbill = self
+      ::where('contract_id', $this->contract_id)
+      ->order_by('monthrefdate', 'asc')
       ->order_by('monthseqnumber', 'asc')
       ->first();
     if ($firsteverbill == $this) {
@@ -225,8 +249,9 @@ class Cobranca extends Model {
     }
     $previousbill = null;
     if ($this->monthseqnumber > 1) {
-      $previousbill = Cobranca
-        ::where('monthrefdate', $this->monthrefdate)
+      $previousbill = self
+        ::where('contract_id', $this->contract_id)
+        ->where('monthrefdate', $this->monthrefdate)
         ->where('monthseqnumber', '<',  $this->monthseqnumber)
         ::order_by('monthrefdate', 'desc')
         ->first();
@@ -236,7 +261,10 @@ class Cobranca extends Model {
     }
     $targetmonthrefdate = $this->monthrefdate->copy()->addMonths(-1);
     $firstevermonthrefdate = $firsteverbill->monthrefdate;
-    return $this->search_monthly_focused_previous_bill($targetmonthrefdate, $firsteverbill);
+    return $this->search_monthly_focused_previous_bill(
+      $targetmonthrefdate,
+      $firsteverbill
+    );
   }
 
   public function get_routeparams_toformerbill_asarray() {
@@ -251,75 +279,171 @@ class Cobranca extends Model {
     return $previous_bill->urlrouteparamsasarray;
   } // ends get_routeparams_toformerbill_asarray()
 
-  public function createOrFindNextMonthCobranca($n_seq_from_dateref=1) {
-    $next_monthyeardateref = $this->monthyeardateref->copy()->addMonths(1);
-    if ($this->contract == null) {
-      if ($this->contract_id == null) {
-        throw new Exception("contract is null when calling createOrFindNextMonthCobranca())", 1);
-      }
-      // Try to fetch contract from contract_id
-      $this->contract = Contract::find($this->contract_id);
-      if ($this->contract == null) {
+  public function fetch_or_create_next_months_bill($monthseqnumber=1) {
+    $next_monthrefdate = $this->monthrefdate->copy()->addMonths(1);
+    if ($this->contract_id == null) {
         throw new Exception("contract_id was not db-found when calling createOrFindNextMonthCobranca())", 1);
-      }
     }
     return CobrancaGerador
-      ::createOrRetrieveCobrancaWithTripleContractRefSeq(
-        $this->contract,
-        $next_monthyeardateref,
-        $n_seq_from_dateref
+      ::fetch_or_create_next_months_bill(
+        $this->contract_id,
+        $next_monthrefdate,
+        $monthseqnumber
       );
   }
 
-  public function extract_month_from_monthyeardateref() {
-    if ($this->monthyeardateref == null) {
-      return 's/n';
-    }
-    return $this->monthyeardateref->month;
-  }
-
-  public function extract_year_from_monthyeardateref() {
-    if ($this->monthyeardateref == null) {
-      return 's/n';
-    }
-    return $this->monthyeardateref->year;
-  }
-
-  public function createIfNeededBillingItemFor(
-      $cobranca,
+  public function generate_billingitem_from_contract(
       $cobrancatipo,
-      $monthrefdate,
-      $value,
+      //$value,
       $numberpart = null,
       $totalparts = null
     ) {
 
-    // Defaults to ref_type, freq_used_type etc
-    // Default to ref_type
-    if ($ref_type == null) {
-      $ref_type = CobrancaTipo::K_REF_TYPE_IS_DATE;
-    }
-    // Default to freq_used_type
-    if ($freq_used_type == null) {
-      $freq_used_type = CobrancaTipo::K_FREQ_USED_IS_MONTHLY;
-    }
+    if ($this->contract == null) {
+      return null;
+    } // ->get_value_in_cobrancatipo($cobrancatipo)
 
-    if ($ref_type == CobrancaTipo::K_REF_TYPE_IS_PARCEL ||
-        $ref_type == CobrancaTipo::K_REF_TYPE_IS_BOTH_DATE_N_PARCEL) {
-      if ($n_cota_ref == null) {
-        $n_cota_ref = 1;
-      } // ends inner if
-      if ($total_cotas_ref == null) {
-        $total_cotas_ref = 1;
-      } // ends inner if
-    } // ends outer if
+    $cobrancatipos = $this->contract->get_auto_billing_types();
+    $noninserted_cobrancatipos = array();
+    $has_been_inserted = false;
+    foreach ($cobrancatipos as $cobrancatipo) {
+      $has_been_inserted = false;
+      $char4id = $cobrancatipo->char4id;
+      $cobrancatipo_id = CobrancaTipo::get_cobrancatipo_by_char4id($char4id);
+      switch ($char4id) {
+        case CobrancaTipo::K_4CHAR_ALUG:
+          $value = $this->contract->get_value_of_cobrancatipo(CobrancaTipo::K_4CHAR_ALUG);
+          $numberpart = 1;
+          $totalparts = 1;
+          $carried_cobranca_id = null; // use only for CARR (ie carried debts)
+          $billingitem = fetch_or_create_billingitem_with(
+                          $this->id, // cobranca_id
+                          $cobrancatipo_id,
+                          $value,
+                          $this->monthrefdate,
+                          $numberpart,
+                          $totalparts,
+                          $carried_cobranca_id
+                        );
+          $this->billingitems->add($billingitem);
+          $has_been_inserted = true;
+          break;
+
+        case CobrancaTipo::K_4CHAR_COND:
+          $value = $this->contract->imovel->get_value_of_condominium($this->monthrefdate);
+          $numberpart = 1;
+          $totalparts = 1;
+          $carried_cobranca_id = null; // use only for CARR (ie carried debts)
+          $billingitem = fetch_or_create_billingitem_with(
+                          $this->id, // cobranca_id
+                          $cobrancatipo_id,
+                          $value,
+                          $this->monthrefdate,
+                          $numberpart,
+                          $totalparts,
+                          $carried_cobranca_id
+                        );
+          $this->billingitems->add($billingitem);
+          $has_been_inserted = true;
+          break;
+
+        case CobrancaTipo::K_4CHAR_IPTU:
+          $iptu_array = $this->contract->imovel->get_value_of_iptu_array($this->monthrefdate);
+          if ($iptu_array->no_parcels_at_this_moment) {
+            break;
+          }
+          $value = $iptu_array->value;
+          $numberpart = $iptu_array->numberpart;
+          $totalparts = $iptu_array->totalparts;
+          $carried_cobranca_id = null; // use only for CARR (ie carried debts)
+          $billingitem = fetch_or_create_billingitem_with(
+                          $this->id, // cobranca_id
+                          $cobrancatipo_id,
+                          $value,
+                          $this->monthrefdate,
+                          $numberpart,
+                          $totalparts,
+                          $carried_cobranca_id
+                        );
+          $this->billingitems->add($billingitem);
+          $has_been_inserted = true;
+          break;
+
+        case CobrancaTipo::K_4CHAR_CRED:
+          $value = -$this->cred_account;
+          $numberpart = 1;
+          $totalparts = 1;
+          $carried_cobranca_id = null; // use only for CARR (ie carried debts)
+          $billingitem = fetch_or_create_billingitem_with(
+                          $this->id, // cobranca_id
+                          $cobrancatipo_id,
+                          $value,
+                          $this->monthrefdate,
+                          $numberpart,
+                          $totalparts,
+                          $carried_cobranca_id
+                        );
+          $this->billingitems->add($billingitem);
+          $has_been_inserted = true;
+          break;
+
+        case CobrancaTipo::K_4CHAR_CARR:
+          $value = $this->debts_from_previous_bills;
+          $numberpart = 1;
+          $totalparts = 1;
+          $carried_cobranca_id = $this->carried_cobranca_id; // use only for CARR (ie carried debts)
+          $billingitem = fetch_or_create_billingitem_with(
+                          $this->id, // cobranca_id
+                          $cobrancatipo_id,
+                          $value,
+                          $this->monthrefdate,
+                          $numberpart,
+                          $totalparts,
+                          $carried_cobranca_id
+                        );
+          $this->billingitems->add($billingitem);
+          $has_been_inserted = true;
+          break;
+
+        case CobrancaTipo::K_4CHAR_FUNE:
+          // Funesbom is yearly / annually
+          $value = $this->imovel->get_funesbom_ifitisitsmonth();
+          if ($value == null) {
+            break;
+          }
+          $numberpart = 1;
+          $totalparts = 1;
+          $carried_cobranca_id = null; // use only for CARR (ie carried debts)
+          $billingitem = fetch_or_create_billingitem_with(
+                          $this->id, // cobranca_id
+                          $cobrancatipo_id,
+                          $value,
+                          $this->monthrefdate,
+                          $numberpart,
+                          $totalparts,
+                          $carried_cobranca_id
+                        );
+          $this->billingitems->add($billingitem);
+          $has_been_inserted = true;
+          break;
+
+
+        default:
+          # code...
+          break;
+      } // ends switch
+      if (!$has_been_inserted) {
+        $noninserted_cobrancatipos[] = $cobrancatipo;
+      }
+    } // ends foreach
+
 
     // Finally, check default monthyeardateref if CobrancaTipo is D or B
     if ($ref_type == CobrancaTipo::K_REF_TYPE_IS_DATE ||
         $ref_type == CobrancaTipo::K_REF_TYPE_IS_BOTH_DATE_N_PARCEL) {
       if ($monthyeardateref == null) {
         $monthyeardateref = $this
-          ->get_conventioned_monthyeardateref_if_it_is_null($monthyeardateref);
+          ->get_conventioned_monthrefdate_if_it_is_null($monthyeardateref);
       } // ends inner if
     } // ends outer if
 
