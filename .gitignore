@@ -6,6 +6,7 @@ storage/
 vendor/
 .buildpath
 .idea/
+.vscode/
 __pycache__/
 .env
 .project

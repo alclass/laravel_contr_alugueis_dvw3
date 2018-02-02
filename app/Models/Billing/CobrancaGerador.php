@@ -64,9 +64,7 @@ class CobrancaGerador {
     $cobranca->contract_id    = $contract_id;
     
     $cobranca->set_duedate_from_monthrefdate();
-    $cobranca->d = $cobranca->duedate->copy();
-    $cobranca->d->day(20);
-    // $cobranca->make_autobillingitem();
+    $cobranca->add_configured_billing_items();
     return $cobranca;
   } // ends [static] create_or_retrieve_cobranca()
 

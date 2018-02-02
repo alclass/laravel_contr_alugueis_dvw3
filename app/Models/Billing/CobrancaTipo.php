@@ -69,6 +69,10 @@ class CobrancaTipo extends Model {
     return self::get_cobrancatipo_with_its_4charrepr($p_4char_repr, false);
   }
 
+  public static function fetch_by_char4id($p_4char_repr) {
+    return self::get_cobrancatipo_with_its_4charrepr($p_4char_repr, false);
+  }
+
   // Static Method 2
   public static function get_cobrancatipo_with_its_4charrepr($p_4char_repr, $raise_exception_if_null=false) {
     $cobrancatipo = CobrancaTipo::where('char4id', $p_4char_repr)

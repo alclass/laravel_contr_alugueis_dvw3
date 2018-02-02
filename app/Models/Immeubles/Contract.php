@@ -85,6 +85,11 @@ class Contract extends Model {
     );
   }
 
+
+  public function get_monthly_value() {
+    return $this->current_rent_value;
+  }
+
   public function todays_diff_to_rent_value_next_reajust_date($from_date = null) {
     /*
       $from_date = null means a convention (in the class) for it to be today's date

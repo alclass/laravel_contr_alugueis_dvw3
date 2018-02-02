@@ -72,6 +72,21 @@ class Imovel extends Model {
 		return null;
 	}
 
+	public function get_condominio_in_refmonth($monthrefdate) {
+		return 350.00;
+	}
+
+	public function get_iptu_value_in_refmonth($monthrefdate) {
+		return 3000.00;
+	}
+
+	public function get_iptu_numberpart_in_refmonth($monthrefdate) {
+		return $monthrefdate->month - 2;
+	}
+	public function get_iptu_totalparts_in_refmonth($monthrefdate) {
+		return 10;
+	}
+
 /*
 
 	public function get_inquilinos_atuais() {

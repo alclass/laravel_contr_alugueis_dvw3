@@ -9,6 +9,9 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 class BillingItem extends Model {
+  /**
+   * docstring
+  */
 
 
   protected $table = 'billingitems';
@@ -19,7 +22,7 @@ class BillingItem extends Model {
    //'updated_at',
  ];
 
- /**
+  /**
   * The attributes that are mass assignable.
   *
   * @var array
@@ -47,7 +50,7 @@ class BillingItem extends Model {
   }
 
   public function copy() {
-    /*
+    /**
     'brief_description', 'value', 'monthrefdate',
     'use_partnumber', 'numberpart', 'totalparts',
     'was_original_value_modified', 'brief_description_for_modifier',

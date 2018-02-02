@@ -6,6 +6,116 @@ use App\Models\Billing\CobrancaTipo;
 
 class BillingItemGenerator {
 
+
+  public static function create_n_return_billing_item(
+      $cobrancatipo,
+      $value,
+      $monthrefdate,
+      $numberpart = 1,
+      $totalparts = 1
+    ) {
+    $billingitem = new BillingItem();
+    $billingitem->cobrancatipo_id = $cobrancatipo->id;
+    $billingitem->value = $value;
+    $billingitem->monthrefdate = $monthrefdate;
+    $billingitem->numberpart = $numberpart;
+    $billingitem->totalparts = $totalparts;
+    return $billingitem;
+  }  
+
+  public static function create_n_return_typed_billing_item(
+      $cobrancatipo_char4id,
+      $value,
+      $monthrefdate,
+      $numberpart = 1,
+      $totalparts = 1
+    ) {
+    $cobrancatipo = CobrancaTipo::fetch_by_char4id($cobrancatipo_char4id);
+    // wrap 'cobrancatipo' with the incoming parameters to the next method:
+    return self::create_n_return_billing_item(
+      $cobrancatipo,
+      $value,
+      $monthrefdate,
+      $numberpart,
+      $totalparts
+    );
+  }
+
+  public static function create_n_return_alug_billing_item(
+    $value,
+    $monthrefdate,
+    $numberpart = 1,
+    $totalparts = 1
+  ) {
+    return self::create_n_return_typed_billing_item(
+      CobrancaTipo::K_4CHAR_ALUG,
+      $value,
+      $monthrefdate,
+      $numberpart,
+      $totalparts
+    );
+  }
+
+  public static function create_n_return_cond_billing_item(
+    $value,
+    $monthrefdate,
+    $numberpart = 1,
+    $totalparts = 1
+  ) {
+    return self::create_n_return_typed_billing_item(
+      CobrancaTipo::K_4CHAR_COND,
+      $value,
+      $monthrefdate,
+      $numberpart,
+      $totalparts
+    );
+  }
+
+  public static function create_n_return_iptu_billing_item(
+    $value,
+    $monthrefdate,
+    $numberpart = 1,
+    $totalparts = 1
+  ) {
+    return self::create_n_return_typed_billing_item(
+      CobrancaTipo::K_4CHAR_IPTU,
+      $value,
+      $monthrefdate,
+      $numberpart,
+      $totalparts
+    );
+  }
+
+  public static function create_n_return_carr_billing_item(
+    $value,
+    $monthrefdate,
+    $numberpart = 1,
+    $totalparts = 1
+  ) {
+    return self::create_n_return_typed_billing_item(
+      CobrancaTipo::K_4CHAR_CARR,
+      $value,
+      $monthrefdate,
+      $numberpart,
+      $totalparts
+    );
+  }
+  
+  public static function create_n_return_cred_billing_item(
+    $value, // care should be taken by callee, ie, $value here should be < 0
+    $monthrefdate,
+    $numberpart = 1,
+    $totalparts = 1
+  ) {
+    return self::create_n_return_typed_billing_item(
+      CobrancaTipo::K_4CHAR_CRED,
+      $value,
+      $monthrefdate,
+      $numberpart,
+      $totalparts
+    );
+  }
+
   public function __construct($cobranca) {
     $this->cobranca = $cobranca;
   }

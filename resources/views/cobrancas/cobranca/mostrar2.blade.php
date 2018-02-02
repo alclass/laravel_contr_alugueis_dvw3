@@ -45,7 +45,7 @@
               </tr>
           </thead>
           <tbody>
-            @foreach ($cobranca->billingitems()->get() as $billingitem)
+            @foreach ($cobranca->billingitems as $billingitem)
               <tr>
                   <td class="col-md-9">
                     <?php

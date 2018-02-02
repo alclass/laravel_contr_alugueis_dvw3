@@ -1,4 +1,7 @@
 <?php
+/**
+ * Cobranca.php 
+ */
 namespace App\Models\Billing;
 
 // To import class Cobranca elsewhere in the Laravel App
@@ -14,6 +17,12 @@ use App\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+*   Class Cobranca
+*
+*   @package App\Models\Billing\Cobranca
+*   @author  Luiz Lewis <livrosetc@yahoo.com.br>
+*/
 class Cobranca extends Model {
 
   /*
@@ -117,6 +126,42 @@ class Cobranca extends Model {
       $total_value += $billingitem->value;
     }
     return $total_value;
+  }
+
+  public function add_configured_billing_items () {
+    $value = $this->contract->get_monthly_value();
+    $billing_item = BillingItemGenerator::create_n_return_alug_billing_item(
+      $value,
+      $this->monthrefdate,
+      $numberpart=1,
+      $totalparts=1
+    );
+    if ($billing_item != null) {
+      $this->billingitems[] = $billing_item;
+    }
+    $value = $this->contract->imovel->get_condominio_in_refmonth($this->monthrefdate);
+    $billing_item = BillingItemGenerator::create_n_return_cond_billing_item(
+      $value,
+      $this->monthrefdate,
+      $numberpart = 1,
+      $totalparts = 1
+    );
+    if ($billing_item != null) {
+      $this->billingitems[] = $billing_item;
+    }
+    $value      = $this->contract->imovel->get_iptu_value_in_refmonth($this->monthrefdate);
+    $numberpart = $this->contract->imovel->get_iptu_numberpart_in_refmonth($this->monthrefdate);
+    $totalparts = $this->contract->imovel->get_iptu_totalparts_in_refmonth($this->monthrefdate);
+    $billing_item = BillingItemGenerator::create_n_return_iptu_billing_item(
+      $value,
+      $this->monthrefdate,
+      $numberpart,
+      $totalparts
+    );
+    if ($billing_item != null) {
+      $this->billingitems[]=$billing_item;
+    }
+
   }
 
   public function copy_without_billingitems() {
