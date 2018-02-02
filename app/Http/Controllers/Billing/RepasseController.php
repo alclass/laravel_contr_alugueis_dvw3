@@ -51,7 +51,7 @@ class RepasseController extends Controller {
 			}
 		}
 		else {
-			$imovel = Imovel:findOrFail($imovel_id);
+			$imovel = Imovel::findOrFail($imovel_id);
 			$iptu = $imovel->get_iptu();
 			$iptus_sob_repasse = [$iptu];
 		}
@@ -69,7 +69,7 @@ class RepasseController extends Controller {
 			}
 		}
 		else {
-			$condominio = condominio:findOrFail($condominio_id);
+			$condominio = condominio::findOrFail($condominio_id);
 			$condominios = [$condominio];
 		}
 		return view('encargos/condominios', ['condominios'=>$condominios, 'category_msg'=>'Condomínio(s)']);

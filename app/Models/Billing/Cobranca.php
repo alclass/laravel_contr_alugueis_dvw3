@@ -37,16 +37,17 @@ class Cobranca extends Model {
     if ($month == null) {
       $month = $today->month;
     }
+		$monthrefdate = new Carbon("$year-$month-01");
 
-		$monthrefdate = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($year, $month);
-		$cobranca = Cobranca
-			::where('contract_id', $contract_id)
-			->where('monthrefdate', $monthrefdate)
-      ->where('monthseqnumber', $monthseqnumber)
-			->first();
+    $cobranca = CobrancaGerador::retrieve_cobranca_with_keys(
+        $contract_id,
+        $monthrefdate,
+        $monthseqnumber
+    );
+
 		// Notice $cobranca may be null from here
 		return $cobranca;
- 	} // ends [static] fetch_cobranca_with_triple_contract_id_year_month()
+ 	} // ends [static] fetch_cobranca_with_year_month_contractid_n_seq()
 
   /*
     =================================
@@ -100,7 +101,7 @@ class Cobranca extends Model {
 
     $iptutabela = IPTUTabela
       ::where('imovel_id'  , $this->contract->imovel->id)
-      ->where('ano'        , $this->monthyeardateref->year)
+      ->where('ano'        , $this->monthrefdate->year)
       ->first();
 
     if ($iptutabela != null && $iptutabela->ano_quitado == true) {
@@ -137,30 +138,23 @@ class Cobranca extends Model {
     }
 
     $copied_cobranca->modifying_amount = $this->modifying_amount;
-    $copied_cobranca->obsinfo = $this->obsinfo;
+    $copied_cobranca->obsinfo          = $this->obsinfo;
 
-    $copied_cobranca->contract_id = $this->contract_id;
+    $copied_cobranca->contract_id    = $this->contract_id;
     $copied_cobranca->bankaccount_id = $this->bankaccount_id;
-    $copied_cobranca->totalparts = $this->totalparts;
+    $copied_cobranca->totalparts     = $this->totalparts;
     // $copied_cobranca->closed = $this->closed;
 
     return $copied_cobranca;
   }
 
+  // dynamic attribute 'imovel'
   public function getImovelAttribute() {
     if ($this->contract == null) {
       return null;
     }
     // null may be returned
     return $this->contract->imovel;
-  }
-
-  public function get_users() {
-    if ($this->contract != null) {
-      // the returning users()->get() is a Collection
-      return $this->contract->users()->get();
-    }
-    return [];
   }
 
   public function getUrlrouteparamsasarrayAttribute() {
@@ -185,92 +179,53 @@ class Cobranca extends Model {
     ];
   }
 
-  public function search_monthly_focused_previous_bill(
-      $targetmonthrefdate,
-      $firstevermonthrefdate=null
-    ) {
+  public function search_previous_bill() {
     /*
 
-      This method is recursive.
-      In a nutshell, it searches 'backward', as soon as
-        a previous bill is found, that one is returned.
+      This method searches 'backwards' in two steps.
+
+      1) The first step is to see if there's a lower monthseqnumber
+      in the same month as the original bill;
+
+      2) The second step is to see if there's a lower monthrefdate
+      also guaranteeing that monthseqnumber is descendingly ordered
     */
 
-    // Protect against infinite recursion
-    if (self::count()==0) {
-      return null;
+    // 1st step: check if there's a lower monthseqnumber
+    // =================================================
+    $previous_bill = self
+      ::where('contract_id', $this->contract_id)
+      ->where('monthrefdate', $this->monthrefdate)
+      ->where('monthseqnumber', '<', $this->monthseqnumber)
+      ->order_by('monthrefdate', 'desc')
+      ->first();
+
+    if ($previous_bill != null) {
+      // Found it !
+      return $previous_bill;
     }
 
-    if ($firstevermonthrefdate==null) {
-      // At this point, at least ONE RECORD exists, for, above, count() is >0
-      $firsteverbill = self
-        ::where('contract_id', $this->contract_id)
-        ->order_by('monthrefdate', 'asc')
-        ->order_by('monthseqnumber', 'asc')
-        ->first();
-      $firstevermonthrefdate = $firsteverbill->monthrefdate;
-    }
-    $previousmonthsloopingbill = self
+    // 2nd step: pick up later record before monthrefdate
+    // =================================================
+
+    $previous_bill = self
       ::where('contract_id', $this->contract_id)
-      ->where('monthrefdate', $targetmonthrefdate)
+      ->where('monthrefdate', '<', $this->monthrefdate)
+      ->order_by('monthrefdate', 'desc')
       ->order_by('monthseqnumber', 'desc')
       ->first();
-    if ($previousmonthsloopingbill != null) {
-      // Here ends recursion
-      return $previousmonthsloopingbill;
-    }
-    if ($targetmonthrefdate > $firstevermonthrefdate) {
-      $targetmonthrefdate = $targetmonthrefdate->addMonths(-1);
-      // Nothing found, recurse one month less
-      return $this->search_monthly_focused_previous_bill(
-        $targetmonthrefdate,
-        $firstevermonthrefdate
-      );
-    }
-    // Anyways... (this point may never be logically reached...)
-    return null;
+
+    // null may be returned from here which means that no previous bill has been found
+    return $previous_bill;
   }
 
-  public function get_previous_bill() {
-    /*
-      If there is no previous bill, this method returns null
-
-      Search is done by TWO steps:
-        1) monthseqnumber is sounded, then
-        2) monthrefdate is sounded
-    */
-    $firsteverbill = self
-      ::where('contract_id', $this->contract_id)
-      ->order_by('monthrefdate', 'asc')
-      ->order_by('monthseqnumber', 'asc')
-      ->first();
-    if ($firsteverbill == $this) {
-      return null;
-    }
-    $previousbill = null;
-    if ($this->monthseqnumber > 1) {
-      $previousbill = self
-        ::where('contract_id', $this->contract_id)
-        ->where('monthrefdate', $this->monthrefdate)
-        ->where('monthseqnumber', '<',  $this->monthseqnumber)
-        ::order_by('monthrefdate', 'desc')
-        ->first();
-    }
-    if ($previousbill != null) {
-      return $previousbill;
-    }
-    $targetmonthrefdate = $this->monthrefdate->copy()->addMonths(-1);
-    $firstevermonthrefdate = $firsteverbill->monthrefdate;
-    return $this->search_monthly_focused_previous_bill(
-      $targetmonthrefdate,
-      $firsteverbill
-    );
-  }
 
   public function get_routeparams_toformerbill_asarray() {
     /*
-      Params are:
-        year, month, imovel_char4id & monthseqnumber
+      output route params are:
+        [year, month, imovel_char4id, monthseqnumber]
+      Eg.:
+        /urlroute.../2018/1/cdutra/1/
     */
     $previous_bill = $this->get_previous_bill();
     if ($previous_bill == null) {
@@ -290,324 +245,37 @@ class Cobranca extends Model {
         $next_monthrefdate,
         $monthseqnumber
       );
+    }
+
+  public function set_duedate_from_monthrefdate() {
+    /*
+      WEIRD behaviou has been found here, maybe it's a bug in Carbon-Laravel.
+      
+      'duedate' below only gets the day value given,
+        when model is not yet saved in db,
+        if the day() method is chained with copy() and addMonths()
+      
+      If, on the other hand, method day() is used after in a following line,
+        the day is not changed. (This has been seen in both Tinker and on browser).
+      
+      The expected value comes, as said above, if day() is chained and
+        the whole instruction goes into one line of code (see below).
+      
+    */
+    $this->duedate = $this->monthrefdate->copy()->addMonths(1)->day(10);
+    // TO-DO take out the 10 hardcoded when possible !!!
+    //$this->duedate->day(10);
+    //$this->duedate->addMonths(1);
   }
 
-  public function generate_billingitem_from_contract(
-      $cobrancatipo,
-      //$value,
-      $numberpart = null,
-      $totalparts = null
-    ) {
-
-    if ($this->contract == null) {
-      return null;
-    } // ->get_value_in_cobrancatipo($cobrancatipo)
-
-    $cobrancatipos = $this->contract->get_auto_billing_types();
-    $noninserted_cobrancatipos = array();
-    $has_been_inserted = false;
-    foreach ($cobrancatipos as $cobrancatipo) {
-      $has_been_inserted = false;
-      $char4id = $cobrancatipo->char4id;
-      $cobrancatipo_id = CobrancaTipo::get_cobrancatipo_by_char4id($char4id);
-      switch ($char4id) {
-        case CobrancaTipo::K_4CHAR_ALUG:
-          $value = $this->contract->get_value_of_cobrancatipo(CobrancaTipo::K_4CHAR_ALUG);
-          $numberpart = 1;
-          $totalparts = 1;
-          $carried_cobranca_id = null; // use only for CARR (ie carried debts)
-          $billingitem = fetch_or_create_billingitem_with(
-                          $this->id, // cobranca_id
-                          $cobrancatipo_id,
-                          $value,
-                          $this->monthrefdate,
-                          $numberpart,
-                          $totalparts,
-                          $carried_cobranca_id
-                        );
-          $this->billingitems->add($billingitem);
-          $has_been_inserted = true;
-          break;
-
-        case CobrancaTipo::K_4CHAR_COND:
-          $value = $this->contract->imovel->get_value_of_condominium($this->monthrefdate);
-          $numberpart = 1;
-          $totalparts = 1;
-          $carried_cobranca_id = null; // use only for CARR (ie carried debts)
-          $billingitem = fetch_or_create_billingitem_with(
-                          $this->id, // cobranca_id
-                          $cobrancatipo_id,
-                          $value,
-                          $this->monthrefdate,
-                          $numberpart,
-                          $totalparts,
-                          $carried_cobranca_id
-                        );
-          $this->billingitems->add($billingitem);
-          $has_been_inserted = true;
-          break;
-
-        case CobrancaTipo::K_4CHAR_IPTU:
-          $iptu_array = $this->contract->imovel->get_value_of_iptu_array($this->monthrefdate);
-          if ($iptu_array->no_parcels_at_this_moment) {
-            break;
-          }
-          $value = $iptu_array->value;
-          $numberpart = $iptu_array->numberpart;
-          $totalparts = $iptu_array->totalparts;
-          $carried_cobranca_id = null; // use only for CARR (ie carried debts)
-          $billingitem = fetch_or_create_billingitem_with(
-                          $this->id, // cobranca_id
-                          $cobrancatipo_id,
-                          $value,
-                          $this->monthrefdate,
-                          $numberpart,
-                          $totalparts,
-                          $carried_cobranca_id
-                        );
-          $this->billingitems->add($billingitem);
-          $has_been_inserted = true;
-          break;
-
-        case CobrancaTipo::K_4CHAR_CRED:
-          $value = -$this->cred_account;
-          $numberpart = 1;
-          $totalparts = 1;
-          $carried_cobranca_id = null; // use only for CARR (ie carried debts)
-          $billingitem = fetch_or_create_billingitem_with(
-                          $this->id, // cobranca_id
-                          $cobrancatipo_id,
-                          $value,
-                          $this->monthrefdate,
-                          $numberpart,
-                          $totalparts,
-                          $carried_cobranca_id
-                        );
-          $this->billingitems->add($billingitem);
-          $has_been_inserted = true;
-          break;
-
-        case CobrancaTipo::K_4CHAR_CARR:
-          $value = $this->debts_from_previous_bills;
-          $numberpart = 1;
-          $totalparts = 1;
-          $carried_cobranca_id = $this->carried_cobranca_id; // use only for CARR (ie carried debts)
-          $billingitem = fetch_or_create_billingitem_with(
-                          $this->id, // cobranca_id
-                          $cobrancatipo_id,
-                          $value,
-                          $this->monthrefdate,
-                          $numberpart,
-                          $totalparts,
-                          $carried_cobranca_id
-                        );
-          $this->billingitems->add($billingitem);
-          $has_been_inserted = true;
-          break;
-
-        case CobrancaTipo::K_4CHAR_FUNE:
-          // Funesbom is yearly / annually
-          $value = $this->imovel->get_funesbom_ifitisitsmonth();
-          if ($value == null) {
-            break;
-          }
-          $numberpart = 1;
-          $totalparts = 1;
-          $carried_cobranca_id = null; // use only for CARR (ie carried debts)
-          $billingitem = fetch_or_create_billingitem_with(
-                          $this->id, // cobranca_id
-                          $cobrancatipo_id,
-                          $value,
-                          $this->monthrefdate,
-                          $numberpart,
-                          $totalparts,
-                          $carried_cobranca_id
-                        );
-          $this->billingitems->add($billingitem);
-          $has_been_inserted = true;
-          break;
-
-
-        default:
-          # code...
-          break;
-      } // ends switch
-      if (!$has_been_inserted) {
-        $noninserted_cobrancatipos[] = $cobrancatipo;
-      }
-    } // ends foreach
-
-
-    // Finally, check default monthyeardateref if CobrancaTipo is D or B
-    if ($ref_type == CobrancaTipo::K_REF_TYPE_IS_DATE ||
-        $ref_type == CobrancaTipo::K_REF_TYPE_IS_BOTH_DATE_N_PARCEL) {
-      if ($monthyeardateref == null) {
-        $monthyeardateref = $this
-          ->get_conventioned_monthrefdate_if_it_is_null($monthyeardateref);
-      } // ends inner if
-    } // ends outer if
-
-    if ($ref_type == CobrancaTipo::K_REF_TYPE_IS_DATE) {
-      // Nullify these two if ref_type is D
-      $n_cota_ref      = null;
-      $total_cotas_ref = null;
-    }
-
-    if ($ref_type == CobrancaTipo::K_REF_TYPE_IS_PARCEL) {
-      // Nullify this one two if ref_type is D
-      $monthyeardateref = null;
-    } else {
-      // Zero time fields to guarantee date-equility will work
-      $monthyeardateref->setTime(0,0,0);
-    }
-
-    // Query for Billing Item existence
-    $billingitem = null;
-    switch ($ref_type) {
-      case CobrancaTipo::K_REF_TYPE_IS_BOTH_DATE_N_PARCEL: {
-        // break;  // let it fall to the next
-      } // ends case
-      case CobrancaTipo::K_REF_TYPE_IS_DATE: {
-        $billingitem = $this->billingitems
-          ->where('cobrancatipo_id',  $cobrancatipo->id)
-          ->where('value',    $value)
-          ->where('monthrefdate', $monthyeardateref)
-          ->where('numberpart',   $freq_used_type)
-          ->first();
-        break;
-      } // ends case
-      case CobrancaTipo::K_REF_TYPE_IS_PARCEL: {
-        $billingitem = $this->billingitems
-          ->where('cobrancatipo_id', $cobrancatipo->id)
-          ->where('value', $value)
-          ->where('monthrefdate', $monthyeardateref)
-          ->where('numberpart', $numberpart)
-          ->where('totalparts', $totalparts)
-          ->where('reftype', $ref_type)
-          ->first();
-        break;
-      } // ends case
-    } // ends switch ($ref_type)
-
-    if ($billingitem != null) {
-      return $billingitem;
-    }
-
-    // create a new one
-    $billingitem                   = new BillingItem;
-    $billingitem->cobrancatipo_id  = $cobrancatipo->id;
-    $billingitem->charged_value    = $value;
-    $billingitem->ref_type         = $ref_type;
-    $billingitem->freq_used_type   = $freq_used_type;
-    $billingitem->monthyeardateref = $monthyeardateref;
-    $billingitem->n_cota_ref       = $n_cota_ref;
-    $billingitem->total_cotas_ref  = $total_cotas_ref;
-    $this->billingitems()->save($billingitem);
-    $billingitem->save();
-
-    return $billingitem;
-  } // ends createIfNeededBillingItemFor()
-
-
-  public function createIfNeededBillingItemForCredito(
-      $value,
-      $reftype = null,
-      $monthrefdate = null,
-      $numberpart = null,
-      $totalparts = null
-    ) {
-    // Fetch crédito's $cobrancatipo :: K_4CHAR_CRED
-    $cobrancatipo = CobrancaTipo
-      ::get_cobrancatipo_with_its_4char_repr(CobrancaTipo::K_4CHAR_CRED);
-    return $this->createIfNeededBillingItemFor(
-      $cobrancatipo,
-      $value,
-      $reftype,
-      $monthrefdate,
-      $numberpart,
-      $totalparts
-    );
-  }
-
-  public function createIfNeededBillingItemForMora(
-      $cobranca,
-      $cobrancatipo,
-      $monthrefdate,
-      $value,
-      $numberpart = null,
-      $totalparts = null
-    ) {
-    // Fetch mora's $cobrancatipo :: K_4CHAR_MORA
-    $cobrancatipo = CobrancaTipo
-      ::get_cobrancatipo_with_its_4char_repr(CobrancaTipo::K_4CHAR_MORA);
-    return $this->createIfNeededBillingItemFor(
-      $cobranca,
-      $cobrancatipo,
-      $monthrefdate,
-      $value,
-      $numberpart,
-      $totalparts
-    );
-  }
-
-  public function createIfNeededBillingItemForMoraOrCreditoMonthlyRef(
-      $valor_negativo_mora_positivo_credito,
-      $monthyeardateref=null
-    ) {
-    // First method's parameter cannot be null. Raise exception if it is
-    if ($valor_negativo_mora_positivo_credito==null) {
-      throw new Exception("valor_negativo_mora_positivo_credito==null in createIfNeededBillingItemForMoraOrCreditoMonthlyRef()", 1);
-    }
-    $ref_type        = BillingItem::K_REF_TYPE_IS_DATE;
-    $freq_used_type  = BillingItem::K_FREQ_USED_IS_MONTHLY;
-    $n_cota_ref      = null;
-    $total_cotas_ref = null;
-    // $monthyeardateref = $this->get_conventioned_monthyeardateref_if_it_is_null($monthyeardateref);
-    if ($valor_negativo_mora_positivo_credito == 0) {
-      return null;
-    }
-    if ($valor_negativo_mora_positivo_credito < 0) {
-      // take |modulus|, ie, a positive value will be the 'mora'
-      $value = $valor_negativo_mora_positivo_credito * (-1);
-      return $this->createIfNeededBillingItemForMora(
-        $value,
-        $ref_type,
-        $freq_used_type,
-        $monthyeardateref,
-        $n_cota_ref,
-        $total_cotas_ref
-      );
-    }
-    // Now, here, $value > 0
-    // 'changing' variable names for better expressing
-    $value = $valor_negativo_mora_positivo_credito;
-    return $this->createIfNeededBillingItemForCredito(
-      $value,
-      $ref_type,
-      $freq_used_type,
-      $monthyeardateref,
-      $n_cota_ref,
-      $total_cotas_ref
-    );
-  }
-
-  public function find_n_days_until_duedate() {
+  public function find_n_days_until_duedate_in_future() {
     $today = Carbon::today();
+    if ($today > $this->duedate) {
+      return null;
+    }
     $n_days_until_duedate = $this->duedate->diffInDays($today);
     return $n_days_until_duedate;
   }
-
-  public function monthyeardateref_or_its_convention_if_it_is_null(
-      $monthyeardateref
-    ) {
-    if ($monthyeardateref == null) {
-      return DateFunctions::find_conventional_monthyeardateref_with_date_n_dueday(
-        null, // $p_monthyeardateref
-        $this->contract->pay_day_when_monthly
-      );
-    }
-    return $monthyeardateref;
-  } // ends get_conventioned_monthyeardateref_if_it_is_null()
 
   public function __toString() {
     /*
@@ -623,8 +291,15 @@ class Cobranca extends Model {
     $outstr .= 'Contract Imóvel ' . $apelido . '\n';
     // $outstr .= $this->billingitemsinjson;
     return $outstr;
-  } // public function __toString()
+  } // ends __toString()
 
+  public function get_users() {
+    if ($this->contract != null) {
+      // the returning users()->get() is a Collection
+      return $this->contract->users()->get();
+    }
+    return [];
+  }
 
   public function bankaccount() {
     return $this->belongsTo('App\Models\Finance\BankAccount');

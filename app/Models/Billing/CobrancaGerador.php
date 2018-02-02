@@ -1,5 +1,6 @@
 <?php
 namespace App\Models\Billing;
+// use App\Models\Billing\BillingItem\CobrancaGerador;
 
 use App\Models\Billing\BillingItem;
 use App\Models\Billing\Cobranca;
@@ -20,23 +21,60 @@ class CobrancaGerador {
         ::createOrRetrieveCobrancaWithTripleContractIdRefSeq()
   */
 
-  public static function createOrRetrieveCobrancaWithTripleContractIdRefSeq(
-      $contract_id,
-      $monthyeardateref=null,
-      $n_seq_from_dateref=1
+  public static function retrieve_cobranca_with_keys(
+    $contract_id,
+    $monthrefdate,
+    $monthseqnumber=1
     ) {
-    $contract = Contract::find($contract_id);
-    return self::createOrRetrieveCobrancaWithTripleContractRefSeq(
-      $contract,
-      $monthyeardateref,
-      $n_seq_from_dateref
+
+    return Cobranca
+      ::where('contract_id', $contract_id)
+      ->where('monthrefdate', $monthrefdate)
+      ->where('monthseqnumber', $monthseqnumber)
+      ->first();
+  }
+
+  public static function create_or_retrieve_cobranca_with_keys(
+        $contract_id,
+        $monthrefdate,
+        $monthseqnumber=1
+    ) {
+    if ($monthrefdate == null) {
+      return null;
+    }
+    if (!Contract::where('id', $contract_id)->exists()) {
+      return null;
+    }
+
+    $cobranca = self::retrieve_cobranca_with_keys(
+      $contract_id,
+      $monthrefdate,
+      $monthseqnumber
     );
-  } // ends [static] createAndReturnNewCobrancaWithTripleContractRefSeq()
+    
+    if ($cobranca != null) {
+      return $cobranca;
+    }
+    if (!Contract::where('id', $contract_id)->exists()) {
+      return null;
+    }
+    $cobranca = new Cobranca();
+    $cobranca->monthrefdate   = $monthrefdate;
+    $cobranca->monthseqnumber = $monthseqnumber;
+    $cobranca->contract_id    = $contract_id;
+    
+    $cobranca->set_duedate_from_monthrefdate();
+    $cobranca->d = $cobranca->duedate->copy();
+    $cobranca->d->day(20);
+    // $cobranca->make_autobillingitem();
+    return $cobranca;
+  } // ends [static] create_or_retrieve_cobranca()
+
 
   public static function createOrRetrieveCobrancaWithTripleContractRefSeq(
       $contract,
-      $monthyeardateref=null,
-      $n_seq_from_dateref=1
+      $monthyeardateref   = null,
+      $n_seq_from_dateref = 1
     ) {
     // [1] Treat $contract_id
     if ($contract == null) {
@@ -44,7 +82,7 @@ class CobrancaGerador {
       throw new Exception($error);
     }
     // [2] Treat $monthyeardateref
-    if ($monthyeardateref==null) {
+    if ($monthyeardateref == null) {
       // The convention is:
       // if day is within [1,duedate] monthref is the previous one
       // if day is duedate+1 and above monthref is the current one
@@ -80,7 +118,7 @@ class CobrancaGerador {
       $monthyeardateref,
       $n_seq_from_dateref=1
     ) {
-    $cobranca = new Cobranca;
+    $cobranca = new Cobranca();
     $cobranca->contract_id        = $contract->id;
     $cobranca->bankaccount_id     = $contract->bankaccount_id;
     $cobranca->monthyeardateref   = $monthyeardateref;
@@ -151,20 +189,17 @@ class CobrancaGerador {
   }
   */
 
-  public function set_monthyeardateref_relative_to_today($force_change_if_dateref_not_null=false) {
+  public function set_monthrefdate_relative_to_todaysdate() {
     /*
       Basically this function will never be called, due to the adjustment
-       in dateref in the static instantiator function above
+       in refdate in the static instantiator function above
        ie, createOrRetrieveCobrancaWithTripleContractRefSeq()
     */
-    if ($this->cobranca->monthyeardateref!=null && $force_change_if_dateref_not_null==false) {
-      return;
-    }
-    $this->cobranca->monthyeardateref = DateFunctions
-      ::find_conventional_monthyeardateref_with_date_n_dueday(
-        null, // $p_monthyeardateref
-        $this->cobranca->contract->pay_day_when_monthly
-      );
+    
+    // $this->cobranca->contract->pay_day_when_monthly
+    $today = Carbon::today();
+    $this->cobranca->monthrefdate = $today->copy();
+    $this->cobranca->monthrefdate->day = 1;
   }
 
   public function set_cobranca_duedate_based_on_monthyeardateref() {
@@ -474,5 +509,153 @@ class CobrancaGerador {
     $outstr .= $this->cobranca->__toString();
     return $outstr;
   }
+
+
+  public function generate_billingitem_from_contract(
+      $cobrancatipo,
+      //$value,
+      $numberpart = null,
+      $totalparts = null
+    ) {
+
+    if ($this->cobranca->contract == null) {
+      return null;
+    } // ->get_value_in_cobrancatipo($cobrancatipo)
+
+    $cobrancatipos = $this->cobranca->contract->get_auto_billing_types();
+    $noninserted_cobrancatipos = array();
+    $has_been_inserted = false;
+    foreach ($cobrancatipos as $cobrancatipo) {
+      $has_been_inserted = false;
+      $char4id = $cobrancatipo->char4id;
+      $cobrancatipo_id = CobrancaTipo::get_cobrancatipo_by_char4id($char4id);
+      switch ($char4id) {
+        case CobrancaTipo::K_4CHAR_ALUG:
+          $value = $this->cobranca->contract->get_value_of_cobrancatipo(CobrancaTipo::K_4CHAR_ALUG);
+          $numberpart = 1;
+          $totalparts = 1;
+          $carried_cobranca_id = null; // use only for CARR (ie carried debts)
+          $billingitem = fetch_or_create_billingitem_with(
+                          $this->cobranca->id, // cobranca_id
+                          $cobrancatipo_id,
+                          $value,
+                          $cobranca->monthrefdate,
+                          $numberpart,
+                          $totalparts,
+                          $carried_cobranca_id
+                        );
+          $this->cobranca->billingitems->add($billingitem);
+          $has_been_inserted = true;
+          break;
+
+        case CobrancaTipo::K_4CHAR_COND:
+          $value = $this->cobranca->contract->imovel->get_value_of_condominium($cobranca->monthrefdate);
+          $numberpart = 1;
+          $totalparts = 1;
+          $carried_cobranca_id = null; // use only for CARR (ie carried debts)
+          $billingitem = BillingItem::fetch_or_create_billingitem_with(
+                          $this->cobranca->id, // cobranca_id
+                          $cobrancatipo_id,
+                          $value,
+                          $this->monthrefdate,
+                          $numberpart,
+                          $totalparts,
+                          $carried_cobranca_id
+                        );
+          $this->cobranca->billingitems->add($billingitem);
+          $has_been_inserted = true;
+          break;
+
+        case CobrancaTipo::K_4CHAR_IPTU:
+          $iptu_array = $this->cobranca->contract->imovel->get_value_of_iptu_array($cobranca->monthrefdate);
+          if ($iptu_array->no_parcels_at_this_moment) {
+            break;
+          }
+          $value = $iptu_array->value;
+          $numberpart = $iptu_array->numberpart;
+          $totalparts = $iptu_array->totalparts;
+          $carried_cobranca_id = null; // use only for CARR (ie carried debts)
+          $billingitem = BillingItem::fetch_or_create_billingitem_with(
+                          $this->cobranca->id, // cobranca_id
+                          $cobrancatipo_id,
+                          $value,
+                          $cobranca->monthrefdate,
+                          $numberpart,
+                          $totalparts,
+                          $carried_cobranca_id
+                        );
+          $this->cobranca->billingitems->add($billingitem);
+          $has_been_inserted = true;
+          break;
+
+        case CobrancaTipo::K_4CHAR_CRED:
+          $value = -$cobranca->cred_account;
+          $numberpart = 1;
+          $totalparts = 1;
+          $carried_cobranca_id = null; // use only for CARR (ie carried debts)
+          $billingitem = BillingItem::fetch_or_create_billingitem_with(
+                          $this->cobranca->id, // cobranca_id
+                          $cobrancatipo_id,
+                          $value,
+                          $this->cobranca->monthrefdate,
+                          $numberpart,
+                          $totalparts,
+                          $carried_cobranca_id
+                        );
+          $this->cobranca->billingitems->add($billingitem);
+          $has_been_inserted = true;
+          break;
+
+        case CobrancaTipo::K_4CHAR_CARR:
+          $value = $this->cobranca->debts_from_previous_bills;
+          $numberpart = 1;
+          $totalparts = 1;
+          $carried_cobranca_id = $this->cobranca->carried_cobranca_id; // use only for CARR (ie carried debts)
+          $billingitem = BillingItem::fetch_or_create_billingitem_with(
+                          $this->cobranca->id, // cobranca_id
+                          $cobrancatipo_id,
+                          $value,
+                          $cobranca->monthrefdate,
+                          $numberpart,
+                          $totalparts,
+                          $carried_cobranca_id
+                        );
+          $this->cobranca->billingitems->add($billingitem);
+          $has_been_inserted = true;
+          break;
+
+        case CobrancaTipo::K_4CHAR_FUNE:
+          // Funesbom is yearly / annually
+          $value = $this->cobranca->imovel->get_funesbom_ifitisitsmonth();
+          if ($value == null) {
+            break;
+          }
+          $numberpart = 1;
+          $totalparts = 1;
+          $carried_cobranca_id = null; // use only for CARR (ie carried debts)
+          $billingitem = BillingItem::fetch_or_create_billingitem_with(
+                          $this->cobranca->id, // cobranca_id
+                          $cobrancatipo_id,
+                          $value,
+                          $this->cobranca->monthrefdate,
+                          $numberpart,
+                          $totalparts,
+                          $carried_cobranca_id
+                        );
+          $this->cobranca->billingitems->add($billingitem);
+          $has_been_inserted = true;
+          break;
+
+
+        default:
+          # code...
+          break;
+      } // ends switch
+      if (!$has_been_inserted) {
+        $noninserted_cobrancatipos[] = $cobrancatipo;
+      }
+    } // ends foreach
+
+  } // ends generate_billingitem_from_contract()
 
 } // ends class CobrancaGerador

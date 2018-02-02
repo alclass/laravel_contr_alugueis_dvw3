@@ -59,7 +59,7 @@
                       $tipocobrancastr = $cobrancatipobriefdescr . ' (' . $cobrancatipochar4id . ')';
                     ?>
                     <em>{{ $tipocobrancastr }}</em>
-                    @if($cobrancatipo != null && $cobrancatipo->is_carr() == true && $cobranca->$previous_bill_id != null)
+                    @if($cobrancatipo != null && $cobrancatipo->is_it_carried_debt() == true && $cobranca->$previous_bill_id != null)
                       <a href="{{ route('$billingitemroute', $cobranca->get_routeparams_toformerbill_asarray()) }}">
                         Cobr. Anterior
                       </a>
@@ -89,7 +89,17 @@
                   <td class="text-left">
                     <p>
                       Vencimento: <strong> {{ $cobranca->duedate->format('d/m/Y') }} </strong><br>
-                      (Em {{ $cobranca->find_n_days_until_duedate() }} dias)
+                      <?php 
+                        $dias_faltando_str = 'n/a';
+                        $dias_faltando = $cobranca->find_n_days_until_duedate_in_future();
+                        if ($dias_faltando == 0) {
+                          $dias_faltando_str = 'hoje';
+                        }
+                        else {
+                          $dias_faltando_str = '' . $dias_faltando;
+                        }
+                      ?>
+                      (Em {{ $dias_faltando_str }} dias)
                     </p>
                   </td>
                   <td>   </td>

@@ -1,6 +1,7 @@
 <?php namespace App\Http\Controllers\Billing;
 
 use App\Models\Billing\Cobranca;
+use App\Models\Billing\CobrancaGerador;
 use App\Models\Billing\CobrancaTipo;
 use App\Models\Billing\MoraDebito;
 use App\Models\Immeubles\Contract;
@@ -212,8 +213,13 @@ class CobrancaController extends Controller {
 			->where('contract_id',    $contract->id)
 			->first();
 		if ($cobranca == null) {
-			$page_msg = 'Cobrança não existe. Dados: Ref.: ' . $year . '/' . $month . '; imóvel ' . $imovel4char . '; contrato: ' . $contract->id . '; dt=' . $monthrefdate;
-			return $page_msg;
+			$cobranca = CobrancaGerador::create_or_retrieve_cobranca_with_keys(
+				$contract->id,
+				$monthrefdate,
+				$monthseqnumber
+			);
+			//$page_msg = 'Cobrança não existe. Dados: Ref.: ' . $year . '/' . $month . '; imóvel ' . $imovel4char . '; contrato: ' . $contract->id . '; dt=' . $monthrefdate;
+			//return $page_msg;
 		}
 		$bankaccount = $contract->bankaccount;
 		$today = Carbon::today();

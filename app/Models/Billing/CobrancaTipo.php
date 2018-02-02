@@ -303,6 +303,13 @@ class CobrancaTipo extends Model {
     'long_description ',
   ];
 
+  public function is_it_carried_debt() {
+    if ($this->char4id == self::K_4CHAR_CARR) {
+      return true;
+    }
+    return false;
+  }
+
   public function toString() {
     $outline  = "[$this->char4id] => $this->brief_description ";
     $outline .= "(reftipo=$this->reftype, freqtipo=$this->freqtype)";
