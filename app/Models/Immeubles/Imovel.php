@@ -76,7 +76,54 @@ class Imovel extends Model {
 		return 350.00;
 	}
 
+	public function get_iptu_outarray_via_dbdirectapproch() {
+		$iptu_outarray = [];
+		$iptu_record = IPTUTable
+			::where('imovel_id', $this->id)
+			->where('ano', $monthrefdate->year)
+			->first();
+		$totalparts = $iptu_record->total_de_parcelas;			
+		$n_months_without_iptu = 12 - $totalparts;
+		$iptu_outarray['ano_quitado'] = $iptu_record->ano_quitado;
+		$iptu_outarray['optado_por_cota_unica'] = $iptu_record->optado_por_cota_unica;
+		$iptu_outarray['partnumber'] = 1;
+		if ($iptu_record->optado_por_cota_unica) {
+			$iptu_outarray['totalparts'] = 1;
+		}
+		else {
+			$iptu_outarray['totalparts'] = $totalparts;
+		}
+		if ($monthrefdate->month < $n_months_without_iptu + 1) {
+			// time window without IPTU
+			$iptu_outarray['valor_repasse'] = 0;
+			return $iptu_outarray;
+		}
+		if ($iptu_record->ano_quitado) { 
+			$iptu_outarray['valor_repasse'] = 0;
+			return $iptu_outarray;
+		}
+		if ($iptu_record->optado_por_cota_unica) { 
+			if ($monthrefdate->month != 3) {
+				$iptu_outarray['valor_repasse'] = 0;
+				return $iptu_outarray;
+			}
+			$iptu_outarray['valor_repasse'] = $iptu_record->valor_parcela_unica;
+			return $iptu_outarray;
+		}
+		$partnumber = $monthrefdate->month - 2;
+		$iptu_outarray['partnumber'] = $partnumber;
+		if ($partnumber > $totalparts) {
+				$iptu_outarray['valor_repasse'] = 0;
+		}
+		$iptu_outarray['valor_repasse'] = $iptu_record->valor_por_parcela;
+		return $iptu_outarray;
+	} // ends get_iptu_outarray_via_dbdirectapproch()
+
 	public function get_iptu_value_in_refmonth($monthrefdate) {
+		$iptu_record = $this->iptus->where('ano', $monthrefdate->year)->first();
+		if ($iptu_record == null) {
+			return $this->get_iptu_value_via_dbdirectapproch();
+		}
 		return 3000.00;
 	}
 
@@ -119,5 +166,10 @@ class Imovel extends Model {
 	public function contracts() {
 		return $this->hasMany('App\Models\Immeubles\Contract');
   }
+
+	public function iptus() {
+		return $this->hasMany('App\Models\Tributos\IPTUTabela');
+  }
+
 
 } // ends class Imovel extends Model

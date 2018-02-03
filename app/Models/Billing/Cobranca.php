@@ -109,8 +109,8 @@ class Cobranca extends Model {
     }
 
     $iptutabela = IPTUTabela
-      ::where('imovel_id'  , $this->contract->imovel->id)
-      ->where('ano'        , $this->monthrefdate->year)
+      ::where('imovel_id', $this->contract->imovel->id)
+      ->where('ano'      , $this->monthrefdate->year)
       ->first();
 
     if ($iptutabela != null && $iptutabela->ano_quitado == true) {
@@ -122,7 +122,7 @@ class Cobranca extends Model {
 
   public function get_total_value() {
     $total_value = 0;
-    foreach ($this->billingitems()->get() as $billingitem) {
+    foreach ($this->billingitems as $billingitem) {
       $total_value += $billingitem->value;
     }
     return $total_value;

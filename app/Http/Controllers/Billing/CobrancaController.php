@@ -201,7 +201,7 @@ class CobrancaController extends Controller {
 			::where('imovel_id', $imovel->id)
 			->where('is_active', true)
 			->first();
-		if ($imovel == null) {
+		if ($contract == null) {
 			$page_msg = 'Imóvel '. $imovel->apelido . ' não tem contrato ativo.';
 			return $page_msg;
 		}
