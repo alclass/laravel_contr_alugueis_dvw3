@@ -9,11 +9,11 @@ weekdayindex is 0 for Monday, 1 for Tuesday, on until 6 for Sunday
 class TestMonthRefs(unittest.TestCase):
 
   def setUp(self):
-    monthyeardateref = date(2018,1,1)
+    monthrefdate = date(2018,1,1)
     duedate          = date(2018,2,10)
     billingitems  = create_billingitems_list_for_invoicebill()
     self.bill_obj = Bill(
-      monthyeardateref,
+      monthrefdate,
       duedate,
       billingitems
     )
@@ -25,7 +25,7 @@ class TestMonthRefs(unittest.TestCase):
     self.bill_obj.add_payment_obj(payment_obj)
 
 
-  def test_generate_conventioned_monthyeardateref_against_given_date_before_day10(self):
+  def test_generate_conventioned_monthrefdate_against_given_date_before_day10(self):
     '''
     A 'monthref' is a date that always ends up with day=1.
     (Day has no meaning to a 'monthref', a 'monthref' is a somewhat class-reuse of Date.)
@@ -34,30 +34,30 @@ class TestMonthRefs(unittest.TestCase):
     '''
     given_date        = date(2017,1,9)
     expected_monthref = date(2017,1,1)
-    returned_monthref = self.bill_obj.generate_conventioned_monthyeardateref_against_given_date(given_date)
+    returned_monthref = self.bill_obj.generate_conventioned_monthrefdate_against_given_date(given_date)
     self.assertEqual(expected_monthref, returned_monthref)
     given_date        = date(2017,1,1)
     expected_monthref = date(2017,1,1)
-    returned_monthref = self.bill_obj.generate_conventioned_monthyeardateref_against_given_date(given_date)
+    returned_monthref = self.bill_obj.generate_conventioned_monthrefdate_against_given_date(given_date)
     self.assertEqual(expected_monthref, returned_monthref)
 
-  def test_generate_conventioned_monthyeardateref_against_given_date_after_day10(self):
+  def test_generate_conventioned_monthrefdate_against_given_date_after_day10(self):
     given_date        = date(2017,1,11)
     expected_monthref = date(2017,2,1)
-    returned_monthref = self.bill_obj.generate_conventioned_monthyeardateref_against_given_date(given_date)
+    returned_monthref = self.bill_obj.generate_conventioned_monthrefdate_against_given_date(given_date)
     self.assertEqual(expected_monthref, returned_monthref)
     given_date        = date(2017,1,31)
     expected_monthref = date(2017,2,1)
-    returned_monthref = self.bill_obj.generate_conventioned_monthyeardateref_against_given_date(given_date)
+    returned_monthref = self.bill_obj.generate_conventioned_monthrefdate_against_given_date(given_date)
     self.assertEqual(expected_monthref, returned_monthref)
 
-  def test_generate_conventioned_monthyeardateref_against_given_date_on_day10(self):
+  def test_generate_conventioned_monthrefdate_against_given_date_on_day10(self):
     given_date        = date(2017,1,10)
     expected_monthref = date(2017,1,1)
-    returned_monthref = self.bill_obj.generate_conventioned_monthyeardateref_against_given_date(given_date)
+    returned_monthref = self.bill_obj.generate_conventioned_monthrefdate_against_given_date(given_date)
     self.assertEqual(expected_monthref, returned_monthref)
 
-  def test_generate_conventioned_monthyeardateref_against_today(self):
+  def test_generate_conventioned_monthrefdate_against_today(self):
     '''
     This test is a bit odd in the sense that it depends on today's date.
     However, if tests are run everyday, in the case it ends up passing thru' all days (along some months),
@@ -71,5 +71,5 @@ class TestMonthRefs(unittest.TestCase):
     if today.day > 10:
       expected_monthref = expected_monthref + relativedelta(months=+1)
     # passing None to method means that the method will consider given_date to be today's date
-    returned_monthref = self.bill_obj.generate_conventioned_monthyeardateref_against_given_date(None)
+    returned_monthref = self.bill_obj.generate_conventioned_monthrefdate_against_given_date(None)
     self.assertEqual(expected_monthref, returned_monthref)

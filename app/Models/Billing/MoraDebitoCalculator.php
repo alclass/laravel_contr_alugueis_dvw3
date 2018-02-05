@@ -21,15 +21,15 @@ class MoraDebitoCalculator {
 
     $debitomoras = MoraDebito::where('contract_id', $this->contract->id)
       ->where('is_open', true)
-      ->orderBy('monthyeardateref')
+      ->orderBy('monthrefdate')
       ->get();
 
     $this->contractmoras = array();
     foreach ($debitomoras as $debitomora) {
       $contractmora = new ContractMora(
         $this->contract,
-        $debitomora->monthyeardateref, // $monthyeardateref_ini
-        null, // default for $monthyeardateref_fim
+        $debitomora->monthrefdate, // $monthrefdate_ini
+        null, // default for $monthrefdate_fim
         null, // default for $begin_interest_on_date
         null  // default for $finish_interest_on_date
       );

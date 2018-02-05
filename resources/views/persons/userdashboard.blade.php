@@ -30,11 +30,11 @@
 								}
 							?>
 							@include('contracts.dashboard_contract')
-							@foreach($contract->cobrancas->where('has_been_paid', 0)->sortBy('monthyeardateref') as $cobranca)
+							@foreach($contract->cobrancas->where('has_been_paid', 0)->sortBy('monthrefdate') as $cobranca)
 							<?php
 								$cobranca_em_aberto_strmonthref = 'n/a';
-								if ($cobranca->monthyeardateref!=null) {
-									$cobranca_em_aberto_strmonthref = $cobranca->monthyeardateref->format('M-Y');
+								if ($cobranca->monthrefdate!=null) {
+									$cobranca_em_aberto_strmonthref = $cobranca->monthrefdate->format('M-Y');
 								}
 							?>
 							<h6>Cobrança em aberto Ref. {{ $cobranca_em_aberto_strmonthref }}</h6>

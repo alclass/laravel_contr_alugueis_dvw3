@@ -43,8 +43,8 @@ class CorrMonetTest extends TestCase {
     return $mercadoindicador->id;
   }   // ends get_mercado_indicador_id_for_SELIC()
 
-  public function   check_or_set_corrmonet_fractionindex_for_monthyeardateref(
-      $monthyeardateref,
+  public function   check_or_set_corrmonet_fractionindex_for_monthrefdate(
+      $monthrefdate,
       $corrmonet_fractionindex
     ) {
 
@@ -52,7 +52,7 @@ class CorrMonetTest extends TestCase {
 
     $corrmonet = CorrMonet
       ::where('indice4char', $selic_char4indicator)
-      ->where('monthyeardateref', $monthyeardateref)
+      ->where('monthrefdate', $monthrefdate)
       ->first();
 
     if ($corrmonet!=null) {
@@ -65,36 +65,36 @@ class CorrMonetTest extends TestCase {
       $corrmonet->mercado_indicador_id = $this->get_mercado_indicador_id_for_SELIC(); // this is the id for SELIC
       $corrmonet->indice4char = $selic_char4indicator;
       $corrmonet->fraction_value = $corrmonet_fractionindex;
-      $corrmonet->monthyeardateref = $monthyeardateref;
+      $corrmonet->monthrefdate = $monthrefdate;
     }
-  }  // ends check_or_set_corrmonet_fractionindex_for_monthyeardateref()
+  }  // ends check_or_set_corrmonet_fractionindex_for_monthrefdate()
 
   public function set_if_corrmonets_are_not_in_db() {
 
     // 1 of 3
-    $monthyeardateref = new Carbon('2017-03-01');
+    $monthrefdate = new Carbon('2017-03-01');
     $corrmonet_fractionindex = 0.0105;
 
-    $this->check_or_set_corrmonet_fractionindex_for_monthyeardateref(
-      $monthyeardateref,
+    $this->check_or_set_corrmonet_fractionindex_for_monthrefdate(
+      $monthrefdate,
       $corrmonet_fractionindex
     );
 
     // 2 of 3
-    $monthyeardateref = new Carbon('2017-04-01');
+    $monthrefdate = new Carbon('2017-04-01');
     $corrmonet_fractionindex = 0.0079;
 
-    $this->check_or_set_corrmonet_fractionindex_for_monthyeardateref(
-      $monthyeardateref,
+    $this->check_or_set_corrmonet_fractionindex_for_monthrefdate(
+      $monthrefdate,
       $corrmonet_fractionindex
     );
 
     // 3 of 3
-    $monthyeardateref = new Carbon('2017-05-01');
+    $monthrefdate = new Carbon('2017-05-01');
     $corrmonet_fractionindex = 0.0093;
 
-    $this->check_or_set_corrmonet_fractionindex_for_monthyeardateref(
-      $monthyeardateref,
+    $this->check_or_set_corrmonet_fractionindex_for_monthrefdate(
+      $monthrefdate,
       $corrmonet_fractionindex
     );
 
@@ -113,8 +113,8 @@ class CorrMonetTest extends TestCase {
 
     $ini_date = new Carbon('2017-03-01');
     $end_date = new Carbon('2017-05-01');
-    $monthyeardaterefs = DateFunctions
-      ::get_ini_end_monthyeardaterefs_list($ini_date, $end_date);
+    $monthrefdates = DateFunctions
+      ::get_ini_end_monthrefdates_list($ini_date, $end_date);
 
     $corrmonet_fractionindex_list = [
       0.0105,
@@ -123,9 +123,9 @@ class CorrMonetTest extends TestCase {
     ];
 
     $expected_corrmonet_month_n_fractionindex_tuplelist = array();
-    foreach ($monthyeardaterefs as $i=>$monthyeardateref) {
+    foreach ($monthrefdates as $i=>$monthrefdate) {
       $corrmonet_fractionindex = $corrmonet_fractionindex_list[$i];
-      $tuple = [$monthyeardateref, $corrmonet_fractionindex];
+      $tuple = [$monthrefdate, $corrmonet_fractionindex];
       $expected_corrmonet_month_n_fractionindex_tuplelist[] = $tuple;
     }
 

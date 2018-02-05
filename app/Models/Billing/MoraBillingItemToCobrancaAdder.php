@@ -30,7 +30,7 @@ class MoraBillingItemToCobrancaAdder {
       ::where('cobranca_id',              $this->cobranca->id)
       ->where('cobrancatipo_id',          5) // 5 is MORA
       ->where('original_value_if_needed', $moradebito->ini_debt_value)
-      ->where('monthyeardateref',         $moradebito->monthyeardateref)
+      ->where('monthrefdate',         $moradebito->monthrefdate)
       ->first();
     if ($billingitem_if_any != null) {
       print ("Billing Item for MoraDebito already exists" . '\n');

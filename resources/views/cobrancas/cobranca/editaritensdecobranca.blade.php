@@ -34,7 +34,7 @@
     <h3>Por favor, se isto estiver incorreto, entrar em contato.</h3>
   @endif
   @if ($cobranca->billingitems()->count() > 0)
-    <div font-size="16">Holerith <div font-size="10">Ref. {{ $cobranca->monthyeardateref->format('M/Y') }}</div></div>
+    <div font-size="16">Holerith <div font-size="10">Ref. {{ $cobranca->monthrefdate->format('M/Y') }}</div></div>
     <table class="rwd-table">
       <tr>
         <th>Item</th>
@@ -46,7 +46,7 @@
     @foreach ($cobranca->billingitems()->get() as $billingitem)
       <tr>
         <td data-th="item">  {{ $billingitem->brief_description }} </td>
-        <td data-th="ref">   {{ $billingitem->monthyeardateref->format('M-Y') }} </td>
+        <td data-th="ref">   {{ $billingitem->monthrefdate->format('M-Y') }} </td>
         <td data-th="valor"> {{ $billingitem->charged_value }} </td>
         <td data-th="repasse"> * </td>
       </tr>
@@ -110,12 +110,12 @@
       <label class="col-md-4 control-label" for="monthref">Mês ref.</label>
       <div class="col-md-1">
       <input id="monthref" name="monthref"
-        placeholder="{{ $cobranca->extract_month_from_monthyeardateref() }}" class="form-control input-md" required="" type="text">
+        placeholder="{{ $cobranca->extract_month_from_monthrefdate() }}" class="form-control input-md" required="" type="text">
       </div>
       <label class="col-md-4 control-label" for="yearref">Ano ref.</label>
       <div class="col-md-1">
       <input id="yearref" name="yearref"
-        placeholder="{{ $cobranca->extract_year_from_monthyeardateref() }}" class="form-control input-md" required="" type="text">
+        placeholder="{{ $cobranca->extract_year_from_monthrefdate() }}" class="form-control input-md" required="" type="text">
       </div>
     </div>
 

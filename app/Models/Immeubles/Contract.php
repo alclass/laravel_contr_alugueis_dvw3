@@ -24,7 +24,7 @@ class Contract extends Model {
   ];
 
   private $today            = null;
-  private $monthyeardateref = null;
+  private $monthrefdate = null;
   private $monthly_duedate  = null;
   // private $cobranca_to_save = null;
 
@@ -131,23 +131,23 @@ class Contract extends Model {
     $ultimas_n_cobrancas_pagas = Cobranca
       ::where('contract_id', $contract->id)
       ->where('has_been_paid', true)
-      ->orderBy('monthyeardateref', 'desc')
+      ->orderBy('monthrefdate', 'desc')
       ->take($n_lasts)->get();
 
     return $ultimas_n_cobrancas_pagas;
   }
 
   public function get_ultimas_n_cobrancas_relative_to_ref(
-      $monthyeardateref=null,
+      $monthrefdate=null,
       $n_lasts=null
     ) {
 
-    // return $this->cobrancas()->orderBy('monthyeardateref', 'desc')->take($n_lasts)->get();
+    // return $this->cobrancas()->orderBy('monthrefdate', 'desc')->take($n_lasts)->get();
 
-    if ($monthyeardateref == null) {
-      $monthyeardateref = DateFunctions
-        ::find_conventional_monthyeardateref_with_date_n_dueday(
-          null, // $p_monthyeardateref
+    if ($monthrefdate == null) {
+      $monthrefdate = DateFunctions
+        ::find_conventional_monthrefdate_with_date_n_dueday(
+          null, // $p_monthrefdate
           $this->pay_day_when_monthly
         );
     }
@@ -156,29 +156,29 @@ class Contract extends Model {
     }
     $cobrancas_passadas = Cobranca
       ::where('contract_id', $this->id)
-      ->where('monthyeardateref', '<',  $monthyeardateref)
-      ->orderBy('monthyeardateref', 'desc')
+      ->where('monthrefdate', '<',  $monthrefdate)
+      ->orderBy('monthrefdate', 'desc')
       ->take($n_lasts)->get();
 
     return $cobrancas_passadas;
   } // ends get_ultimas_n_cobrancas()
 
-  public function get_cobranca_by_monthyeardateref($monthyeardateref=null) {
+  public function get_cobranca_by_monthrefdate($monthrefdate=null) {
 
-    if ($monthyeardateref == null) {
-      $monthyeardateref = DateFunctions
-        ::find_conventional_monthyeardateref_with_date_n_dueday(
-          null, // $p_monthyeardateref
+    if ($monthrefdate == null) {
+      $monthrefdate = DateFunctions
+        ::find_conventional_monthrefdate_with_date_n_dueday(
+          null, // $p_monthrefdate
           $this->pay_day_when_monthly
         );
     }
     $cobranca = Cobranca
       ::where('contract_id', $this->id)
-      ->where('monthyeardateref', $monthyeardateref)
+      ->where('monthrefdate', $monthrefdate)
       ->first();
 
     return $cobranca;
-  } // ends get_cobranca_by_monthyeardateref()
+  } // ends get_cobranca_by_monthrefdate()
 
   public function calc_fmontant_from_imontant_monthdaterange_under_contract_mora() {
     /*
@@ -188,8 +188,8 @@ class Contract extends Model {
     return $contract_mora
       ->calc_fmontant_from_imontant_monthdaterange_under_contract_mora(
         $initial_montant,
-        $monthyeardateref_ini,
-        $monthyeardateref_fim,
+        $monthrefdate_ini,
+        $monthrefdate_fim,
         $first_month_took_n_days = null,
         $last_month_took_n_days  = null
       );
@@ -204,7 +204,7 @@ class Contract extends Model {
   }
 
   public function get_cobranca_atual() {
-    return $this->get_cobranca_by_monthyeardateref();
+    return $this->get_cobranca_by_monthrefdate();
   }
 
   public function imovel() {

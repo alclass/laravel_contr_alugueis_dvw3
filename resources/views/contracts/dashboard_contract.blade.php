@@ -18,15 +18,15 @@
 				$cobranca_formatstrmonthref = 'n/a';
 				$cobranca_formatstrduedate  = 'n/a';
 				// cobranca is surely not null, for it came from loop
-				if ($cobranca->monthyeardateref!=null) {
-					$cobranca_formatstrmonthref = $cobranca->monthyeardateref->format('M-Y');
+				if ($cobranca->monthrefdate!=null) {
+					$cobranca_formatstrmonthref = $cobranca->monthrefdate->format('M-Y');
 				}
 				if ($cobranca->duedate!=null) {
 					$cobranca_formatstrduedate  = $cobranca->duedate->format('M-Y');
 				}
 				// $contract_id = $contract->id;
-				// $year = $cobranca->monthyeardateref->year;
-				// $month = $cobranca->monthyeardateref->month;
+				// $year = $cobranca->monthrefdate->year;
+				// $month = $cobranca->monthrefdate->month;
 			?>
 			<td>{{ $loop->iteration }}</td>
 			<td>{{ $cobranca_formatstrmonthref }}</td>
@@ -55,10 +55,10 @@
 			$cobranca_formatstrmonthref = 'n/a';
 			$cobranca_formatstrduedate  = 'n/a';
 			// cobranca is surely not null, for it came from loop
-			// however, monthyeardateref or duedate may be null and
+			// however, monthrefdate or duedate may be null and
 			// 	then there's an exception-raise risk of issue method ->format() on null
-			if ($cobranca_atual->monthyeardateref!=null) {
-				$cobranca_formatstrmonthref = $cobranca_atual->monthyeardateref->format('M-Y');
+			if ($cobranca_atual->monthrefdate!=null) {
+				$cobranca_formatstrmonthref = $cobranca_atual->monthrefdate->format('M-Y');
 			}
 			if ($cobranca_atual->duedate!=null) {
 				$cobranca_formatstrduedate  = $cobranca_atual->duedate->format('M-Y');
@@ -71,8 +71,8 @@
 		<td>{{ ($cobranca_atual->has_been_paid ? 'Quitado' : 'Em Aberto') }}</td>
 		<?php
 			// $contract_id = $cobranca_atual->id;
-			// $year        = $cobranca_atual->monthyeardateref->year;
-			// $month       = $cobranca_atual->monthyeardateref->month;
+			// $year        = $cobranca_atual->monthrefdate->year;
+			// $month       = $cobranca_atual->monthrefdate->month;
 		?>
 		<td><a href="{{ route('cobranca.mostrar', $cobranca_atual->id) }}">visualizar</a></td>
 	</tr>

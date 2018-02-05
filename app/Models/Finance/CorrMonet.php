@@ -42,26 +42,26 @@ class CorrMonet extends Model {
       $corrmonet_char4indicator = MercadoIndice
         ::get_default_char4indicator_for_corrmonet();
     }
-    // get $monthyeardaterefs from DateFunctions
-    $monthyeardaterefs = DateFunctions
-      ::get_ini_end_monthyeardaterefs_list($ini_date, $end_date);
-    // guard against null/empty (parameters $ini_date & $end_date will be checked in get_ini_end_monthyeardaterefs_list())
-    if (empty($monthyeardaterefs)) {
+    // get $monthrefdates from DateFunctions
+    $monthrefdates = DateFunctions
+      ::get_ini_end_monthrefdates_list($ini_date, $end_date);
+    // guard against null/empty (parameters $ini_date & $end_date will be checked in get_ini_end_monthrefdates_list())
+    if (empty($monthrefdates)) {
       return null;
     }
     $corrmonet_month_n_fractionindex_tuplelist = array();
     $monthly_corrmonet_indices = self
       ::where('indice4char',    $corrmonet_char4indicator)
-      ->whereIn('monthyeardateref', $monthyeardaterefs)
-      ->orderBy('monthyeardateref', 'asc')
+      ->whereIn('monthrefdate', $monthrefdates)
+      ->orderBy('monthrefdate', 'asc')
       ->get();
     foreach ($monthly_corrmonet_indices as $corrmonet_monthly_index_obj) {
       $corrmonet_month_n_index_tuple = array();
-      // Assign `monthyeardateref` (the column name & attribute name are the same)
-      $corrmonet_month_n_index_tuple[] = $corrmonet_monthly_index_obj->monthyeardateref;
+      // Assign `monthrefdate` (the column name & attribute name are the same)
+      $corrmonet_month_n_index_tuple[] = $corrmonet_monthly_index_obj->monthrefdate;
       // Assign `fraction_value` (the column name & attribute name are the same)
       $corrmonet_month_n_index_tuple[] = $corrmonet_monthly_index_obj->fraction_value;
-      // Push tuple (monthyeardateref, corrmonet_fraction) into tuplelist
+      // Push tuple (monthrefdate, corrmonet_fraction) into tuplelist
       $corrmonet_month_n_fractionindex_tuplelist[] = $corrmonet_month_n_index_tuple;
     }
     return $corrmonet_month_n_fractionindex_tuplelist;
@@ -133,8 +133,8 @@ class CorrMonet extends Model {
     if ($indice4char == null) {
       $indice4char = env('K_INDICE4CHAR_SELIC', MercadoIndice::K_INDICE4CHAR_SELIC);
     }
-    // guarantee $monthdate is a $monthyeardateref
-    $monthyeardateref = $monthdate->copy()->day(1)->setTime(0,0,0);
+    // guarantee $monthdate is a $monthrefdate
+    $monthrefdate = $monthdate->copy()->day(1)->setTime(0,0,0);
     $corrmonet_obj = self::where('indice4char', $indice4char)
       ->where('indice4char', $monthdate)
       ->first();
@@ -155,7 +155,7 @@ class CorrMonet extends Model {
   protected $table = 'corrmonets';
 
   protected $dates = [
-    'monthyeardateref',
+    'monthrefdate',
   ];
 
   /**
@@ -167,7 +167,7 @@ class CorrMonet extends Model {
      'mercado_indicador_id',
      'indice4char',
      'fraction_value',
-     'monthyeardateref',
+     'monthrefdate',
    ];
 
 

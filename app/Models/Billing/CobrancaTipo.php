@@ -47,8 +47,8 @@ class CobrancaTipo extends Model {
 
     //---------------------------------------------
     [Static Method 2]
-    get_cobrancatipo_with_its_4charrepr()
-      eg.: get_cobrancatipo_with_its_4charrepr('ALUG') return the ALUG cobrancatipo obj.
+    fetch_or_create_cobrancatipo_by_char4id()
+      eg.: fetch_or_create_cobrancatipo_by_char4id('ALUG') return the ALUG cobrancatipo obj.
     //---------------------------------------------
     [Static Method 3]
     get_cobrancatipo_via_its_4charrepr_sqllikeword()
@@ -59,22 +59,16 @@ class CobrancaTipo extends Model {
       eg.: get_exact_4charrepr_via_sqllikeword('aluguel') return 'ALUG'
     //---------------------------------------------
     [Static Method 5]
-    get_4charrepr_via_cobrancatipo_id()
-      eg.: get_4charrepr_via_cobrancatipo_id(1) return 'ALUG' (of course, it will depend on whether or not the db-table has id=1 for char4id='ALUG')
+    get_char4id_by_id()
+      eg.: get_char4id_by_id(1) return 'ALUG' (of course, it will depend on whether or not the db-table has id=1 for char4id='ALUG')
 
   */
 
-  // Static Method 1
-  public static function get_cobrancatipo_by_char4id($p_4char_repr) {
-    return self::get_cobrancatipo_with_its_4charrepr($p_4char_repr, false);
-  }
-
-  public static function fetch_by_char4id($p_4char_repr) {
-    return self::get_cobrancatipo_with_its_4charrepr($p_4char_repr, false);
-  }
-
   // Static Method 2
-  public static function get_cobrancatipo_with_its_4charrepr($p_4char_repr, $raise_exception_if_null=false) {
+  public static function fetch_or_create_cobrancatipo_by_char4id(
+      $p_4char_repr,
+      $raise_exception_if_null=false
+    ) {
     $cobrancatipo = CobrancaTipo::where('char4id', $p_4char_repr)
       ->first();
     if ($cobrancatipo == null) {
@@ -113,84 +107,14 @@ class CobrancaTipo extends Model {
     }
     // At this point, it'll return as null
     return $cobrancatipo;
-  } // ends [static] get_cobrancatipo_with_its_4charrepr()
+  } // ends [static] fetch_or_create_cobrancatipo_by_char4id()
 
 
-  // Static Method 3
-  public static function get_cobrancatipo_via_its_4charrepr_sqllikeword($p_oneword) {
-    /*
+  public static function fetch_by_char4id($p_4char_repr) {
+    return self::fetch_or_create_cobrancatipo_by_char4id($p_4char_repr, $raise_exception_if_null=false);
+  }
 
-      This method fetches the char4id of a CobrancaTipo
-        allowing either a larger or shorter name to be used.
-      Examples:
-
-        get_4charid_via_oneword('aluguel')
-        => returns 'ALUG'
-        get_4charid_via_oneword('alu')
-        => returns 'ALUG'
-        get_4charid_via_oneword('ALUG')
-        => returns 'ALUG'
-
-      ie, 'aluguel', 'alu' and 'ALUG', all tokens were able to fetch the record
-
-      CAUTION: ALUG, COND, IPTU etc thinking on all possible 4-chars,
-        there may be some clash of shorter names, so it's to be avoided
-        calling this method with shorter names.
-
-    */
-
-     if ($p_oneword == null) {
-       return null;
-     }
-     // put $oneword in CAPITAL
-     // $oneword = strtolower($p_oneword); // not needed, the SELECT finds it with lowercase
-     // trim it to its first 4 chars or less if it has less
-     $n_chars = strlen($oneword); // also: mb_strlen()
-     $n_chars = ($n_chars > 4 ? 4 : $n_chars);
-     $prospected_char4id = substr($oneword, 0, $n_chars);
-     if (strlen($prospected_char4id) < 4) {
-       $prospected_char4id .= '%'; // to be used in the 'where-like sql'
-     }
-     $cobrancatipo = CobrancaTipo::where('char4id', 'like', $prospected_char4id)->first();
-     if ($cobrancatipo == null) {
-       return null;
-     }
-     return $cobrancatipo;
-  } // ends [static] get_cobrancatipo_via_its_4charrepr_sqllikeword()
-
-  // Static Method 4
-  public static function get_exact_4charrepr_via_sqllikeword($sqllikeword) {
-    /*
-      This ideia behind this method is to get the exact 4-char id
-        using a word that works with the sql-like operator.
-
-      Examples:
-        ALUG is returned if incoming parameter is aluguel or even alu
-      One caution is that if two 4char ids begin with 'alu' it would
-        be better to not use 'alu', but 'alug' or 'aluguel' which is a better option
-
-      This method is planned to be used in the HTML-forms, ie, for forming
-        the radio button and/or drop-menus that may be used for the user
-        to choosen a billing item that he or she intends to generate.
-
-      Example:
-      <select id="ref_type_select" name="ref_type_select" class="form-control">
-        <option value="{{ bi->get_exact_4charrepr_via_sqllikeword('aluguel') }}">Aluguel</option>
-        <option value="{{ bi->get_exact_4charrepr_via_sqllikeword('condo') }}">Condomínio</option>
-        <option value="{{ bi->get_exact_4charrepr_via_sqllikeword('iptu') }}">IPTU</option>
-      </select>
-
-    */
-    $cobrancatipo = self::get_cobrancatipo_via_4charrepr_sqllikeword($sqllikeword);
-    if ($cobrancatipo == null) {
-      return null;
-    }
-    return $cobrancatipo->char4id;
-  } // ends get_exact_4charrepr_via_sqllikeword()
-
-  // Static Method 5
-
-  public static function get_4charrepr_via_cobrancatipo_id($cobrancatipo_id) {
+  public static function get_char4id_by_id($cobrancatipo_id) {
     $cobrancatipo = CobrancaTipo::where('id', $cobrancatipo_id)->first();
     if ($cobrancatipo == null) {
       return null;
@@ -200,7 +124,7 @@ class CobrancaTipo extends Model {
 
 
   public static function fetch_or_create_alug() {
-    $cobrancatipo = self::get_cobrancatipo_with_its_4charrepr(self::K_4CHAR_ALUG);
+    $cobrancatipo = self::fetch_or_create_cobrancatipo_by_char4id(self::K_4CHAR_ALUG);
     if ($cobrancatipo == null) {
       $cobrancatipo = new CobrancaTipo();
       $cobrancatipo->char4id = self::K_4CHAR_ALUG;
@@ -214,7 +138,7 @@ class CobrancaTipo extends Model {
   } // ends [static] create_alug()
 
   public static function fetch_or_create_cond() {
-    $cobrancatipo = self::get_cobrancatipo_with_its_4charrepr(self::K_4CHAR_COND);
+    $cobrancatipo = self::fetch_or_create_cobrancatipo_by_char4id(self::K_4CHAR_COND);
     if ($cobrancatipo == null) {
       $cobrancatipo = new CobrancaTipo();
       $cobrancatipo->char4id = self::K_4CHAR_COND;
@@ -227,7 +151,7 @@ class CobrancaTipo extends Model {
   } // ends [static] create_cond()
 
   public static function fetch_or_create_iptu() {
-    $cobrancatipo = self::get_cobrancatipo_with_its_4charrepr(self::K_4K_4CHAR_IPTU);
+    $cobrancatipo = self::fetch_or_create_cobrancatipo_by_char4id(self::K_4K_4CHAR_IPTU);
     if ($cobrancatipo == null) {
       $cobrancatipo = new CobrancaTipo();
       $cobrancatipo->char4id = self::K_4CHAR_IPTU;
@@ -240,7 +164,7 @@ class CobrancaTipo extends Model {
   } // ends [static] create_iptu()
 
   public static function fetch_or_create_fune() {
-    $cobrancatipo = self::get_cobrancatipo_with_its_4charrepr(self::K_4CHAR_FUNE);
+    $cobrancatipo = self::fetch_or_create_cobrancatipo_by_char4id(self::K_4CHAR_FUNE);
     if ($cobrancatipo == null) {
       $cobrancatipo = new CobrancaTipo();
       $cobrancatipo->char4id = self::K_4CHAR_FUNE;
@@ -253,7 +177,7 @@ class CobrancaTipo extends Model {
   } // ends [static] create_fune()
 
   public static function fetch_or_create_carr() {
-    $cobrancatipo = self::get_cobrancatipo_with_its_4charrepr(self::K_4CHAR_CARR);
+    $cobrancatipo = self::fetch_or_create_cobrancatipo_by_char4id(self::K_4CHAR_CARR);
     if ($cobrancatipo == null) {
       $cobrancatipo = new CobrancaTipo();
       $cobrancatipo->char4id = self::K_4CHAR_CARR;
@@ -266,7 +190,7 @@ class CobrancaTipo extends Model {
   } // ends [static] create_carr()
 
   public static function fetch_or_create_cred() {
-    $cobrancatipo = self::get_cobrancatipo_with_its_4charrepr(self::K_4CHAR_CRED);
+    $cobrancatipo = self::fetch_or_create_cobrancatipo_by_char4id(self::K_4CHAR_CRED);
     if ($cobrancatipo == null) {
       $cobrancatipo = new CobrancaTipo();
       $cobrancatipo->char4id = self::K_4CHAR_CRED;

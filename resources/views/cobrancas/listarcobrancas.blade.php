@@ -35,7 +35,7 @@
       $month_ref   = $cobranca->monthrefdate->month;
       $cobranca_formatstrduedate = 'n/a';
       if ($cobranca->monthrefdate != null) {
-        $cobranca_formatstrmonthyeardateref = $cobranca->monthrefdate->format('d/M/Y');
+        $cobranca_formatstrmonthrefdate = $cobranca->monthrefdate->format('d/M/Y');
       }
       if ($cobranca->duedate != null) {
         $cobranca_formatstrduedate = $cobranca->duedate->format('d/M/Y');
@@ -43,7 +43,7 @@
      ?>
     <tr>
       <td data-th="imovel">     {{ $imovel_apelido }} </td>
-      <td data-th="monthref">   {{ $cobranca_formatstrmonthyeardateref }} </td>
+      <td data-th="monthref">   {{ $cobranca_formatstrmonthrefdate }} </td>
       <td data-th="prazopagto"> {{ $cobranca_formatstrduedate }} </td>
       <td data-th="valor">      {{ $valor_cobranca }} </td>
       {{-- route('cobranca.mostrar', --}}

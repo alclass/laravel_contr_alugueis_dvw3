@@ -9,9 +9,9 @@ import calendar # calendar.monthrange(year, month)
 
 import sys
 
-class MonthYearDateRef:
+class monthrefdate:
 
-  def generate_conventioned_monthyeardateref_against_given_date(self, p_date=None):
+  def generate_conventioned_monthrefdate_against_given_date(self, p_date=None):
     '''
     if date is from yyyy-mm-01 until yyyy-mm-10,
       then
@@ -23,20 +23,20 @@ class MonthYearDateRef:
     '''
 
     if p_date is None:
-      monthyeardateref = date.today()
+      monthrefdate = date.today()
     else:
-      monthyeardateref = copy(p_date)
-    if monthyeardateref.day > 10:
-      monthyeardateref = monthyeardateref + relativedelta(months=+1)
-    monthyeardateref = monthyeardateref.replace(day = 1)
-    return monthyeardateref
+      monthrefdate = copy(p_date)
+    if monthrefdate.day > 10:
+      monthrefdate = monthrefdate + relativedelta(months=+1)
+    monthrefdate = monthrefdate.replace(day = 1)
+    return monthrefdate
 
   def find_monthyearrefdate(self, month=None, year=None):
     if month is None or year is None:
-      monthyeardateref = self.generate_conventioned_monthyeardateref_against_given_date()
+      monthrefdate = self.generate_conventioned_monthrefdate_against_given_date()
     else:
-      monthyeardateref = date(year, month, 1)
-    return monthyeardateref
+      monthrefdate = date(year, month, 1)
+    return monthrefdate
 
 
 

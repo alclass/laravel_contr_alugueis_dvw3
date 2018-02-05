@@ -51,18 +51,16 @@ class CobrancaGerador {
       $monthrefdate,
       $monthseqnumber
     );
-    
+
     if ($cobranca != null) {
       return $cobranca;
     }
-    if (!Contract::where('id', $contract_id)->exists()) {
-      return null;
-    }
+
     $cobranca = new Cobranca();
     $cobranca->monthrefdate   = $monthrefdate;
     $cobranca->monthseqnumber = $monthseqnumber;
     $cobranca->contract_id    = $contract_id;
-    
+
     $cobranca->set_duedate_from_monthrefdate();
     $cobranca->add_configured_billing_items();
     return $cobranca;
@@ -71,7 +69,7 @@ class CobrancaGerador {
 
   public static function createOrRetrieveCobrancaWithTripleContractRefSeq(
       $contract,
-      $monthyeardateref   = null,
+      $monthrefdate   = null,
       $n_seq_from_dateref = 1
     ) {
     // [1] Treat $contract_id
@@ -79,20 +77,20 @@ class CobrancaGerador {
       $error = 'Error: Contract is null when instanting a CobrancaGerador object.  Cannot create Cobranca, raise/throw exception.';
       throw new Exception($error);
     }
-    // [2] Treat $monthyeardateref
-    if ($monthyeardateref == null) {
+    // [2] Treat $monthrefdate
+    if ($monthrefdate == null) {
       // The convention is:
       // if day is within [1,duedate] monthref is the previous one
       // if day is duedate+1 and above monthref is the current one
-      $monthyeardateref = DateFunctions
-        ::find_conventional_monthyeardateref_with_date_n_dueday(
-          null, // $p_monthyeardateref
+      $monthrefdate = DateFunctions
+        ::find_conventional_monthrefdate_with_date_n_dueday(
+          null, // $p_monthrefdate
           $contract->pay_day_when_monthly
         );
     }
     $cobranca = Cobranca
       ::where('contract_id',        $contract->id)
-      ->where('monthyeardateref',   $monthyeardateref)
+      ->where('monthrefdate',   $monthrefdate)
       ->where('n_seq_from_dateref', $n_seq_from_dateref)
       ->first();
     if ($cobranca == null) {
@@ -100,7 +98,7 @@ class CobrancaGerador {
       // create a new Cobranca for it does not exist yet
       $cobranca = self::createAndReturnNewCobrancaWithTripleContractRefSeq(
         $contract,
-        $monthyeardateref,
+        $monthrefdate,
         $n_seq_from_dateref
       );
     }
@@ -113,14 +111,14 @@ class CobrancaGerador {
 
   private static function createAndReturnNewCobrancaWithTripleContractRefSeq(
       $contract,
-      $monthyeardateref,
+      $monthrefdate,
       $n_seq_from_dateref=1
     ) {
     $cobranca = new Cobranca();
     $cobranca->contract_id        = $contract->id;
     $cobranca->bankaccount_id     = $contract->bankaccount_id;
-    $cobranca->monthyeardateref   = $monthyeardateref;
-    $cobranca->duedate            = $monthyeardateref->copy()->addMonths(1);
+    $cobranca->monthrefdate   = $monthrefdate;
+    $cobranca->duedate            = $monthrefdate->copy()->addMonths(1);
     $cobranca->duedate->day($contract->pay_day_when_monthly);
     $cobranca->n_seq_from_dateref = $n_seq_from_dateref;
     $cobranca->save();
@@ -159,19 +157,19 @@ class CobrancaGerador {
     $do_raise_exception_if_null_cobrancatipo = true;
 
     // [1] ALUG
-    $cobrancatipo = CobrancaTipo::get_cobrancatipo_with_its_4char_repr(
+    $cobrancatipo = CobrancaTipo::fetch_by_char4id(
       CobrancaTipo::K_4CHAR_ALUG,
       $do_raise_exception_if_null_cobrancatipo
     );
     $this->cobrancatipo_objs_array[CobrancaTipo::K_4CHAR_ALUG] = $cobrancatipo;
     // [2] IPTU
-    $cobrancatipo = CobrancaTipo::get_cobrancatipo_with_its_4char_repr(
+    $cobrancatipo = CobrancaTipo::fetch_by_char4id(
       CobrancaTipo::K_4CHAR_IPTU,
       $do_raise_exception_if_null_cobrancatipo
     );
     $this->cobrancatipo_objs_array[CobrancaTipo::K_4CHAR_IPTU] = $cobrancatipo;
     // [3] CONDOMÍNIO
-    $cobrancatipo = CobrancaTipo::get_cobrancatipo_with_its_4char_repr(
+    $cobrancatipo = CobrancaTipo::fetch_by_char4id(
       CobrancaTipo::K_4CHAR_COND,
       $do_raise_exception_if_null_cobrancatipo
     );
@@ -193,24 +191,24 @@ class CobrancaGerador {
        in refdate in the static instantiator function above
        ie, createOrRetrieveCobrancaWithTripleContractRefSeq()
     */
-    
+
     // $this->cobranca->contract->pay_day_when_monthly
     $today = Carbon::today();
     $this->cobranca->monthrefdate = $today->copy();
     $this->cobranca->monthrefdate->day = 1;
   }
 
-  public function set_cobranca_duedate_based_on_monthyeardateref() {
+  public function set_cobranca_duedate_based_on_monthrefdate() {
     /*
       Basically the first 'if' in this method will never solve 'true',
        due to the adjustment
        in dateref in the static instantiator function above
        ie, createOrRetrieveCobrancaWithTripleContractRefSeq()
     */
-    if ($this->cobranca->monthyeardateref==null) {
-      $this->set_monthyeardateref_relative_to_today();
+    if ($this->cobranca->monthrefdate==null) {
+      $this->set_monthrefdate_relative_to_today();
     }
-    $this->cobranca->duedate      = $this->cobranca->monthyeardateref->copy()->addMonths(1);
+    $this->cobranca->duedate      = $this->cobranca->monthrefdate->copy()->addMonths(1);
     $this->cobranca->duedate->day = $this->cobranca->contract->pay_day_when_monthly;
   }
 
@@ -242,7 +240,7 @@ class CobrancaGerador {
     $billingitem->charged_value     = $this->cobranca->contract->current_rent_value;
     $billingitem->ref_type          = BillingItem::K_REF_TYPE_IS_DATE;
     $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_MONTHLY;
-    $billingitem->monthyeardateref  = $this->cobranca->monthyeardateref;
+    $billingitem->monthrefdate  = $this->cobranca->monthrefdate;
 
     $this->cobranca->billingitems()->save($billingitem);
     $billingitem->save();
@@ -263,7 +261,7 @@ class CobrancaGerador {
     // [recheck this] imovel is protected against null in Constructor (ie, $this->contract->imovel is not null at this point)
     $iptutabela = IPTUTabela
       ::where('imovel_id', $this->cobranca->contract->imovel->id)
-      ->where('ano', $this->cobranca->monthyeardateref->year)
+      ->where('ano', $this->cobranca->monthrefdate->year)
       ->first();
     if ($iptutabela == null) {
       return null; // [2] IPTU db-info is not available (see also docstring above)
@@ -274,7 +272,7 @@ class CobrancaGerador {
     }
 
     // 3rd case: non-incidence on ref.Jan and ref.Dez
-    if ($this->cobranca->monthyeardateref->month == 1 || $this->cobranca->monthyeardateref->month == 12) {
+    if ($this->cobranca->monthrefdate->month == 1 || $this->cobranca->monthrefdate->month == 12) {
       // this case is optado por 10x and the first one starts in March ref. February
       // Billing happens from March to December, ref. Feb to Nov
       return null;
@@ -295,7 +293,7 @@ class CobrancaGerador {
     $billingitem->brief_description = $cobrancatipo->brief_description;
 
     // 1st create case: cota-única anual foi escolhida a ser repassada em Fevereiro, ref. Janeiro
-    if ($iptutabela->optado_por_cota_unica == true && $this->monthyeardateref->month == 1) {
+    if ($iptutabela->optado_por_cota_unica == true && $this->monthrefdate->month == 1) {
       $billingitem->charged_value     = $iptutabela->valor_parcela_unica;
       $billingitem->ref_type          = BillingItem::K_REF_TYPE_IS_BOTH_DATE_N_PARCEL;
       $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_YEARLY;
@@ -303,16 +301,16 @@ class CobrancaGerador {
       $billingitem->total_cotas_ref   = 1; // no logical need for a const here,
       //  1 itself hardcoded is logically okay, but for N cotas,
       //  there'll be a static method in IPTUTabela to avoid hardcoding N (cotas) here
-      $billingitem->monthyeardateref  = $this->cobranca->monthyeardateref;
+      $billingitem->monthrefdate  = $this->cobranca->monthrefdate;
     } else {
       // 2nd create case: escolhido o pagamento em 10 cotas (10 é const em IPTUTabela)
       // if even the cota-única was chosen (because it was chosen but not paid...  Review this)
       $billingitem->charged_value     = $iptutabela->valor_parcela_10x;
       $billingitem->ref_type          = BillingItem::K_REF_TYPE_IS_BOTH_DATE_N_PARCEL;
       $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_MONTHLY;
-      $billingitem->n_cota_ref        = $this->cobranca->monthyeardateref->month - 1;
+      $billingitem->n_cota_ref        = $this->cobranca->monthrefdate->month - 1;
       $billingitem->total_cotas_ref   = IPTUTabela::get_IPTU_N_COTAS_ANO();
-      $billingitem->monthyeardateref  = $this->cobranca->monthyeardateref;
+      $billingitem->monthrefdate  = $this->cobranca->monthrefdate;
     }
 
     $this->cobranca->billingitems()->save($billingitem);
@@ -352,7 +350,7 @@ class CobrancaGerador {
     // Find condominium tariff value
     $valor_e_ou_brief_info = CondominioTarifa::get_valor_tarifa_mesref_ou_alternativa_com_brief_info(
       $this->cobranca->contract->imovel->id,
-      $this->cobranca->monthyeardateref
+      $this->cobranca->monthrefdate
     );
     $condominio_tarifa_valor = $valor_e_ou_brief_info['condominio_tarifa_valor'];
     $brief_info = $valor_e_ou_brief_info['brief_info'];
@@ -360,7 +358,7 @@ class CobrancaGerador {
     $billingitem->charged_value     = $condominio_tarifa_valor;
     $billingitem->ref_type          = BillingItem::K_REF_TYPE_IS_DATE;
     $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_MONTHLY;
-    $billingitem->monthyeardateref  = $this->cobranca->monthyeardateref;
+    $billingitem->monthrefdate  = $this->cobranca->monthrefdate;
     if ($brief_info != null) {
       $billingitem->obs = $brief_info;
     }
@@ -409,7 +407,7 @@ class CobrancaGerador {
     $billingitem->was_original_value_modified = true;
     $billingitem->ref_type          = BillingItem::K_REF_TYPE_IS_DATE;
     $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_MONTHLY;
-    $billingitem->monthyeardateref  = $moradebito->monthyeardateref;
+    $billingitem->monthrefdate  = $moradebito->monthrefdate;
     $brief_info = $moradebito->get_lineinfo_n_time_correction_lineinfo();
     if ($brief_info != null) {
       $billingitem->obs = $brief_info;
@@ -526,7 +524,7 @@ class CobrancaGerador {
     foreach ($cobrancatipos as $cobrancatipo) {
       $has_been_inserted = false;
       $char4id = $cobrancatipo->char4id;
-      $cobrancatipo_id = CobrancaTipo::get_cobrancatipo_by_char4id($char4id);
+      $cobrancatipo_id = CobrancaTipo::fetch_by_char4id($char4id);
       switch ($char4id) {
         case CobrancaTipo::K_4CHAR_ALUG:
           $value = $this->cobranca->contract->get_value_of_cobrancatipo(CobrancaTipo::K_4CHAR_ALUG);

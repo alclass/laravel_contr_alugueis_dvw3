@@ -34,7 +34,7 @@ CREATE TABLE `additiontarifas` (
   `id` int(10) UNSIGNED NOT NULL,
   `cobrancatipo_id` int(11) NOT NULL,
   `contract_id` int(11) NOT NULL,
-  `monthyeardateref` date DEFAULT NULL,
+  `monthrefdate` date DEFAULT NULL,
   `n_cota` int(11) DEFAULT NULL,
   `total_cotas` int(11) DEFAULT NULL,
   `lineinfo` varchar(80) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -93,7 +93,7 @@ CREATE TABLE `billingitems` (
   `charged_value` decimal(9,2) NOT NULL,
   `ref_type` char(1) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'D',
   `freq_used_ref` char(1) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'M',
-  `monthyeardateref` date DEFAULT NULL,
+  `monthrefdate` date DEFAULT NULL,
   `n_cota_ref` tinyint(3) UNSIGNED DEFAULT NULL,
   `total_cotas_ref` tinyint(3) UNSIGNED DEFAULT NULL,
   `was_original_value_modified` tinyint(1) NOT NULL DEFAULT '0',
@@ -114,7 +114,7 @@ CREATE TABLE `billingitems` (
 
 CREATE TABLE `cobrancas` (
   `id` int(10) UNSIGNED NOT NULL,
-  `monthyeardateref` date NOT NULL,
+  `monthrefdate` date NOT NULL,
   `n_seq_from_dateref` tinyint(3) UNSIGNED NOT NULL DEFAULT '1',
   `duedate` date DEFAULT NULL,
   `discount` decimal(9,2) DEFAULT NULL,
@@ -158,7 +158,7 @@ CREATE TABLE `condominiotarifas` (
   `id` int(10) UNSIGNED NOT NULL,
   `imovel_id` int(11) NOT NULL,
   `tarifa_valor` decimal(9,2) NOT NULL,
-  `monthyeardateref` date NOT NULL,
+  `monthrefdate` date NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -235,7 +235,7 @@ CREATE TABLE `corrmonets` (
   `mercado_indicador_id` tinyint(3) UNSIGNED NOT NULL,
   `indice4char` char(4) COLLATE utf8mb4_unicode_ci NOT NULL,
   `fraction_value` decimal(6,5) NOT NULL,
-  `monthyeardateref` date NOT NULL,
+  `monthrefdate` date NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -327,7 +327,7 @@ CREATE TABLE `migrations` (
 CREATE TABLE `moradebitos` (
   `id` int(10) UNSIGNED NOT NULL,
   `contract_id` int(11) NOT NULL,
-  `monthyeardateref` date DEFAULT NULL,
+  `monthrefdate` date DEFAULT NULL,
   `is_open` tinyint(1) NOT NULL DEFAULT '1',
   `ini_debt_date` date NOT NULL,
   `ini_debt_value` decimal(9,2) NOT NULL,

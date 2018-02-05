@@ -38,7 +38,7 @@ class ImovelController extends Controller {
       ::where('imovel_id', $imovel_id)
       ->get();
     $imovel = Imovel::findOrFail($imovel_id);
-    // return var_dump($monthyeardateref->toDayDateTimeString());
+    // return var_dump($monthrefdate->toDayDateTimeString());
     return view('imoveis.condominiotarifas', [
       'condominiotarifas'=>$condominiotarifas,
       'imovel'=>$imovel

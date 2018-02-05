@@ -27,23 +27,23 @@ is_date_on_last_day_of_month()
 [doesn't have unittest]
 
 [2]
-find_conventional_cutdate_from_monthyeardateref
+find_conventional_cutdate_from_monthrefdate
 [has unittest]
 
 [2 (same as above, just treating null cutday to default)]
-find_conventional_duedate_from_monthyeardateref
+find_conventional_duedate_from_monthrefdate
 [wrapper of the one above]
 
 [3]
-make_n_get_monthyeardateref_with_year_n_month()
+make_n_get_monthrefdate_with_year_n_month()
 [doesn't have unittest]
 
 [3]
-find_conventional_monthyeardateref_with_date_n_cutday()
+find_conventional_monthrefdate_with_date_n_cutday()
 [has unittest]
 
 [3 (same as above, just treating null cutday to default)]
-find_conventional_monthyeardateref_with_date_n_dueday()
+find_conventional_monthrefdate_with_date_n_dueday()
 [wrapper of the one above]
 
 [4]
@@ -59,7 +59,7 @@ get_ini_end_months_list()
 [has unittest]
 
 [7]
-get_ini_end_monthyeardaterefs_list()
+get_ini_end_monthrefdates_list()
 [has unittest]
 
 [8]
@@ -78,7 +78,7 @@ correct_for_proportional_first_n_last_months_n_return_fractionarray()
 
 class DateFunctions {
 
-  const CUT_PAY_IN_MONTH_FOR_FINDING_MONTHYEARDATEREF = 10; // this will hold if env() does not have it
+  const CUT_PAY_IN_MONTH_FOR_FINDING_monthrefdate = 10; // this will hold if env() does not have it
   const LOOP_ITERATION_PROTECTION_COUNTER_FOR_MONTHS_YEARS = 10000;
 
 // old name: find_next_anniversary_date_with_triple_start_end_n_from()
@@ -87,7 +87,7 @@ class DateFunctions {
 
     $cut_day_in_month = (int) env(
       'PAY_DAY_WHEN_MONTHLY',
-      self::CUT_PAY_IN_MONTH_FOR_FINDING_MONTHYEARDATEREF
+      self::CUT_PAY_IN_MONTH_FOR_FINDING_monthrefdate
     );
     return $cut_day_in_month;
   }
@@ -118,18 +118,18 @@ class DateFunctions {
 
   public static function calc_fraction_of_n_days_in_specified_month(
       $n_days_considered = null,
-      $monthyeardateref  = null
+      $monthrefdate  = null
     ) {
     /*
 
     */
-    if ($n_days_considered == null || $monthyeardateref == null) {
+    if ($n_days_considered == null || $monthrefdate == null) {
       return null;
     }
     if ($n_days_considered < 1) {
       return 0;
     }
-    $total_days_in_specified_month = self::get_total_days_in_specified_month($monthyeardateref);
+    $total_days_in_specified_month = self::get_total_days_in_specified_month($monthrefdate);
     if ($n_days_considered >= $total_days_in_specified_month) {
       return 1;
     }
@@ -250,7 +250,7 @@ class DateFunctions {
 
   } // ends [static] find_next_anniversary_date_with_triple_start_end_n_from()
 
-  public static function make_n_get_monthyeardateref_with_year_n_month(
+  public static function make_n_get_monthrefdate_with_year_n_month(
       $year = null,
       $month = null
     ) {
@@ -258,12 +258,12 @@ class DateFunctions {
 		if ($year  == null) { $year  = $today->year;  }
 		if ($month == null) { $month = $today->month; }
     $day = 1;
-    $monthyeardateref = Carbon::createFromDate($year, $month, $day);
-		$monthyeardateref->setTime(0,0,0);
-    return $monthyeardateref;
-  } // ends [static] make_n_get_monthyeardateref_with_year_n_month()
+    $monthrefdate = Carbon::createFromDate($year, $month, $day);
+		$monthrefdate->setTime(0,0,0);
+    return $monthrefdate;
+  } // ends [static] make_n_get_monthrefdate_with_year_n_month()
 
-  public static function find_conventional_monthyeardateref_with_date_n_cutday(
+  public static function find_conventional_monthrefdate_with_date_n_cutday(
     $date = null,
     $cut_day_in_month
   ) {
@@ -289,7 +289,7 @@ class DateFunctions {
 
     if ($cut_day_in_month == null) {
       /*
-      See also method find_conventional_monthyeardateref_with_date_n_dueday()
+      See also method find_conventional_monthrefdate_with_date_n_dueday()
       which calls a default for $cut_day_in_month and then wraps to this method
       */
       return null;
@@ -297,22 +297,22 @@ class DateFunctions {
     $date = ( $date != null ? $date : Carbon::today() );
     if ($date->day >= 1 && $date->day <= $cut_day_in_month) {
       // pick up previous month and ajust day
-      $monthyeardateref = $date->copy()->addMonths(-1);
+      $monthrefdate = $date->copy()->addMonths(-1);
     } else {
-      $monthyeardateref = $date->copy();
+      $monthrefdate = $date->copy();
     }
-    $monthyeardateref->day(1);
-    $monthyeardateref->setTime(0,0,0);
-    return $monthyeardateref;
-  } // ends [static] calc_conventional_monthyeardateref_with_date_n_cutday()
+    $monthrefdate->day(1);
+    $monthrefdate->setTime(0,0,0);
+    return $monthrefdate;
+  } // ends [static] calc_conventional_monthrefdate_with_date_n_cutday()
 
-  public static function find_conventional_monthyeardateref_with_date_n_dueday(
+  public static function find_conventional_monthrefdate_with_date_n_dueday(
     $date = null,
     $dueday_in_month = null
   ) {
     /*
         Explanation is in the docstring for method
-          calc_conventional_monthyeardateref_with_date_n_cutday()
+          calc_conventional_monthrefdate_with_date_n_cutday()
 
         This method is a wrapper to that one, the only difference is that
           this one resolves a default for null $cut_day_in_month
@@ -323,47 +323,47 @@ class DateFunctions {
     if ($dueday_in_month == null) {
       $dueday_in_month = self::get_default_cutdate_in_month();
     }
-    return self::find_conventional_monthyeardateref_with_date_n_cutday(
+    return self::find_conventional_monthrefdate_with_date_n_cutday(
       $date,
       $dueday_in_month
     );
-  } // ends find_rent_monthyeardateref_under_convention()
+  } // ends find_rent_monthrefdate_under_convention()
 
-  public static function find_conventional_cutdate_from_monthyeardateref(
-    $monthyeardateref,
+  public static function find_conventional_cutdate_from_monthrefdate(
+    $monthrefdate,
     $cut_day_in_month
   ) {
     /*
-        $cutdate is the next month to $monthyeardateref on day = $cut_day_in_month
+        $cutdate is the next month to $monthrefdate on day = $cut_day_in_month
     */
     if ($cut_day_in_month == null) {
       return null;
     }
-    if ($monthyeardateref == null) {
-      $monthyeardateref = Carbon::today();
-      $monthyeardateref->day(1); // all $monthyeardateref's have day=1
-      $monthyeardateref->setTime(0,0,0);
+    if ($monthrefdate == null) {
+      $monthrefdate = Carbon::today();
+      $monthrefdate->day(1); // all $monthrefdate's have day=1
+      $monthrefdate->setTime(0,0,0);
     }
     // $cutdate is next month on cut_day
-    $cutdate = $monthyeardateref->copy()->addMonths(1);
+    $cutdate = $monthrefdate->copy()->addMonths(1);
     $cutdate->day($cut_day_in_month);
     return $cutdate;
 
-  } // ends [static] find_conventional_cutdate_from_monthyeardateref()
+  } // ends [static] find_conventional_cutdate_from_monthrefdate()
 
 
-  public static function find_conventional_duedate_from_monthyeardateref(
+  public static function find_conventional_duedate_from_monthrefdate(
       $date = null,
       $pay_day_when_monthly = null
     ) {
       /*
           This method is a wrapper to
-            find_conventional_cutdate_from_monthyeardateref()
+            find_conventional_cutdate_from_monthrefdate()
       */
     if ($pay_day_when_monthly == null) {
       $pay_day_when_monthly = self::get_default_cutdate_in_month();
     }
-    return self::find_conventional_cutdate_from_monthyeardateref(
+    return self::find_conventional_cutdate_from_monthrefdate(
       $date,
       $pay_day_when_monthly
     );
@@ -409,32 +409,32 @@ class DateFunctions {
 
   } // ends [static] get_ini_fim_monthrefs_list()
 
-  public static function get_ini_end_monthyeardaterefs_list(
-    $p_monthyeardateref_ini = null,
-    $p_monthyeardateref_fim = null
+  public static function get_ini_end_monthrefdates_list(
+    $p_monthrefdate_ini = null,
+    $p_monthrefdate_fim = null
   ) {
   /*
 
   */
-  if ($p_monthyeardateref_ini == null) {
-    $p_monthyeardateref_ini = self::find_conventional_monthyeardateref_with_date_n_dueday();
+  if ($p_monthrefdate_ini == null) {
+    $p_monthrefdate_ini = self::find_conventional_monthrefdate_with_date_n_dueday();
   }
-  if ($p_monthyeardateref_fim == null) {
-    $p_monthyeardateref_fim = self::find_conventional_monthyeardateref_with_date_n_dueday();
+  if ($p_monthrefdate_fim == null) {
+    $p_monthrefdate_fim = self::find_conventional_monthrefdate_with_date_n_dueday();
   }
   // Force convention of day=1 and time(0,0,0)
   // This will guarantee middle months will also have that convention
-  $monthyeardateref_ini = $p_monthyeardateref_ini->copy()->day(1);
-  $monthyeardateref_ini->setTime(0,0,0);
-  $monthyeardateref_fim = $p_monthyeardateref_fim->copy()->day(1);
-  $monthyeardateref_fim->setTime(0,0,0);
-  $ini_fim_monthyeardaterefs_list = self::get_ini_end_months_list(
-    $monthyeardateref_ini,
-    $monthyeardateref_fim
+  $monthrefdate_ini = $p_monthrefdate_ini->copy()->day(1);
+  $monthrefdate_ini->setTime(0,0,0);
+  $monthrefdate_fim = $p_monthrefdate_fim->copy()->day(1);
+  $monthrefdate_fim->setTime(0,0,0);
+  $ini_fim_monthrefdates_list = self::get_ini_end_months_list(
+    $monthrefdate_ini,
+    $monthrefdate_fim
   );
-  return $ini_fim_monthyeardaterefs_list;
+  return $ini_fim_monthrefdates_list;
 
-  } // ends [static] get_ini_end_monthyeardaterefs_list()
+  } // ends [static] get_ini_end_monthrefdates_list()
 
   public static function get_month_n_monthdays_fraction_tuple_list(
     $months_list = null

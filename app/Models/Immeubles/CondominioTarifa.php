@@ -85,11 +85,11 @@ class CondominioTarifa extends Model {
 
   public static function get_valor_tarifa_mesref_ou_alternativa_com_brief_info(
       $imovel_id,
-      $monthyeardateref
+      $monthrefdate
     ) {
     $return_array = array();
     $condominio_tarifa = self::where('imovel_id', $imovel_id)
-      ->where('monthyeardateref', $monthyeardateref)
+      ->where('monthrefdate', $monthrefdate)
       ->first();
     $brief_info = null;
     if ($condominio_tarifa == null) {
@@ -103,7 +103,7 @@ class CondominioTarifa extends Model {
   } // ends [static] get_valor_tarifa_mesref_ou_alternativa()
 
   protected $dates = [
-    'monthyeardateref',
+    'monthrefdate',
     //'created_at',
     //'updated_at',
   ];
@@ -117,7 +117,7 @@ class CondominioTarifa extends Model {
    */
   protected $fillable = [
     'tarifa_valor',
-    'monthyeardateref',
+    'monthrefdate',
   ];
 
   public function media_min_max_das_tarifas($condominiotarifas) {

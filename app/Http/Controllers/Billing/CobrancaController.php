@@ -115,7 +115,7 @@ class CobrancaController extends Controller {
 
 	public function onref($year=null, $month=null)	{
 		//return 'hi';
-		$monthrefdate = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($year, $month);
+		$monthrefdate = DateFunctions::make_n_get_monthrefdate_with_year_n_month($year, $month);
 		$cobrancas = Cobranca
 			::where('monthrefdate', $monthrefdate)
 			->get();
@@ -125,7 +125,7 @@ class CobrancaController extends Controller {
 
 	public function onlyrent_onref($year=null, $month=null)	{
 		//return 'hi';
-		$monthrefdate = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($year, $month);
+		$monthrefdate = DateFunctions::make_n_get_monthrefdate_with_year_n_month($year, $month);
 		$cobrancas = Cobranca
 			::where('monthrefdate', $monthrefdate)
 			->get();
@@ -174,14 +174,14 @@ class CobrancaController extends Controller {
 
 
 	public function mostrarmesref($contract, $year, $month)	{
-		$monthrefdate = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($year, $month);
+		$monthrefdate = DateFunctions::make_n_get_monthrefdate_with_year_n_month($year, $month);
 		$monthrefdate = Carbon::createFromDate($year, $month, 1);
 		$monthrefdate->setTime(0,0,0);
 		$cobrancas = Cobranca
 			::where('contract_id', $contract_id)
 			->where('monthrefdate', $monthrefdate)
 			->get();
-		// return var_dump($monthyeardateref->toDayDateTimeString());
+		// return var_dump($monthrefdate->toDayDateTimeString());
 		return view('cobrancas.cobranca.mostrar', ['cobrancas'=>$cobrancas]);
 	}
 
@@ -307,7 +307,7 @@ class CobrancaController extends Controller {
 		// -------------------------------------
 		$cobrancatipo_id = $request->input('cobrancatipo_id');
 		$cobrancatipo  = CobrancaTipo::findOrFail($cobrancatipo_id);
-		$monthrefdate = DateFunctions::make_n_get_monthyeardateref_with_year_n_month($yearref, $monthref);
+		$monthrefdate = DateFunctions::make_n_get_monthrefdate_with_year_n_month($yearref, $monthref);
 		// -------------------------------------
 		$value   = $request->input('value');
 		$ref_type        = $request->input('reftype');

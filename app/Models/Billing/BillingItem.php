@@ -64,9 +64,9 @@ class BillingItem extends Model {
     if ($this->monthrefdate != null) {
       $bi_copy->monthrefdate = $this->monthrefdate->copy();
     }
-    $bi_copy->numberpart     = $this->numberpart;
     $bi_copy->use_partnumber = $this->use_partnumber;
-    $bi_copy->totalparts = $this->totalparts;
+    $bi_copy->numberpart     = $this->numberpart;
+    $bi_copy->totalparts     = $this->totalparts;
     $bi_copy->was_original_value_modified = $this->was_original_value_modified;
     $bi_copy->brief_description_for_modifier = $this->brief_description_for_modifier;
     $bi_copy->original_value = $this->original_value;

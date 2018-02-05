@@ -30,7 +30,7 @@
             $n_seq += 1;
           ?>
           <td data-th="n"> {{ $n_seq }} </td>
-          <td data-th="ref"> {{ $condominiotarifa->monthyeardateref->format('M-Y') }} </td>
+          <td data-th="ref"> {{ $condominiotarifa->monthrefdate->format('M-Y') }} </td>
           <td data-th="tarifa"> {{ $condominiotarifa->tarifa_valor }} </td>
         </tr>
       @endforeach

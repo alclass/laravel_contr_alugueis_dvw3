@@ -11,16 +11,16 @@ class BItemGenTester {
 
   public $cobranca = null;
   public $bitemgen = null;
-  public $next_monthyeardateref = null;
+  public $next_monthrefdate = null;
 
   public function __construct($cobranca_id) {
     $this->cobranca = Cobranca::find($cobranca_id);
     $this->bitemgen = new BillingItemGenerator($this->cobranca);
-    $this->set_next_monthyeardateref();
+    $this->set_next_monthrefdate();
   } // ends __construct()
 
-  private function set_next_monthyeardateref() {
-    $this->next_monthyeardateref = $this->cobranca->monthyeardateref->copy()->addMonths(1);
+  private function set_next_monthrefdate() {
+    $this->next_monthrefdate = $this->cobranca->monthrefdate->copy()->addMonths(1);
   }
 
   public function gerar($valor_negativo_mora_positivo_credito=null) {
@@ -29,7 +29,7 @@ class BItemGenTester {
     }
     $this->bitemgen->createIfNeededBillingItemForMoraOrCreditoMonthlyRef(
       $valor_negativo_mora_positivo_credito,
-      $this->next_monthyeardateref
+      $this->next_monthrefdate
     );
   }
 
@@ -50,7 +50,7 @@ class BItemGenTester {
       /*
       print ('id                = ' . $billingitem->id);
       print ('brief_description = ' . $billingitem->brief_description);
-      print ('date ref          = ' . $billingitem->monthyeardateref);
+      print ('date ref          = ' . $billingitem->monthrefdate);
       print ('charged_value     = ' . $billingitem->charged_value);
       print ('ref type          = ' . $billingitem->ref_type);
       print ('ref type          = ' . $billingitem->ref_type);

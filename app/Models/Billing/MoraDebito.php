@@ -17,7 +17,7 @@ class MoraDebito extends Model {
   protected $table = 'moradebitos';
 
   protected $dates = [
-    'monthyeardateref', 'ini_debt_date', 'changed_debt_date',
+    'monthrefdate', 'ini_debt_date', 'changed_debt_date',
   ];
 
 	/**
@@ -26,7 +26,7 @@ class MoraDebito extends Model {
 	 * @var array
 	 */
 	protected $fillable = [
-    'monthyeardateref',  'is_open',
+    'monthrefdate',  'is_open',
     'ini_debt_date',     'ini_debt_value',
     'changed_debt_date', 'changed_debt_value',
     'mora_rules_id', // null if rules are those of contract's

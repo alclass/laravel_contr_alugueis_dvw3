@@ -1,10 +1,11 @@
 <?php
 namespace App\Models\Billing;
+// use App\Models\Billing\CobrancaTester;
 
-// use App\Models\Billing\Cobranca;
 use App\Models\Billing\CobrancaGerador;
 use App\Models\Immeubles\Contract;
 use App\Models\Immeubles\Imovel;
+use Carbon\Carbon;
 
 class CobrancaTester {
 
@@ -12,12 +13,40 @@ class CobrancaTester {
   public $cobranca_gerador = null;
 
   public function __construct($imovel_apelido) {
-    $imovel = Imovel::where('apelido', $imovel_apelido)->first();
-    $this->contract = Contract::where('imovel_id', $imovel->id)
+    $this->imovel = Imovel::where('apelido', $imovel_apelido)->first();
+    $this->contract = Contract
+      ::where('imovel_id', $this->imovel->id)
       ->where('is_active', 1)
       ->first();
     $this->cobranca_gerador = new CobrancaGerador($this->contract);
   } // ends __construct()
+
+  public function g1() {
+    $monthrefdate = new Carbon('2018-3-1');
+    $contract_id = 3;
+    $cobranca = CobrancaGerador::create_or_retrieve_cobranca_with_keys(
+      $contract_id,
+      $monthrefdate,
+      $monthseqnumber = 1
+    );
+    return $cobranca;
+  }
+
+  public function imv1() {
+    // $this->monthrefdate
+    $monthrefdate = new Carbon('2018-3-1');
+    $iptuanoimovel = $this->imovel
+      ->get_iptuanoimovel_with_refmonth_or_default($monthrefdate);
+    $is_refmonth_billable = $iptuanoimovel->is_refmonth_billable($monthrefdate);
+    print('is_refmonth_billable = ');
+    print_r($is_refmonth_billable);
+    print('mesref_de_inicio_repasse = ');
+    print_r($iptuanoimovel->mesref_de_inicio_repasse);
+    print('mesref_de_fim_repasse = ');
+    print_r($iptuanoimovel->mesref_de_fim_repasse);
+    print('returning $iptuanoimovel');
+    return $iptuanoimovel;
+  }
 
   public function gerar() {
     $this->cobranca_gerador->gerar_cobranca_based_on_today();

@@ -43,11 +43,11 @@ class PaymentController extends Controller {
 
 	public function conciliar($contract_id, $year, $month, $n_seq_from_dateref=1) {
 
-		$monthyeardateref = Carbon::createFromDate($year, $month, 1);
-		$monthyeardateref->setTime(0,0,0);
+		$monthrefdate = Carbon::createFromDate($year, $month, 1);
+		$monthrefdate->setTime(0,0,0);
 		$cobranca = Cobranca
 			::where('contract_id', $contract_id)
-			->where('monthyeardateref', $monthyeardateref)
+			->where('monthrefdate', $monthrefdate)
 			->where('n_seq_from_dateref', $n_seq_from_dateref)
 			->first();
 		return view('cobrancas.payments.conciliar', ['cobranca' => $cobranca]);

@@ -112,10 +112,10 @@ class AmortizationParcelsEvolver {
       $last_day_in_month = $last_day_in_month_date->day;
       $month_fraction = $n_elapsed_days / $last_day_in_month;
       // convention for corr. monet. is M-1 (M minus one)
-      $previous_monthyeardateref = $from_day_in_month_date->copy()
+      $previous_monthrefdate = $from_day_in_month_date->copy()
         ->addMonths(-1)->day(1)->setTime(0,0,0);
       $corrmonet_month_fraction_index = CorrMonet
-        ::get_corr_monet_for_month_or_average($previous_monthyeardateref);
+        ::get_corr_monet_for_month_or_average($previous_monthrefdate);
       $applied_corrmonet_fraction = $corrmonet_month_fraction_index * $month_fraction;
       $juros_am_perc = MercadoIndice::get_default_juros_fixos_am_in_perc();
       $cm_n_juros_aplic_dias_perc = ($corrmonet_month_fraction_index + $juros_am_perc) * $month_fraction;
@@ -155,10 +155,10 @@ class AmortizationParcelsEvolver {
         $month_fraction = $n_elapsed_days / $total_days_in_month;
       } // ends inner if
     } // ends outer if
-    $previous_monthyeardateref = $last_day_in_month_date->copy()
+    $previous_monthrefdate = $last_day_in_month_date->copy()
       ->addMonths(-1)->day(1)->setTime(0,0,0);
     $corrmonet_month_fraction_index = CorrMonet
-      ::get_corr_monet_for_month_or_average($previous_monthyeardateref);
+      ::get_corr_monet_for_month_or_average($previous_monthrefdate);
     $applied_corrmonet_fraction = $corrmonet_month_fraction_index * $month_fraction;
     $juros_am_perc = MercadoIndice::get_default_juros_fixos_am_in_perc();
     $cm_n_juros_aplic_dias_perc = ($corrmonet_month_fraction_index + $juros_am_perc) * $month_fraction;

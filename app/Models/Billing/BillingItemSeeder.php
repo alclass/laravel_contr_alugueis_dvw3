@@ -23,8 +23,8 @@ class BillingItemSeeder {
     $billingitem = new BItem;
     $billingitem->cobrancatipo_id = 1;
     $billingitem->item_value      = 1000;
-    $monthyeardateref           = Carbon::createFromFormat('Y-m-d', '2016-02-02');
-    $billingitem->ref_obj = BItem::make_ref_obj_with_date($monthyeardateref);
+    $monthrefdate           = Carbon::createFromFormat('Y-m-d', '2016-02-02');
+    $billingitem->ref_obj = BItem::make_ref_obj_with_date($monthrefdate);
     $this->bitems[] = $billingitem;
     $this->billingitems->add($billingitem);
 

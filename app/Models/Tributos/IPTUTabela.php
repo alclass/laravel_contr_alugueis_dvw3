@@ -85,7 +85,7 @@ class IPTUTabela extends Model {
 
   */
   protected $attributes = ['mesref_de_fim_repasse', 'totalparts'];
-  
+
   public function copytoanewyearinstance($ano) {
     $copied_iptu = new self();
     $copied_iptu->imovel_id = $this->imovel_id;

@@ -66,72 +66,72 @@ class ContractMora  {
   */
 
   private $contract = null; // if null, raise/throw exception
-  private $monthyeardateref_ini = null; // if null, default to conventional $monthyeardateref
-  private $monthyeardateref_fim = null; // if null, default to conventional $monthyeardateref
-  private $begin_interest_on_date  = null; // if null, defaults to $monthyeardateref_ini->copy()->addMonths(1)
-  private $finish_interest_on_date = null; // if null, defaults to $monthyeardateref_ini->copy()->addMonths(1)->addDays(duedate)
-  private $monthyeardaterefs_list  = null; // to be derived from $monthyeardateref_ini & $monthyeardateref_fim
+  private $monthrefdate_ini = null; // if null, default to conventional $monthrefdate
+  private $monthrefdate_fim = null; // if null, default to conventional $monthrefdate
+  private $begin_interest_on_date  = null; // if null, defaults to $monthrefdate_ini->copy()->addMonths(1)
+  private $finish_interest_on_date = null; // if null, defaults to $monthrefdate_ini->copy()->addMonths(1)->addDays(duedate)
+  private $monthrefdates_list  = null; // to be derived from $monthrefdate_ini & $monthrefdate_fim
   private $composedmorafraction_list = null;
   private $corrmonetfraction_list = null;
 
   public function __construct(
       $contract,
-      $monthyeardateref_ini,
-      $monthyeardateref_fim = null,
+      $monthrefdate_ini,
+      $monthrefdate_fim = null,
       $begin_interest_on_date = null,
       $finish_interest_on_date = null
     ) {
     $this->contract = $contract;
-    $this->set_monthyeardateref_ini($monthyeardateref_ini);
-    $this->set_monthyeardateref_fim($monthyeardateref_fim);
+    $this->set_monthrefdate_ini($monthrefdate_ini);
+    $this->set_monthrefdate_fim($monthrefdate_fim);
     $this->set_begin_interest_on_date($begin_interest_on_date);
     $this->set_finish_interest_on_date($finish_interest_on_date);
-    $this->generate_once_monthyeardaterefs_list();
+    $this->generate_once_monthrefdates_list();
     $this->generate_once_corrmonetfraction_list();
     $this->generate_once_composedmorafraction_list();
   }
 
-  public function set_monthyeardateref_ini($monthyeardateref_ini) {
-    $this->monthyeardateref_ini = $monthyeardateref_ini;
-    if ($this->monthyeardateref_ini == null) {
-      $this->monthyeardateref_ini = DateFunctions::find_conventional_monthyeardateref_with_date_n_dueday();
+  public function set_monthrefdate_ini($monthrefdate_ini) {
+    $this->monthrefdate_ini = $monthrefdate_ini;
+    if ($this->monthrefdate_ini == null) {
+      $this->monthrefdate_ini = DateFunctions::find_conventional_monthrefdate_with_date_n_dueday();
       return;
     }
-    $this->monthyeardateref_ini->day(1);
-    $this->monthyeardateref_ini->setTime(0,0,0);
+    $this->monthrefdate_ini->day(1);
+    $this->monthrefdate_ini->setTime(0,0,0);
     $today = Carbon::today();
-    if ($this->monthyeardateref_ini > $today) {
-      $error_msg = "Error: monthyeardateref_ini=$this->monthyeardateref_ini > today=$today";
+    if ($this->monthrefdate_ini > $today) {
+      $error_msg = "Error: monthrefdate_ini=$this->monthrefdate_ini > today=$today";
       throw new Exception($error_msg, 1);
     }
-  } // ends set_monthyeardateref_ini()
+  } // ends set_monthrefdate_ini()
 
-  public function get_monthyeardateref_ini() {
-    return $this->monthyeardateref_ini;
+  public function get_monthrefdate_ini() {
+    return $this->monthrefdate_ini;
   }
 
-  public function set_monthyeardateref_fim($monthyeardateref_fim) {
-    $this->monthyeardateref_fim = $monthyeardateref_fim;
-    if ($this->monthyeardateref_fim == null) {
-      $this->monthyeardateref_fim = DateFunctions::find_conventional_monthyeardateref_with_date_n_dueday();
+  public function set_monthrefdate_fim($monthrefdate_fim) {
+    $this->monthrefdate_fim = $monthrefdate_fim;
+    if ($this->monthrefdate_fim == null) {
+      $this->monthrefdate_fim = DateFunctions::find_conventional_monthrefdate_with_date_n_dueday();
     }
-    if ($this->monthyeardateref_ini > $this->monthyeardateref_fim) {
-      $error_msg = "monthyeardateref_ini ($this->monthyeardateref_ini) > monthyeardateref_fim ($this->monthyeardateref_fim)";
+    if ($this->monthrefdate_ini > $this->monthrefdate_fim) {
+      $error_msg = "monthrefdate_ini ($this->monthrefdate_ini) > monthrefdate_fim ($this->monthrefdate_fim)";
       throw new Exception($error_msg, 1);
     }
-    $this->monthyeardateref_fim->day(1);
-    $this->monthyeardateref_fim->setTime(0,0,0);
-  } // ends set_monthyeardateref_fim()
+    $this->monthrefdate_fim->day(1);
+    $this->monthrefdate_fim->setTime(0,0,0);
+  } // ends set_monthrefdate_fim()
 
-  public function get_monthyeardateref_fim() {
-    return $this->monthyeardateref_fim;
+  public function get_monthrefdate_fim() {
+    return $this->monthrefdate_fim;
   }
 
   public function set_begin_interest_on_date($begin_interest_on_date) {
     $this->begin_interest_on_date = $begin_interest_on_date;
     if ($this->begin_interest_on_date==null) {
-      // this is the default $begin_interest_on_date, ie, one month after $monthyeardateref_ini
-      $this->begin_interest_on_date = $this->monthyeardateref_ini->copy()->addMonths(1);
+      // this is the default $begin_interest_on_date, ie, one month after $monthrefdate_ini
+      $this->begin_interest_on_date = $this->monthrefdate_ini->copy()->addMonths(1);
     }
   }
 
@@ -164,15 +164,15 @@ class ContractMora  {
     return $this->finish_interest_on_date;
   }
 
-  public function generate_once_monthyeardaterefs_list() {
-    $this->monthyeardaterefs_list = DateFunctions::get_ini_end_monthyeardaterefs_list(
-        $this->monthyeardateref_ini,
-        $this->monthyeardateref_fim
+  public function generate_once_monthrefdates_list() {
+    $this->monthrefdates_list = DateFunctions::get_ini_end_monthrefdates_list(
+        $this->monthrefdate_ini,
+        $this->monthrefdate_fim
       );
-  } // ends generate_once_monthyeardaterefs_list()
+  } // ends generate_once_monthrefdates_list()
 
-  public function get_monthyeardaterefs_list() {
-    return $this->monthyeardaterefs_list;
+  public function get_monthrefdates_list() {
+    return $this->monthrefdates_list;
   }
 
   public function is_last_month_full_interest() {
@@ -191,7 +191,7 @@ class ContractMora  {
   }
 
   public function find_mora_duration_in_tuple_n_months_n_additional_days() {
-    $first_mora_month = $this->monthyeardateref_ini->copy()->addMonths(1);
+    $first_mora_month = $this->monthrefdate_ini->copy()->addMonths(1);
     $n_months = $first_mora_month->diffInMonths($this->finish_interest_on_date);
     $n_months += 1; $n_days = 0;
     if ($this->is_last_month_full_interest()) {
@@ -233,11 +233,11 @@ class ContractMora  {
       return null;
     }
     $this->corrmonetfraction_list = array();
-    foreach ($this->monthyeardaterefs_list as $monthyeardateref) {
+    foreach ($this->monthrefdates_list as $monthrefdate) {
       $corrmonetfractionvalue = 0;
       $corr_monet_obj = CorrMonet
         ::where('indice4char', $this->contract->corrmonet_indice4char)
-        ->where('monthyeardateref', $monthyeardateref)
+        ->where('monthrefdate', $monthrefdate)
         ->first();
       // if it's not found, try average()
       if ($corr_monet_obj == null) {

@@ -149,12 +149,12 @@ class BillingItemGenerator {
       } // ends inner if
     } // ends outer if
 
-    // Finally, check default monthyeardateref if CobrancaTipo is D or B
+    // Finally, check default monthrefdate if CobrancaTipo is D or B
     if ($ref_type == BillingItem::K_REF_TYPE_IS_DATE ||
         $ref_type == BillingItem::K_REF_TYPE_IS_BOTH_DATE_N_PARCEL) {
-      if ($monthyeardateref == null) {
-        $monthyeardateref = $this->cobranca
-          ->return_monthyeardateref_or_if_null_its_convention($monthyeardateref);
+      if ($monthrefdate == null) {
+        $monthrefdate = $this->cobranca
+          ->return_monthrefdate_or_if_null_its_convention($monthrefdate);
       } // ends inner if
     } // ends outer if
 
@@ -166,10 +166,10 @@ class BillingItemGenerator {
 
     if ($ref_type == BillingItem::K_REF_TYPE_IS_PARCEL) {
       // Nullify this one two if ref_type is D
-      $monthyeardateref = null;
+      $monthrefdate = null;
     } else {
       // Zero time fields to guarantee date-equility will work
-      $monthyeardateref->setTime(0,0,0);
+      $monthrefdate->setTime(0,0,0);
     }
 
     // Query for Billing Item existence
@@ -182,7 +182,7 @@ class BillingItemGenerator {
         $billingitem = $this->cobranca->billingitems()
           ->where('cobrancatipo_id',  $cobrancatipo->id)
           ->where('charged_value',    $value)
-          ->where('monthyeardateref', $monthyeardateref)
+          ->where('monthrefdate', $monthrefdate)
           ->where('ref_type',         $ref_type)
           ->where('freq_used_ref',   $freq_used_ref)
           ->first();
@@ -212,7 +212,7 @@ class BillingItemGenerator {
     $billingitem->charged_value    = $value;
     $billingitem->ref_type         = $ref_type;
     $billingitem->freq_used_ref   = $freq_used_ref;
-    $billingitem->monthyeardateref = $monthyeardateref;
+    $billingitem->monthrefdate = $monthrefdate;
     $billingitem->n_cota_ref       = $n_cota_ref;
     $billingitem->total_cotas_ref  = $total_cotas_ref;
     $this->cobranca->billingitems()->save($billingitem);
@@ -229,13 +229,13 @@ class BillingItemGenerator {
       $value,
       $ref_type = null,
       $freq_used_ref = null,
-      $monthyeardateref = null,
+      $monthrefdate = null,
       $n_cota_ref = null,
       $total_cotas_ref = null
     ) {
     // Fetch crédito's $cobrancatipo :: K_4CHAR_CRED
     $cobrancatipo = CobrancaTipo
-      ::get_cobrancatipo_with_its_4char_repr(CobrancaTipo::K_4CHAR_CRED);
+      ::fetch_by_char4id(CobrancaTipo::K_4CHAR_CRED);
     return $this->createIfNeededBillingItemFor(
       $cobranca,
       $cobrancatipo,
@@ -254,19 +254,19 @@ class BillingItemGenerator {
       $value,
       $ref_type = null,
       $freq_used_ref = null,
-      $monthyeardateref=null,
+      $monthrefdate=null,
       $n_cota_ref = null,
       $total_cotas_ref = null
       ) {
     // Fetch mora's $cobrancatipo :: K_4CHAR_MORA
     $cobrancatipo = CobrancaTipo
-      ::get_cobrancatipo_with_its_4char_repr(CobrancaTipo::K_4CHAR_MORA);
+      ::fetch_by_char4id(CobrancaTipo::K_4CHAR_MORA);
     return $this->createIfNeededBillingItemFor(
       $cobrancatipo,
       $value,
       $ref_type,
       $freq_used_ref,
-      $monthyeardateref,
+      $monthrefdate,
       $n_cota_ref,
       $total_cotas_ref
     );
@@ -285,7 +285,7 @@ class BillingItemGenerator {
         to become a positive one plus its CobrancaTipo (4-char MORA)
     */
       $valor_negativo_mora_positivo_credito,
-      $monthyeardateref=null
+      $monthrefdate=null
     ) {
     // First method's parameter cannot be null. Raise exception if it is
     if ($valor_negativo_mora_positivo_credito==null) {
@@ -295,7 +295,7 @@ class BillingItemGenerator {
     $freq_used_ref  = BillingItem::K_FREQ_USED_IS_MONTHLY;
     $n_cota_ref      = null;
     $total_cotas_ref = null;
-    // $monthyeardateref = $this->cobranca->return_monthyeardateref_or_if_null_its_convention($monthyeardateref);
+    // $monthrefdate = $this->cobranca->return_monthrefdate_or_if_null_its_convention($monthrefdate);
     if ($valor_negativo_mora_positivo_credito == 0) {
       return null;
     }
@@ -306,7 +306,7 @@ class BillingItemGenerator {
         $value,
         $ref_type,
         $freq_used_ref,
-        $monthyeardateref,
+        $monthrefdate,
         $n_cota_ref,
         $total_cotas_ref
       );
@@ -318,7 +318,7 @@ class BillingItemGenerator {
       $value,
       $ref_type,
       $freq_used_ref,
-      $monthyeardateref,
+      $monthrefdate,
       $n_cota_ref,
       $total_cotas_ref
     );

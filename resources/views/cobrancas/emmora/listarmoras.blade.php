@@ -20,13 +20,13 @@
 
   @foreach ($moradebitos as $moradebito)
     <?php
-      $monthyeardateref_str = 'n/a';
-      if ($moradebito->monthyeardateref !=null) {
-        $monthyeardateref_str = $moradebito->monthyeardateref->format('M/Y');
+      $monthrefdate_str = 'n/a';
+      if ($moradebito->monthrefdate !=null) {
+        $monthrefdate_str = $moradebito->monthrefdate->format('M/Y');
       }
     ?>
     <br>
-    <h3>Mora Ref.: {{ $monthyeardateref_str }} </h3>
+    <h3>Mora Ref.: {{ $monthrefdate_str }} </h3>
     <h4>Valor original: {{ $moradebito->ini_debt_value }} </h4>
     <h5>Ainda em aberto: {{ $moradebito->is_open }}</h5>
     <h4>Valor corrigido: {{ $moradebito->update_debt_value() }} </h4>

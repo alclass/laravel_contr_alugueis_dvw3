@@ -20,23 +20,23 @@ class DateFunctionsTest extends TestCase {
 
   public function testcalc_fraction_of_n_days_in_specified_month() {
     $n_days_considered = 15;
-    $monthyeardateref  = new Carbon('2017-04-01'); // April has 30 days
+    $monthrefdate  = new Carbon('2017-04-01'); // April has 30 days
     $expected_answer   = 15/30;
     $n_days_as_month_fraction = DateFunctions
       ::calc_fraction_of_n_days_in_specified_month(
         $n_days_considered,
-        $monthyeardateref
+        $monthrefdate
       );
 
     $this->assertEquals($n_days_as_month_fraction, $expected_answer);
 
     $n_days_considered = 7;
-    $monthyeardateref  = new Carbon('2017-05-01'); // May has 31 days
+    $monthrefdate  = new Carbon('2017-05-01'); // May has 31 days
     $expected_answer   = 7/31;
     $n_days_as_month_fraction = DateFunctions
       ::calc_fraction_of_n_days_in_specified_month(
         $n_days_considered,
-        $monthyeardateref
+        $monthrefdate
       );
     $this->assertEquals($n_days_as_month_fraction, $expected_answer);
 
@@ -305,127 +305,127 @@ class DateFunctionsTest extends TestCase {
 
   }  // ends testfind_next_anniversary_date_with_triple_start_end_n_from()
 
-  public function testfind_conventional_cutdate_from_monthyeardateref() {
+  public function testfind_conventional_cutdate_from_monthrefdate() {
 
     // Inner test 1
-    $monthyeardateref = new Carbon('2017-05-01');
-    // $monthyeardateref->setTime(0,0,0);
+    $monthrefdate = new Carbon('2017-05-01');
+    // $monthrefdate->setTime(0,0,0);
     $cut_day_in_month = 11;
-    $expected_conventional_cutdate_from_monthyeardateref = new Carbon('2017-06-11');
-    $returned_conventional_cutdate_from_monthyeardateref = DateFunctions
-      ::find_conventional_cutdate_from_monthyeardateref(
-        $monthyeardateref,
+    $expected_conventional_cutdate_from_monthrefdate = new Carbon('2017-06-11');
+    $returned_conventional_cutdate_from_monthrefdate = DateFunctions
+      ::find_conventional_cutdate_from_monthrefdate(
+        $monthrefdate,
         $cut_day_in_month
       );
     $this->assertEquals(
-      $returned_conventional_cutdate_from_monthyeardateref,
-      $expected_conventional_cutdate_from_monthyeardateref
+      $returned_conventional_cutdate_from_monthrefdate,
+      $expected_conventional_cutdate_from_monthrefdate
     );
 
     // Inner test 2
-    $monthyeardateref = new Carbon('2016-02-29');
-    // $monthyeardateref->setTime(0,0,0);
+    $monthrefdate = new Carbon('2016-02-29');
+    // $monthrefdate->setTime(0,0,0);
     $cut_day_in_month = 9;
-    $expected_conventional_cutdate_from_monthyeardateref = new Carbon('2016-03-09');
-    $returned_conventional_cutdate_from_monthyeardateref = DateFunctions
-      ::find_conventional_cutdate_from_monthyeardateref(
-        $monthyeardateref,
+    $expected_conventional_cutdate_from_monthrefdate = new Carbon('2016-03-09');
+    $returned_conventional_cutdate_from_monthrefdate = DateFunctions
+      ::find_conventional_cutdate_from_monthrefdate(
+        $monthrefdate,
         $cut_day_in_month
       );
     $this->assertEquals(
-      $returned_conventional_cutdate_from_monthyeardateref,
-      $expected_conventional_cutdate_from_monthyeardateref
+      $returned_conventional_cutdate_from_monthrefdate,
+      $expected_conventional_cutdate_from_monthrefdate
     );
 
     // Inner test 3
-    $monthyeardateref = new Carbon('2016-02-29');
-    // $monthyeardateref->setTime(0,0,0);
+    $monthrefdate = new Carbon('2016-02-29');
+    // $monthrefdate->setTime(0,0,0);
     $cut_day_in_month = null;
-    $expected_conventional_cutdate_from_monthyeardateref = null;
-    $returned_conventional_cutdate_from_monthyeardateref = DateFunctions
-      ::find_conventional_cutdate_from_monthyeardateref(
-        $monthyeardateref,
+    $expected_conventional_cutdate_from_monthrefdate = null;
+    $returned_conventional_cutdate_from_monthrefdate = DateFunctions
+      ::find_conventional_cutdate_from_monthrefdate(
+        $monthrefdate,
         $cut_day_in_month
       );
     $this->assertEquals(
-      $returned_conventional_cutdate_from_monthyeardateref,
-      $expected_conventional_cutdate_from_monthyeardateref
+      $returned_conventional_cutdate_from_monthrefdate,
+      $expected_conventional_cutdate_from_monthrefdate
     );
 
     // Inner test 4
-    $monthyeardateref = null;
-    // $monthyeardateref->setTime(0,0,0);
+    $monthrefdate = null;
+    // $monthrefdate->setTime(0,0,0);
     $cut_day_in_month = 3;
-    // Simulate the default $monthyeardateref when it's received as null
-    $todays_monthyeardateref = Carbon::today();
-    $todays_monthyeardateref->day(1);
-    $todays_monthyeardateref->setTime(0,0,0);
-    $cutdate = $todays_monthyeardateref->copy()->addMonths(1);
+    // Simulate the default $monthrefdate when it's received as null
+    $todays_monthrefdate = Carbon::today();
+    $todays_monthrefdate->day(1);
+    $todays_monthrefdate->setTime(0,0,0);
+    $cutdate = $todays_monthrefdate->copy()->addMonths(1);
     $cutdate->day($cut_day_in_month);
-    $expected_conventional_cutdate_from_monthyeardateref = $cutdate;
-    $returned_conventional_cutdate_from_monthyeardateref = DateFunctions
-      ::find_conventional_cutdate_from_monthyeardateref(
-        $monthyeardateref,
+    $expected_conventional_cutdate_from_monthrefdate = $cutdate;
+    $returned_conventional_cutdate_from_monthrefdate = DateFunctions
+      ::find_conventional_cutdate_from_monthrefdate(
+        $monthrefdate,
         $cut_day_in_month
       );
     $this->assertEquals(
-      $returned_conventional_cutdate_from_monthyeardateref,
-      $expected_conventional_cutdate_from_monthyeardateref
+      $returned_conventional_cutdate_from_monthrefdate,
+      $expected_conventional_cutdate_from_monthrefdate
     );
 
-  }  // ends testfind_conventional_cutdate_from_monthyeardateref()
+  }  // ends testfind_conventional_cutdate_from_monthrefdate()
 
 
-  public function testfind_conventional_monthyeardateref_with_date_n_cutday() {
+  public function testfind_conventional_monthrefdate_with_date_n_cutday() {
 
     // Inner test 1
     $date = new Carbon('2017-05-05');
-    // $monthyeardateref->setTime(0,0,0);
+    // $monthrefdate->setTime(0,0,0);
     $cut_day_in_month = 11;
-    $expected_conventional_monthyeardateref_with_date_n_cutday = new Carbon('2017-04-01');
-    $expected_conventional_monthyeardateref_with_date_n_cutday->setTime(0,0,0);
-    $returned_conventional_monthyeardateref_with_date_n_cutday = DateFunctions
-      ::find_conventional_monthyeardateref_with_date_n_cutday(
+    $expected_conventional_monthrefdate_with_date_n_cutday = new Carbon('2017-04-01');
+    $expected_conventional_monthrefdate_with_date_n_cutday->setTime(0,0,0);
+    $returned_conventional_monthrefdate_with_date_n_cutday = DateFunctions
+      ::find_conventional_monthrefdate_with_date_n_cutday(
         $date,
         $cut_day_in_month
       );
     $this->assertEquals(
-      $returned_conventional_monthyeardateref_with_date_n_cutday,
-      $expected_conventional_monthyeardateref_with_date_n_cutday
+      $returned_conventional_monthrefdate_with_date_n_cutday,
+      $expected_conventional_monthrefdate_with_date_n_cutday
     );
 
     // Inner test 2
     $date = new Carbon('2017-05-15');
-    // $monthyeardateref->setTime(0,0,0);
+    // $monthrefdate->setTime(0,0,0);
     $cut_day_in_month = 11;
-    $expected_conventional_monthyeardateref_with_date_n_cutday = new Carbon('2017-05-01');
-    $expected_conventional_monthyeardateref_with_date_n_cutday->setTime(0,0,0);
-    $returned_conventional_monthyeardateref_with_date_n_cutday = DateFunctions
-      ::find_conventional_monthyeardateref_with_date_n_cutday(
+    $expected_conventional_monthrefdate_with_date_n_cutday = new Carbon('2017-05-01');
+    $expected_conventional_monthrefdate_with_date_n_cutday->setTime(0,0,0);
+    $returned_conventional_monthrefdate_with_date_n_cutday = DateFunctions
+      ::find_conventional_monthrefdate_with_date_n_cutday(
         $date,
         $cut_day_in_month
       );
     $this->assertEquals(
-      $returned_conventional_monthyeardateref_with_date_n_cutday,
-      $expected_conventional_monthyeardateref_with_date_n_cutday
+      $returned_conventional_monthrefdate_with_date_n_cutday,
+      $expected_conventional_monthrefdate_with_date_n_cutday
     );
 
     // Inner test 3
     $date = new Carbon('2017-05-15');
-    // $monthyeardateref->setTime(0,0,0);
+    // $monthrefdate->setTime(0,0,0);
     $cut_day_in_month = null;
-    $expected_conventional_monthyeardateref_with_date_n_cutday = null;
-    $returned_conventional_monthyeardateref_with_date_n_cutday = DateFunctions
-      ::find_conventional_monthyeardateref_with_date_n_cutday(
+    $expected_conventional_monthrefdate_with_date_n_cutday = null;
+    $returned_conventional_monthrefdate_with_date_n_cutday = DateFunctions
+      ::find_conventional_monthrefdate_with_date_n_cutday(
         $date,
         $cut_day_in_month
       );
     $this->assertEquals(
-      $returned_conventional_monthyeardateref_with_date_n_cutday,
-      $expected_conventional_monthyeardateref_with_date_n_cutday
+      $returned_conventional_monthrefdate_with_date_n_cutday,
+      $expected_conventional_monthrefdate_with_date_n_cutday
     );
 
-  }  // ends testfind_conventional_cutdate_from_monthyeardateref()
+  }  // ends testfind_conventional_cutdate_from_monthrefdate()
 
   public function testget_ini_end_months_list() {
 
@@ -449,7 +449,7 @@ class DateFunctionsTest extends TestCase {
   }  // ends testget_ini_end_months_list()
 
 
-  public function testget_ini_end_monthyeardaterefs_list() {
+  public function testget_ini_end_monthrefdates_list() {
 
     // Inner test 1
     $d1 = new Carbon('2017-01-01');
@@ -459,7 +459,7 @@ class DateFunctionsTest extends TestCase {
     $d5 = new Carbon('2017-05-01');
     $expected_ini_fim_months_list = [$d1,$d2,$d3,$d4,$d5];
     $returned_ini_fim_months_list = DateFunctions
-      ::get_ini_end_monthyeardaterefs_list(
+      ::get_ini_end_monthrefdates_list(
         $d1,
         $d5
       );
@@ -473,7 +473,7 @@ class DateFunctionsTest extends TestCase {
     $d2 = $d1->copy();
     $expected_ini_fim_months_list = [$d1];
     $returned_ini_fim_months_list = DateFunctions
-      ::get_ini_end_monthyeardaterefs_list(
+      ::get_ini_end_monthrefdates_list(
         $d1,
         $d2
       );
@@ -485,11 +485,11 @@ class DateFunctionsTest extends TestCase {
     // Inner test 3
     $d1 = null;
     $d2 = null;
-    $conventional_monthyeardateref = DateFunctions
-      ::find_conventional_monthyeardateref_with_date_n_dueday();
-    $expected_ini_fim_months_list = [$conventional_monthyeardateref];
+    $conventional_monthrefdate = DateFunctions
+      ::find_conventional_monthrefdate_with_date_n_dueday();
+    $expected_ini_fim_months_list = [$conventional_monthrefdate];
     $returned_ini_fim_months_list = DateFunctions
-      ::get_ini_end_monthyeardaterefs_list(
+      ::get_ini_end_monthrefdates_list(
         $d1,
         $d2
       );
@@ -498,7 +498,7 @@ class DateFunctionsTest extends TestCase {
       $expected_ini_fim_months_list
     );
 
-  }  // ends testget_ini_end_monthyeardaterefs_list()
+  }  // ends testget_ini_end_monthrefdates_list()
 
   public function testget_month_n_monthdays_fraction_tuple_list() {
 

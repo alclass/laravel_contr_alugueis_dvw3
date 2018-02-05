@@ -152,12 +152,13 @@ class Cobranca extends Model {
     if ($billing_item != null) {
       $this->billingitems[] = $billing_item;
     }
-    $iptuanoimovel = $this->contract->imovel->get_iptuanoimovel_with_refmonth_or_default($this->monthrefdate);
-    if ($iptuanoimovel->is_refmonth_billable($this->monthrefdate)) {
+    $iptuanoimovel = $this->contract->imovel
+      ->get_iptuanoimovel_with_refmonth_or_default($this->monthrefdate);
 
+    if ($iptuanoimovel->is_refmonth_billable($this->monthrefdate)) {
       $value = $iptuanoimovel->get_months_repass_value($this->monthrefdate);
       $numberpart = $iptuanoimovel->get_numberpart_with_refmonth($this->monthrefdate);
-      $totalparts = $iptuanoimovel->$totalparts; // do not use: total_de_parcelas for totalparts may embody either of two values
+      $totalparts = $iptuanoimovel->totalparts; // do not use: total_de_parcelas for totalparts may embody either of two values
       $billing_item = BillingItemGenerator::create_n_return_iptu_billing_item(
         $value,
         $this->monthrefdate,

@@ -34,7 +34,7 @@
     <h1>Conciliação</h1>
     <h6>{{ $today->toFormattedDateString() }}</h6>
     <h5>Contrato: <a href="{{ route('contract', $contract->id) }}">{{ $street_address }} </a></h5>
-    <h5>Pagto Ref.: <b>{{ $cobranca->monthyeardateref->format('F/Y') }}</b>
+    <h5>Pagto Ref.: <b>{{ $cobranca->monthrefdate->format('F/Y') }}</b>
     até {{ $cobranca->duedate->toFormattedDateString() }}</h5>
     <br>
     @if (empty($cobranca->billingitems()->get()))
@@ -54,7 +54,7 @@
       @foreach ($cobranca->billingitems()->get() as $billingitem)
         <tr>
           <td data-th="item">  {{ $billingitem->brief_description }} </td>
-          <td data-th="ref">   {{ $billingitem->format_monthyeardateref_as_m_slash_y() }} </td>
+          <td data-th="ref">   {{ $billingitem->format_monthrefdate_as_m_slash_y() }} </td>
           <td data-th="valor"> {{ $billingitem->charged_value }} </td>
           <td data-th="repasse"> * </td>
         </tr>
@@ -62,7 +62,7 @@
       </table>
       <h3>Total: {{ $cobranca->total }}</h3>
       @if ($cobranca->is_iptu_ano_quitado())
-        <h5>(*) IPTU {{ $cobranca->monthyeardateref->year }} quitado</h5>
+        <h5>(*) IPTU {{ $cobranca->monthrefdate->year }} quitado</h5>
       @endif
       @if ($cobranca->contract != null and $cobranca->contract->repassar_condominio == false)
         <h5>(*) Condomínio sob pagamento direto, sem repasse acima.</h5>

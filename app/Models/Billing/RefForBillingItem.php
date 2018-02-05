@@ -34,10 +34,10 @@ class RefForBillingItem {
     return $ref_obj;
   }
 
-  public static function make_ref_obj_with_date($monthyeardateref, $is_yearly=false) {
+  public static function make_ref_obj_with_date($monthrefdate, $is_yearly=false) {
     $ref_obj = new Ref;
     $ref_obj->ref_type = Ref::K_REFTYPE_DATE;
-    $ref_obj->date_ref = $monthyeardateref;
+    $ref_obj->date_ref = $monthrefdate;
     return self::fill_in_ref_freq_used($ref_obj, $is_yearly);
   }
 
