@@ -282,7 +282,6 @@ CREATE TABLE `iptutabelas` (
   `optado_por_cota_unica` tinyint(1) NOT NULL DEFAULT '0',
   `ano` smallint(5) UNSIGNED NOT NULL,
   `ano_quitado` tinyint(1) NOT NULL DEFAULT '0',
-  `n_cota_quitada_ate_entao` tinyint(3) UNSIGNED DEFAULT NULL,
   `valor_parcela_unica` decimal(8,2) NOT NULL,
   `valor_parcela_10x` decimal(7,2) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,

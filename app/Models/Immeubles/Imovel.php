@@ -2,14 +2,30 @@
 namespace App\Models\Immeubles;
 
 // use App\Models\Immeubles\Contract;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Collection;
+use App\Models\Tributos\IPTUTabela;
 
 // 2 Collection classes
 // use Illuminate\Database\Eloquent\Collection;
 // [more generic] use Illuminate\Support\Collection;
 
 class Imovel extends Model {
+
+
+	public static function fetch_by_apelido($apelido) {
+		/*
+		if ($p_apelido == null) {
+			return null;
+		}
+		// apelido has mixed case letters, but db will search it case-insensitively
+		// $apelido = strtolower($p_apelido);
+		*/
+		return self
+			::where('apelido', $apelido)
+			->first();
+	}
 
 	/**
 	 * The database table used by the model.
@@ -72,67 +88,134 @@ class Imovel extends Model {
 		return null;
 	}
 
-	public function get_condominio_in_refmonth($monthrefdate) {
-		return 350.00;
+	private function get_private_default_condominiotarifa($monthrefdate) {
+		/*
+			This method is private because it cannot receive a null $monthrefdate
+				ie, callers already adjust $monthrefdate for it being received here
+
+			This method tries TWO options to get a default.
+			1) The 1st option (try) is to retrieve an average from db.
+				This option will fail if either db is empty or offline.
+			2) The 2nd option (try) is to retrieve a pre-set cost group value
+				based on the estate's cost group.
+				For the time being, these group costs have been hardcoded in
+				  class CondominioTarifa.
+					However, they may be put in either a db-table or an env file.
+		*/
+
+		// default 1st try: pick up the cond's average value in db
+		$monthrefdate_12monthsago = $monthrefdate->copy()->addMonths(-12);
+		$avg_tarifa = CondominioTarifa
+			::where('imovel_id', $this->id)
+			->where('monthrefdate', '>', $monthrefdate_12monthsago)
+			->avg('tarifa_valor');
+		if ($avg_tarifa != null && $avg_tarifa > 0) {
+			return $avg_tarifa;
+		}
+
+		// default 2nd try: call the default method (which uses the group cost attribute)
+		$tarifa_valor = CondominioTarifa::get_default_condominiotarifa_for_group_n($this->condominio_grupo_custo);
+		return $tarifa_valor;
+	} // ends private get_private_default_condominiotarifa()
+
+	public function get_default_condominiotarifa($p_monthrefdate=null) {
+		/*
+			This method checks $p_monthrefdate and wraps a non-null $monthrefdate
+				from it to the private method get_private_default_condominiotarifa()
+
+			This mentioned downstream private method does TWO tries to get a default.
+			To get acquainted to/of these TWO tries, see docstring there.
+		*/
+		if ($p_monthrefdate == null) {
+			$monthrefdate = Carbon::today()->day(1);
+		}
+		else {
+			$monthrefdate = $p_monthrefdate;
+		}
+		return $this->get_private_default_condominiotarifa($monthrefdate);
+	} // ends get_default_condominiotarifa()
+
+	public function get_condominiotarifa_in_refmonth($p_monthrefdate) {
+		if ($p_monthrefdate == null) {
+			$monthrefdate = Carbon::today()->day(1);
+		}
+		else {
+			$monthrefdate = $p_monthrefdate;
+		}
+		if ($p_monthrefdate->day != 1) {
+			$monthrefdate = $p_monthrefdate->copy()->day(1);
+		}
+
+		// 1st try: fetch the value inserted for monthref
+		$cond_tarifa = CondominioTarifa
+			::where('imovel_id', $this->id)
+			->where('monthrefdate', $monthrefdate)
+			->first();
+		if ($cond_tarifa != null) {
+			return $cond_tarifa->tarifa_valor;
+		}
+
+		// 2nd try: the value inserted for previous_monthref
+		$previous_monthref = $monthrefdate->copy()->addMonths(-1);
+		$cond_tarifa = CondominioTarifa
+			::where('imovel_id', $this->id)
+			->where('monthrefdate', $previous_monthref)
+			->first();
+		if ($cond_tarifa != null) {
+			return $cond_tarifa->tarifa_valor;
+		}
+
+		// both 1st and 2nd tries resulted null, try the default method
+		// the default method also has 2 tries (1st: it'll try an avg; 2nd: by cost group)
+		return $this->get_private_default_condominiotarifa($monthrefdate);
 	}
 
-	public function get_iptu_outarray_via_dbdirectapproch() {
-		$iptu_outarray = [];
-		$iptu_record = IPTUTable
+	private function make_default_iptuanoimovel_instance($monthrefdate) {
+		return IPTUTabela::make_default_instance_with_imovel_n_ano($this, $monthrefdate->year);
+	} // ends make_default_iptuanoimovel_instance()
+
+	public function get_iptuanoimovel_with_refmonth_or_null($monthrefdate) {
+		return IPTUTabela
 			::where('imovel_id', $this->id)
 			->where('ano', $monthrefdate->year)
 			->first();
-		$totalparts = $iptu_record->total_de_parcelas;			
-		$n_months_without_iptu = 12 - $totalparts;
-		$iptu_outarray['ano_quitado'] = $iptu_record->ano_quitado;
-		$iptu_outarray['optado_por_cota_unica'] = $iptu_record->optado_por_cota_unica;
-		$iptu_outarray['partnumber'] = 1;
-		if ($iptu_record->optado_por_cota_unica) {
-			$iptu_outarray['totalparts'] = 1;
-		}
-		else {
-			$iptu_outarray['totalparts'] = $totalparts;
-		}
-		if ($monthrefdate->month < $n_months_without_iptu + 1) {
-			// time window without IPTU
-			$iptu_outarray['valor_repasse'] = 0;
-			return $iptu_outarray;
-		}
-		if ($iptu_record->ano_quitado) { 
-			$iptu_outarray['valor_repasse'] = 0;
-			return $iptu_outarray;
-		}
-		if ($iptu_record->optado_por_cota_unica) { 
-			if ($monthrefdate->month != 3) {
-				$iptu_outarray['valor_repasse'] = 0;
-				return $iptu_outarray;
-			}
-			$iptu_outarray['valor_repasse'] = $iptu_record->valor_parcela_unica;
-			return $iptu_outarray;
-		}
-		$partnumber = $monthrefdate->month - 2;
-		$iptu_outarray['partnumber'] = $partnumber;
-		if ($partnumber > $totalparts) {
-				$iptu_outarray['valor_repasse'] = 0;
-		}
-		$iptu_outarray['valor_repasse'] = $iptu_record->valor_por_parcela;
-		return $iptu_outarray;
-	} // ends get_iptu_outarray_via_dbdirectapproch()
+	} // ends get_iptuanoimovel_with_refmonth_or_return_null()
 
-	public function get_iptu_value_in_refmonth($monthrefdate) {
-		$iptu_record = $this->iptus->where('ano', $monthrefdate->year)->first();
-		if ($iptu_record == null) {
-			return $this->get_iptu_value_via_dbdirectapproch();
+	private function get_iptuanoimovel_of_previous_year_of_refmonth($monthrefdate) {
+		$previous_year_monthrefdate = $monthrefdate->copy()->addYear(-1);
+		$iptu_ano_imovel = $this->get_iptuanoimovel_with_refmonth_or_null($previous_year_monthrefdate);
+		if ($iptu_ano_imovel == null) {
+			return null;
 		}
-		return 3000.00;
-	}
+		// make a new one without saving it to db
+		$res_iptu_ano_imovel = $iptu_ano_imovel->copytoanewyearinstance($monthrefdate->year);
+		return $res_iptu_ano_imovel;
+	} // ends get_iptuanoimovel_of_previous_year_of_refmonth()
 
-	public function get_iptu_numberpart_in_refmonth($monthrefdate) {
-		return $monthrefdate->month - 2;
-	}
-	public function get_iptu_totalparts_in_refmonth($monthrefdate) {
-		return 10;
-	}
+	public function get_iptuanoimovel_with_refmonth_or_default($monthrefdate) {
+		$iptu_ano_imovel = $this->get_iptuanoimovel_with_refmonth_or_null($monthrefdate);
+		if ($iptu_ano_imovel != null) {
+			return $iptu_ano_imovel;
+		}
+		// 2nd try: check if there's  a previous year record available
+		$iptu_ano_imovel = $this->get_iptuanoimovel_of_previous_year_of_refmonth($monthrefdate);
+		if ($iptu_ano_imovel != null) {
+			return $iptu_ano_imovel;
+		}
+		// 3rd try: make a default instance of $iptu_ano_imovel
+		return $this->make_default_iptuanoimovel_instance($monthrefdate);
+	} // ends get_iptuanoimovel_with_refmonth_or_default()
+
+	public function contracts() {
+		return $this->hasMany('App\Models\Immeubles\Contract');
+  }
+
+	public function iptus() {
+		return $this->hasMany('App\Models\Tributos\IPTUTabela');
+  }
+
+} // ends class Imovel extends Model
+
 
 /*
 
@@ -163,13 +246,3 @@ class Imovel extends Model {
 		return $inquilinos_atuais;
   } // ends get_inquilinos_atuais()
 */
-	public function contracts() {
-		return $this->hasMany('App\Models\Immeubles\Contract');
-  }
-
-	public function iptus() {
-		return $this->hasMany('App\Models\Tributos\IPTUTabela');
-  }
-
-
-} // ends class Imovel extends Model

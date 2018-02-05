@@ -21,7 +21,7 @@ class BillingItemGenerator {
     $billingitem->numberpart = $numberpart;
     $billingitem->totalparts = $totalparts;
     return $billingitem;
-  }  
+  }
 
   public static function create_n_return_typed_billing_item(
       $cobrancatipo_char4id,
@@ -74,8 +74,8 @@ class BillingItemGenerator {
   public static function create_n_return_iptu_billing_item(
     $value,
     $monthrefdate,
-    $numberpart = 1,
-    $totalparts = 1
+    $numberpart,
+    $totalparts
   ) {
     return self::create_n_return_typed_billing_item(
       CobrancaTipo::K_4CHAR_IPTU,
@@ -100,7 +100,7 @@ class BillingItemGenerator {
       $totalparts
     );
   }
-  
+
   public static function create_n_return_cred_billing_item(
     $value, // care should be taken by callee, ie, $value here should be < 0
     $monthrefdate,

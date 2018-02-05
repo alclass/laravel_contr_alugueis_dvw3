@@ -1,5 +1,6 @@
 <?php
 namespace App\Models\Immeubles;
+// use App\Models\Immeubles\CondominioTarifa;
 
 use App\Models\Utils\DateFunctions;
 use Illuminate\Database\Eloquent\Model;
@@ -7,6 +8,34 @@ use Illuminate\Database\Eloquent\Model;
 class CondominioTarifa extends Model {
   //
 
+  const K_DEFAULT_CONDOMINIO_GROUP_COSTS  = [
+    /* 
+      This will be mostly used when current data has not been updated to db
+      Notice that this array, if unordered, will be sorted in method,
+        so group numbers ascending have ascending costs
+      Eg. if array is [800, 600, 700], groups will map to [600, 700, 800]
+    */
+    1200,
+    400,
+    700,
+  ];
+
+  public static function get_default_condominiotarifa_for_group_n($cond_group_cost_number=-2) {
+
+    // PHP does a full copy of an array by attribution, not a reference as other languages do
+    // This 'deep' copy is necessary, because sort() cannot change a const by reference
+    $cost_array = self::K_DEFAULT_CONDOMINIO_GROUP_COSTS;
+    sort($cost_array);
+    $index = $cond_group_cost_number - 1;
+    if (array_key_exists($index, $cost_array)) {
+      return $cost_array[$index];
+    }
+    // print_r($cost_array);
+    $lowest_tarifa    = $cost_array[0]; // first element, array is sorted
+    $highest_tarifa   = $cost_array[count($cost_array)-1]; // last element, array is sorted
+    $inbetween_tarifa = ($highest_tarifa + $lowest_tarifa) / 2; // average of min, max
+    return $inbetween_tarifa;
+  } // ends get_default_condominiotarifa_for_group_n()
 
   public static function calcular_media_min_max_das_tarifas($condominio_tarifas) {
     if ($condominio_tarifas == null || $condominio_tarifas->count()==0) {
@@ -31,7 +60,7 @@ class CondominioTarifa extends Model {
     return $triple_stats;
   }
 
-  public static function calcular_media__min_max_das_ultimas_n_tarifas(
+  public static function calcular_media_min_max_das_ultimas_n_tarifas(
     $n_ultimas=null,
     $max_1_year=true
   ) {

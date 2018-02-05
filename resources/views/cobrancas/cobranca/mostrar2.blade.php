@@ -89,7 +89,7 @@
                   <td class="text-left">
                     <p>
                       Vencimento: <strong> {{ $cobranca->duedate->format('d/m/Y') }} </strong><br>
-                      <?php 
+                      <?php
                         $dias_faltando_str = 'n/a';
                         $dias_faltando = $cobranca->find_n_days_until_duedate_in_future();
                         if ($dias_faltando == 0) {

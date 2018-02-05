@@ -1,6 +1,6 @@
 <?php
 /**
- * Cobranca.php 
+ * Cobranca.php
  */
 namespace App\Models\Billing;
 
@@ -139,7 +139,10 @@ class Cobranca extends Model {
     if ($billing_item != null) {
       $this->billingitems[] = $billing_item;
     }
-    $value = $this->contract->imovel->get_condominio_in_refmonth($this->monthrefdate);
+    if ($this->imovel==null){
+      return;
+    }
+    $value = $this->imovel->get_condominiotarifa_in_refmonth($this->monthrefdate);
     $billing_item = BillingItemGenerator::create_n_return_cond_billing_item(
       $value,
       $this->monthrefdate,
@@ -149,20 +152,25 @@ class Cobranca extends Model {
     if ($billing_item != null) {
       $this->billingitems[] = $billing_item;
     }
-    $value      = $this->contract->imovel->get_iptu_value_in_refmonth($this->monthrefdate);
-    $numberpart = $this->contract->imovel->get_iptu_numberpart_in_refmonth($this->monthrefdate);
-    $totalparts = $this->contract->imovel->get_iptu_totalparts_in_refmonth($this->monthrefdate);
-    $billing_item = BillingItemGenerator::create_n_return_iptu_billing_item(
-      $value,
-      $this->monthrefdate,
-      $numberpart,
-      $totalparts
-    );
-    if ($billing_item != null) {
-      $this->billingitems[]=$billing_item;
-    }
+    $iptuanoimovel = $this->contract->imovel->get_iptuanoimovel_with_refmonth_or_default($this->monthrefdate);
+    if ($iptuanoimovel->is_refmonth_billable($this->monthrefdate)) {
 
-  }
+      $value = $iptuanoimovel->get_months_repass_value($this->monthrefdate);
+      $numberpart = $iptuanoimovel->get_numberpart_with_refmonth($this->monthrefdate);
+      $totalparts = $iptuanoimovel->$totalparts; // do not use: total_de_parcelas for totalparts may embody either of two values
+      $billing_item = BillingItemGenerator::create_n_return_iptu_billing_item(
+        $value,
+        $this->monthrefdate,
+        $numberpart,
+        $totalparts
+      );
+      if ($billing_item != null) {
+        $this->billingitems[]=$billing_item;
+      }
+
+    } // ends if $iptuanoimovel->is_refmonth_billable()
+
+  } // ends add_configured_billing_items()
 
   public function copy_without_billingitems() {
     /*
@@ -198,8 +206,9 @@ class Cobranca extends Model {
     if ($this->contract == null) {
       return null;
     }
+    $imovel = $this->contract->imovel;
     // null may be returned
-    return $this->contract->imovel;
+    return $imovel;
   }
 
   public function getUrlrouteparamsasarrayAttribute() {
@@ -295,17 +304,17 @@ class Cobranca extends Model {
   public function set_duedate_from_monthrefdate() {
     /*
       WEIRD behaviou has been found here, maybe it's a bug in Carbon-Laravel.
-      
+
       'duedate' below only gets the day value given,
         when model is not yet saved in db,
         if the day() method is chained with copy() and addMonths()
-      
+
       If, on the other hand, method day() is used after in a following line,
         the day is not changed. (This has been seen in both Tinker and on browser).
-      
+
       The expected value comes, as said above, if day() is chained and
         the whole instruction goes into one line of code (see below).
-      
+
     */
     $this->duedate = $this->monthrefdate->copy()->addMonths(1)->day(10);
     // TO-DO take out the 10 hardcoded when possible !!!

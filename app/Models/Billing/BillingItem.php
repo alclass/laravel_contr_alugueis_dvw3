@@ -38,13 +38,14 @@ class BillingItem extends Model {
   protected $attributes = ['reftype', 'freqtype', 'imovel'];
 
   public function generate_ref_repr_for_cota_column() {
-    $numberpart = 1; $totalparts = 1;
-    if (empty($this->numberpart)) {
-      $numberpart = $this->numberpart;
+    $cobrancatipo = $this->get_cobrancatipo();
+    if ($cobrancatipo != null) {
+      if ($cobrancatipo->reftype == CobrancaTipo::K_REFTYPE_D_DATE) {
+        return '';
+      }
     }
-    if (empty($this->totalparts)) {
-      $totalparts = $this->totalparts;
-    }
+    $numberpart = '' . $this->numberpart;
+    $totalparts = '' . $this->totalparts;
     $outstr = "$numberpart/$totalparts";
     return $outstr;
   }

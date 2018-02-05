@@ -2,7 +2,7 @@
 namespace App\Models\Immeubles;
 
 // To import class Contract elsewhere in the Laravel App
-// use App\Models\Immeubles\Contract
+// use App\Models\Immeubles\Contract;
 
 use App\Models\Billing\Cobranca;
 use App\Models\Utils\DateFunctions;
