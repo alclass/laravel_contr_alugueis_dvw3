@@ -107,6 +107,9 @@ class BillingItemGenerator {
     $numberpart = 1,
     $totalparts = 1
   ) {
+    if ($value > 0) {
+      $value = -$value; 
+    }
     return self::create_n_return_typed_billing_item(
       CobrancaTipo::K_4CHAR_CRED,
       $value,

@@ -45,7 +45,8 @@
               </tr>
           </thead>
           <tbody>
-            @foreach ($cobranca->billingitems as $billingitem)
+            @if(!empty($cobranca->billingitems))
+            @foreach($cobranca->billingitems as $billingitem)
               <tr>
                   <td class="col-md-9">
                     <?php
@@ -72,6 +73,7 @@
                   <td class="col-md-1 text-center">{{ $billingitem->value }}</td>
               </tr>
               @endforeach
+              @endif
               <tr>
                   <td>   </td>
                   <td>   </td>

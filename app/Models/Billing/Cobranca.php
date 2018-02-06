@@ -3,7 +3,6 @@
  * Cobranca.php
  */
 namespace App\Models\Billing;
-
 // To import class Cobranca elsewhere in the Laravel App
 // use App\Models\Billing\Cobranca;
 
@@ -11,6 +10,7 @@ use App\Models\Finance\BankAccount;
 use App\Models\Billing\BillingItem;
 use App\Models\Billing\CobrancaTipo;
 use App\Models\Immeubles\Contract;
+use App\Models\Tributos\FunesbomTaxa;
 use App\Models\Tributos\IPTUTabela;
 use App\Models\Utils\DateFunctions;
 use App\User;
@@ -65,7 +65,6 @@ class Cobranca extends Model {
   */
 
   protected $table     = 'cobrancas';
-  public $billingitems = null;
 
 	/**
 	 * The attributes that are mass assignable.
@@ -128,18 +127,73 @@ class Cobranca extends Model {
     return $total_value;
   }
 
-  public function add_configured_billing_items () {
-    $value = $this->contract->get_monthly_value();
-    $billing_item = BillingItemGenerator::create_n_return_alug_billing_item(
-      $value,
-      $this->monthrefdate,
-      $numberpart=1,
-      $totalparts=1
-    );
-    if ($billing_item != null) {
-      $this->billingitems[] = $billing_item;
+  public function fetch_previous_cobranca() {
+    $previous_monthrefdate = $this->monthrefdate->copy()->addMonths(-1);
+    $previous_cobranca = Cobranca
+      ::where('contract_id', $this->contract_id)
+      ->where('monthrefdate', $previous_monthrefdate)
+      ->where('monthseqnumber', 1) // carries are conventioned to bill seq 1
+      ->first();
+    if ($previous_cobranca == null) {
+      return null;
     }
+    if (!$previous_cobranca->closed) {
+      $previous_cobranca->closeit();
+    }
+    return $previous_cobranca;
+  }
+
+
+  public function carryup_debt_from_the_previous_monthref_if_any() {
+
+    $previous_cobranca = $this->fetch_previous_cobranca();
+    $balance = $previous_cobranca->get_balance();
+    if ($balance > 0) {
+      $debt_to_carry = $balance;
+    }
+    if ($debt_to_carry > 0) {
+      $billing_item = BillingItemGenerator::create_n_return_debt_billing_item(
+        $debt_to_carry,
+        $this->monthrefdate,
+        $numberpart = 1,
+        $totalparts = 1
+      );
+      if ($billing_item != null) {
+        //$this->billingitems[] = $billing_item;
+        $this->billingitems->push($billing_item);
+      }
+    } // ends if debt_to_carry
+
+  }
+
+  public function carryup_cred_from_the_previous_monthref_if_any() {
+
+    $previous_cobranca = $this->fetch_previous_cobranca();
+    $balance = $previous_cobranca->get_balance();
+    if ($balance < 0) {
+      $cred_to_carry = $balance;
+    }
+    if ($cred_to_carry > 0) {
+      $billing_item = BillingItemGenerator::create_n_return_cred_billing_item(
+        $cred_to_carry, // should be negative (though, if not, it's corrected inside)
+        $this->monthrefdate,
+        $numberpart = 1,
+        $totalparts = 1
+      );
+      if ($billing_item != null) {
+        // $this->billingitems[] = $billing_item;
+        $this->billingitems->push($billing_item);
+      }
+    } // ends if cred_to_carry
+  } // ends
+
+  public function add_condominiotarifa_if_apply() {
+
     if ($this->imovel==null){
+      return;
+    }
+
+    if (!$this->imovel->is_condominio_billable()) {
       return;
     }
     $value = $this->imovel->get_condominiotarifa_in_refmonth($this->monthrefdate);
@@ -150,27 +204,90 @@ class Cobranca extends Model {
       $totalparts = 1
     );
     if ($billing_item != null) {
-      $this->billingitems[] = $billing_item;
+      // $this->billingitems[] = $billing_item;
+      $this->billingitems->push($billing_item);
     }
+
+  } // ends add_condominiotarifa()
+
+  public function add_iptu_if_apply() {
+
+    if ($this->imovel==null){
+      return;
+    }
+
     $iptuanoimovel = $this->contract->imovel
       ->get_iptuanoimovel_with_refmonth_or_default($this->monthrefdate);
 
-    if ($iptuanoimovel->is_refmonth_billable($this->monthrefdate)) {
-      $value = $iptuanoimovel->get_months_repass_value($this->monthrefdate);
-      $numberpart = $iptuanoimovel->get_numberpart_with_refmonth($this->monthrefdate);
-      $totalparts = $iptuanoimovel->totalparts; // do not use: total_de_parcelas for totalparts may embody either of two values
-      $billing_item = BillingItemGenerator::create_n_return_iptu_billing_item(
+    if (!$iptuanoimovel->is_refmonth_billable($this->monthrefdate)) {
+      return;
+    }
+    $value = $iptuanoimovel->get_months_repass_value($this->monthrefdate);
+    $numberpart = $iptuanoimovel->get_numberpart_with_refmonth($this->monthrefdate);
+    $totalparts = $iptuanoimovel->totalparts; // do not use: total_de_parcelas for totalparts may embody either of two values
+    $billing_item = BillingItemGenerator::create_n_return_iptu_billing_item(
+      $value,
+      $this->monthrefdate,
+      $numberpart,
+      $totalparts
+    );
+    if ($billing_item != null) {
+      //$this->billingitems[]=$billing_item;
+      $this->billingitems->push($billing_item);
+    }
+
+  } // ends add_iptu()
+
+
+  public function add_rent_billingitem() {
+
+    $value = $this->contract->get_monthly_value();
+    $billing_item = BillingItemGenerator::create_n_return_alug_billing_item(
+      $value,
+      $this->monthrefdate,
+      $numberpart=1,
+      $totalparts=1
+    );
+    if ($billing_item != null) {
+      $this->billingitems->push($billing_item);
+    }
+
+  } // ends add_rent_billingitem()
+
+  public function add_configured_billing_items() {
+
+    $this->add_rent_billingitem();
+    $this->add_condominiotarifa_if_apply();
+    $this->add_iptu_if_apply();
+    $this->add_funesbom_if_apply();
+    $this->carryup_debt_from_the_previous_monthref_if_any();
+    $this->carryup_cred_from_the_previous_monthref_if_any();
+
+  } // ends add_configured_billing_items()
+
+  public function add_funesbom_if_apply() {
+    if ($this->imovel == null) {
+      return;
+    }
+    $funesbomtaxa = FunesbomTaxa::get_instance_by_imovel_apelido($this->imovel->apelido);
+    if ($funesbomtaxa == null) {
+      return;
+    }
+    if ($funesbomtaxa->is_refmonth_billable($this->monthrefdate)) {
+      $value = $funesbomtaxa->get_months_repass_value($this->monthrefdate);
+      $numberpart = $funesbomtaxa->get_numberpart_with_refmonth($this->monthrefdate);
+      $totalparts = $funesbomtaxa->totalparts; // do not use: total_de_parcelas for totalparts may embody either of two values
+      $billing_item = BillingItemGenerator::create_n_return_fune_billing_item(
         $value,
         $this->monthrefdate,
         $numberpart,
         $totalparts
       );
       if ($billing_item != null) {
-        $this->billingitems[]=$billing_item;
+        //$this->billingitems[]=$billing_item;
+        $this->billingitems->push($billing_item);
       }
-
-    } // ends if $iptuanoimovel->is_refmonth_billable()
-
+    }
   } // ends add_configured_billing_items()
 
   public function copy_without_billingitems() {
@@ -347,6 +464,18 @@ class Cobranca extends Model {
     // $outstr .= $this->billingitemsinjson;
     return $outstr;
   } // ends __toString()
+
+  public function get_balance() {
+    /*
+      This method should consider the end of month
+      (Another method may reopen month if a next bill )
+    */
+    $total_value = $this->get_total_value();
+    // process payment
+    // payments are inside a JSON field
+
+    return $total_value;
+  }
 
   public function get_users() {
     if ($this->contract != null) {

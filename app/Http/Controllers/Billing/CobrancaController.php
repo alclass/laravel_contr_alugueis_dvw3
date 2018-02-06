@@ -223,6 +223,7 @@ class CobrancaController extends Controller {
 		}
 		$bankaccount = $contract->bankaccount;
 		$today = Carbon::today();
+		// return var_dump($cobranca);
 		return view('cobrancas.cobranca.mostrar2', [
 			'cobranca'=>$cobranca,
 			'contract'=>$contract,

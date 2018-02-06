@@ -170,6 +170,10 @@ class Imovel extends Model {
 		return $this->get_private_default_condominiotarifa($monthrefdate);
 	}
 
+	public function is_condominio_billable() {
+		return !$this->renter_pays_cond;
+	}
+
 	private function make_default_iptuanoimovel_instance($monthrefdate) {
 		return IPTUTabela::make_default_instance_with_imovel_n_ano($this, $monthrefdate->year);
 	} // ends make_default_iptuanoimovel_instance()

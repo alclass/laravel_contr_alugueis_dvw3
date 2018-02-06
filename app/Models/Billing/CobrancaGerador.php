@@ -63,6 +63,13 @@ class CobrancaGerador {
 
     $cobranca->set_duedate_from_monthrefdate();
     $cobranca->add_configured_billing_items();
+    //$cobranca->carry_debt_n_credit_from_the_previous_monthref_if_any();
+
+    $today = Carbon::today();
+    if ($monthrefdate < $today && $monthrefdate->month != $today->month) {
+      $cobranca->save();
+    }
+
     return $cobranca;
   } // ends [static] create_or_retrieve_cobranca()
 
