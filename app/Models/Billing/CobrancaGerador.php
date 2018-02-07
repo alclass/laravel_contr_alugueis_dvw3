@@ -21,32 +21,15 @@ class CobrancaGerador {
         ::createOrRetrieveCobrancaWithTripleContractIdRefSeq()
   */
 
-  public static function retrieve_cobranca_with_keys(
-    $contract_id,
-    $monthrefdate,
-    $monthseqnumber=1
+
+
+  public static function fetch_or_create_cobranca_with_contractid_monthref_n_seq(
+      $contract_id,
+      $monthrefdate,
+      $monthseqnumber=1
     ) {
 
-    return Cobranca
-      ::where('contract_id', $contract_id)
-      ->where('monthrefdate', $monthrefdate)
-      ->where('monthseqnumber', $monthseqnumber)
-      ->first();
-  }
-
-  public static function create_or_retrieve_cobranca_with_keys(
-        $contract_id,
-        $monthrefdate,
-        $monthseqnumber=1
-    ) {
-    if ($monthrefdate == null) {
-      return null;
-    }
-    if (!Contract::where('id', $contract_id)->exists()) {
-      return null;
-    }
-
-    $cobranca = self::retrieve_cobranca_with_keys(
+    $cobranca = Cobranca::fetch_cobranca_with_contractid_monthref_n_seq(
       $contract_id,
       $monthrefdate,
       $monthseqnumber
@@ -56,14 +39,66 @@ class CobrancaGerador {
       return $cobranca;
     }
 
+    return create_n_return_cobranca_with_contractid_monthref_n_seq(
+      $contract_id,
+      $monthrefdate,
+      $monthseqnumber
+    );
+  }
+
+  public static function create_n_return_cobranca_with_contractid_monthref_n_seq(
+      $contract_id,
+      $monthrefdate,
+      $monthseqnumber=1
+    ) {
+
+    if (!Contract::where('id', $contract_id)->exists()) {
+      return null;
+    }
+
+    if ($monthrefdate == null) {
+      // if it's null, no risk to mutate reference outsidedly
+      $monthrefdate = Carbon::today()->day(10)->addMonths(-1);
+    }
+
+    $allowed_to_create_billing = false;
+    /*
+      Cobranca can only be created if a previous one
+       (same seq, previous month) exists and is closed
+       or if no previous one exists for the contract
+    */
+
+    $n_of_cobrancas = Cobranca
+      ::where('contract_id', $contract_id)
+      ->count();
+
+    if ($n_of_cobrancas == 0) {
+      $allowed_to_create_billing = true;
+    }
+    else {
+      $previousmonthrefdate = $monthrefdate->copy()->addMonths(-1);
+      $previous_bill = Cobranca::fetch_cobranca_with_contractid_monthref_n_seq(
+        $contract_id,
+        $previousmonthrefdate,
+        $monthseqnumber
+      );
+      if ($previous_bill != null && $previous_bill->closed) {
+        $allowed_to_create_billing = true;
+      }
+    }
+
+    if (!$allowed_to_create_billing) {
+      // can't create a new bill
+      return null;
+    }
+
     $cobranca = new Cobranca();
+    $cobranca->contract_id    = $contract_id;
     $cobranca->monthrefdate   = $monthrefdate;
     $cobranca->monthseqnumber = $monthseqnumber;
-    $cobranca->contract_id    = $contract_id;
 
     $cobranca->set_duedate_from_monthrefdate();
-    $cobranca->add_configured_billing_items();
-    //$cobranca->carry_debt_n_credit_from_the_previous_monthref_if_any();
+    $cobranca->add_autoincludeable_billing_items();
 
     $today = Carbon::today();
     if ($monthrefdate < $today && $monthrefdate->month != $today->month) {
@@ -73,65 +108,6 @@ class CobrancaGerador {
     return $cobranca;
   } // ends [static] create_or_retrieve_cobranca()
 
-
-  public static function createOrRetrieveCobrancaWithTripleContractRefSeq(
-      $contract,
-      $monthrefdate   = null,
-      $n_seq_from_dateref = 1
-    ) {
-    // [1] Treat $contract_id
-    if ($contract == null) {
-      $error = 'Error: Contract is null when instanting a CobrancaGerador object.  Cannot create Cobranca, raise/throw exception.';
-      throw new Exception($error);
-    }
-    // [2] Treat $monthrefdate
-    if ($monthrefdate == null) {
-      // The convention is:
-      // if day is within [1,duedate] monthref is the previous one
-      // if day is duedate+1 and above monthref is the current one
-      $monthrefdate = DateFunctions
-        ::find_conventional_monthrefdate_with_date_n_dueday(
-          null, // $p_monthrefdate
-          $contract->pay_day_when_monthly
-        );
-    }
-    $cobranca = Cobranca
-      ::where('contract_id',        $contract->id)
-      ->where('monthrefdate',   $monthrefdate)
-      ->where('n_seq_from_dateref', $n_seq_from_dateref)
-      ->first();
-    if ($cobranca == null) {
-      // ie, cobranca wasn't found
-      // create a new Cobranca for it does not exist yet
-      $cobranca = self::createAndReturnNewCobrancaWithTripleContractRefSeq(
-        $contract,
-        $monthrefdate,
-        $n_seq_from_dateref
-      );
-    }
-    // From here $cobranca is not null and is of intended class-type
-    $gerador = new CobrancaGerador($cobranca);
-    $gerador->gerar_itens_contratuais();
-    // $cobranca->save(); // now 'id' will be available for the billing items (they'll need it)
-    return $cobranca;
-  } // ends [static] createOrRetrieveCobrancaWithTripleContractRefSeq()
-
-  private static function createAndReturnNewCobrancaWithTripleContractRefSeq(
-      $contract,
-      $monthrefdate,
-      $n_seq_from_dateref=1
-    ) {
-    $cobranca = new Cobranca();
-    $cobranca->contract_id        = $contract->id;
-    $cobranca->bankaccount_id     = $contract->bankaccount_id;
-    $cobranca->monthrefdate   = $monthrefdate;
-    $cobranca->duedate            = $monthrefdate->copy()->addMonths(1);
-    $cobranca->duedate->day($contract->pay_day_when_monthly);
-    $cobranca->n_seq_from_dateref = $n_seq_from_dateref;
-    $cobranca->save();
-    $cobranca->contract()->associate($contract);
-    return $cobranca;
-  } // ends [static] createAndReturnNewCobrancaWithTripleContractRefSeq()
 
   /*--------------------------------------------
     Beginning of AREA for the class' attributes:

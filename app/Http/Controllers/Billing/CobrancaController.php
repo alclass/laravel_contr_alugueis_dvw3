@@ -186,13 +186,13 @@ class CobrancaController extends Controller {
 	}
 
 
-	public function show_by_year_month_imovel4char($year, $month, $p_imovel4char, $monthseqnumber=1) {
+	public function show_by_year_month_imovelapelido($year, $month, $p_imovelapelido, $monthseqnumber=1) {
 		/*
 		The 4th param (monthseqnumber) is optional
 		*/
-		$imovel4char = strtoupper($p_imovel4char);
+		$imovelapelido = strtoupper($p_imovelapelido);
 		$imovel = Imovel
-			::where('apelido', $imovel4char)
+			::where('apelido', $imovelapelido)
 			->first();
 		if ($imovel == null) {
 			return 'Imóvel não encontrado.';
@@ -213,6 +213,8 @@ class CobrancaController extends Controller {
 			->where('contract_id',    $contract->id)
 			->first();
 		if ($cobranca == null) {
+			return redirect()->route('cobrancasporimovelroute', [$imovel->apelido]);
+			/*
 			$cobranca = CobrancaGerador::create_or_retrieve_cobranca_with_keys(
 				$contract->id,
 				$monthrefdate,
@@ -220,6 +222,7 @@ class CobrancaController extends Controller {
 			);
 			//$page_msg = 'Cobrança não existe. Dados: Ref.: ' . $year . '/' . $month . '; imóvel ' . $imovel4char . '; contrato: ' . $contract->id . '; dt=' . $monthrefdate;
 			//return $page_msg;
+			*/
 		}
 		$bankaccount = $contract->bankaccount;
 		$today = Carbon::today();
@@ -234,7 +237,35 @@ class CobrancaController extends Controller {
 		]); // alt.:cobrancas.cobranca.mostrarcobranca
 
 
-	} // ends show_by_year_month_imovel4char()
+	} // ends show_by_year_month_imovelapelido()
+
+	public function listar_cobrancas_por_imovel($imovelapelido)	{
+		$imovel = Imovel::fetch_by_apelido($imovelapelido);
+		if ($imovel == null) {
+			return 'Imóvel não encontrado.';
+		}
+		$contract = Contract
+			::where('imovel_id', $imovel->id)
+			->where('is_active', true)
+			->first();
+		if ($contract == null) {
+			$page_msg = 'Imóvel '. $imovel->apelido . ' não tem contrato ativo.';
+			return $page_msg;
+		}
+
+		$cobrancas = Cobranca
+			::where('contract_id', $contract->id)
+			->orderBy('monthrefdate', 'desc')
+			->get();
+
+		$today = Carbon::today();
+		return view('cobrancas/listarcobrancas',	[
+			'cobrancas' => $cobrancas,
+			'today' => $today,
+			'category_msg'=>'Cobranças Histórico',
+		]);
+
+	} // ends listar_cobrancas_por_imovel()
 
 	/**
 	 * Display the specified resource.
@@ -282,7 +313,7 @@ class CobrancaController extends Controller {
 	 * @param  int  $contract_id, int $year, int $month
 	 * @return Response
 	 */
-	 public function edit_via_httpget($contract_id, $year, $month)	{
+	 public function edit_via_httpget($year, $month, $imovelapelido, $monthseqnumber)	{
 		 $cobranca = Cobranca
  			::fetch_cobranca_with_triple_contract_id_year_month($contract_id, $year, $month);
 

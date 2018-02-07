@@ -47,7 +47,7 @@
       <td data-th="prazopagto"> {{ $cobranca_formatstrduedate }} </td>
       <td data-th="valor">      {{ $valor_cobranca }} </td>
       {{-- route('cobranca.mostrar', --}}
-      <td data-th="is_pay_on_date"> <a href="{{ route('cobranca.mostrar', $cobranca->id) }}">
+      <td data-th="is_pay_on_date"> <a href="{{ route('cobrancaviayearmonthimovapelroute', $cobranca->urlrouteparamsasarray) }}">
          visualizar </a></td>
     </tr>
   @endforeach

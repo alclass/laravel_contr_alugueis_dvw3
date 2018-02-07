@@ -15,17 +15,17 @@ class CreateCobrancasTable extends Migration {
 		Schema::create('cobrancas', function(Blueprint $table)
 		{
 			$table->increments('id');
-			$table->integer('previous_bill_id')->unsigned()->nullable();
-			// $table->increments('next_bill_id');
+			$table->integer('contract_id')->nullable();
 			$table->date('monthrefdate');
 			$table->tinyInteger('monthseqnumber')->default(1);
-			$table->integer('contract_id')->nullable();
-			$table->integer('bankaccount_id')->nullable();
 			$table->date('duedate')->nullable();
+			$table->integer('bankaccount_id')->nullable();
 			$table->decimal('total_amount_paid', 9, 2)->nullable();
 			$table->decimal('amount_paid_ontime', 9, 2)->nullable();
-			$table->decimal('debt_to_next_bill', 9, 2)->nullable();
+			$table->decimal('saldo_cobr_fechada', 9, 2)->nullable();
 			$table->date('lastprocessingdate')->nullable();
+			$table->text('billingitemsjson')->nullable();
+			$table->text('paymentsjson')->nullable();
 			$table->text('amountincreasetrailsjson')->nullable();
 			$table->text('obsinfo')->nullable();
 			$table->boolean('closed')->default(0);

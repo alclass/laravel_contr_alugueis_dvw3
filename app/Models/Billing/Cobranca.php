@@ -30,15 +30,67 @@ class Cobranca extends Model {
       Beginning of Static Methods
     =================================
   */
-  public static function fetch_cobranca_with_year_month_contractid_n_seq(
+  public static function fetch_cobranca_with_imovelapelido_year_month_n_seq(
+      $imovelapelido,
       $year,
       $month,
-      $contract_id,
       $monthseqnumber=1
     )	{
-    if ($contract_id == null) {
+
+    $imovel = Imovel
+      ::where('apelido', $imovelapelido)
+      ->first();
+    if ($imovel == null) {
       return null;
     }
+    return self::fetch_cobranca_with_imovel_year_month_n_seq(
+      $imovel,
+      $year,
+      $month,
+      $monthseqnumber
+    );
+  }
+
+  public static function fetch_cobranca_with_imovel_year_month_n_seq(
+      $imovel,
+      $year,
+      $month,
+      $monthseqnumber=1
+    )	{
+    $contract = $imovel->get_active_contract();
+    if ($contract == null) {
+      return null;
+    }
+    return self::fetch_cobranca_with_contract_year_month_n_seq(
+      $contract,
+      $year,
+      $month,
+      $monthseqnumber
+    );
+  }
+
+
+  public static function fetch_cobranca_with_contract_year_month_n_seq(
+      $contract,
+      $year,
+      $month,
+      $monthseqnumber=1
+    )	{
+    return self::fetch_cobranca_with_contractid_year_month_n_seq(
+      $contract->id,
+      $year,
+      $month,
+      $monthseqnumber
+    );
+  }
+
+  public static function fetch_cobranca_with_contractid_year_month_n_seq(
+      $contract_id,
+      $year,
+      $month,
+      $monthseqnumber=1
+    ) {
+
     $today = Carbon::today();
     if ($year == null) {
       $year = $today->year;
@@ -48,15 +100,29 @@ class Cobranca extends Model {
     }
 		$monthrefdate = new Carbon("$year-$month-01");
 
-    $cobranca = CobrancaGerador::retrieve_cobranca_with_keys(
-        $contract_id,
-        $monthrefdate,
-        $monthseqnumber
+    // Notice $cobranca may be null from here
+    return Cobranca::fetch_cobranca_with_contractid_monthref_n_seq(
+      $contract_id,
+      $monthrefdate,
+      $monthseqnumber
     );
+ 	} // ends [static] ()
 
-		// Notice $cobranca may be null from here
-		return $cobranca;
- 	} // ends [static] fetch_cobranca_with_year_month_contractid_n_seq()
+
+  public static function fetch_cobranca_with_contractid_monthref_n_seq(
+      $contract_id,
+      $monthrefdate,
+      $monthseqnumber=1
+    ) {
+
+    // Notice $cobranca may be null from here
+    return Cobranca
+      ::where('contract_id', $contract_id)
+      ->where('monthrefdate', $monthrefdate)
+      ->where('monthseqnumber', $monthseqnumber)
+      ->first();
+  } // ends [static] retrieve_cobranca_with_contractid_monthref_n_seq()
+
 
   /*
     =================================
@@ -79,11 +145,27 @@ class Cobranca extends Model {
    //'updated_at',
  ];
 
+/*
+  monthrefdate
+  monthseqnumber
+  duedate
+  contract_id
+  total_amount_paid
+  bankaccount_id
+  amount_paid_ontime
+  saldo_cobr_fechada
+  lastprocessingdate
+  billingitemsjson
+  paymentsjson
+  amountincreasetrailsjson
+  obsinfo
+  closed
+*/
+
 	protected $fillable = [
-    'previous_bill_id',
 		'monthrefdate', 'monthseqnumber', 'duedate',
     'contract_id',  'bankaccount_id',
-    'value', 'numberpart', 'totalparts',
+
     'closed', 'obsinfo',
 	];
 
@@ -144,48 +226,31 @@ class Cobranca extends Model {
   }
 
 
-  public function carryup_debt_from_the_previous_monthref_if_any() {
+  public function add_autoincludeable_billing_items() {
 
-    $previous_cobranca = $this->fetch_previous_cobranca();
-    $balance = $previous_cobranca->get_balance();
-    if ($balance > 0) {
-      $debt_to_carry = $balance;
+    $this->add_rent_billingitem();
+    $this->add_condominiotarifa_if_apply();
+    $this->add_iptu_if_apply();
+    $this->add_funesbom_if_apply();
+    $this->carryup_debt_from_the_previous_monthref_if_any();
+    $this->carryup_cred_from_the_previous_monthref_if_any();
+
+  } // ends add_configured_billing_items()
+
+  public function add_rent_billingitem() {
+
+    $value = $this->contract->get_monthly_value();
+    $billing_item = BillingItemGenerator::create_n_return_alug_billing_item(
+      $value,
+      $this->monthrefdate,
+      $numberpart=1,
+      $totalparts=1
+    );
+    if ($billing_item != null) {
+      $this->billingitems->push($billing_item);
     }
-    if ($debt_to_carry > 0) {
-      $billing_item = BillingItemGenerator::create_n_return_debt_billing_item(
-        $debt_to_carry,
-        $this->monthrefdate,
-        $numberpart = 1,
-        $totalparts = 1
-      );
-      if ($billing_item != null) {
-        //$this->billingitems[] = $billing_item;
-        $this->billingitems->push($billing_item);
-      }
-    } // ends if debt_to_carry
 
-  }
-
-  public function carryup_cred_from_the_previous_monthref_if_any() {
-
-    $previous_cobranca = $this->fetch_previous_cobranca();
-    $balance = $previous_cobranca->get_balance();
-    if ($balance < 0) {
-      $cred_to_carry = $balance;
-    }
-    if ($cred_to_carry > 0) {
-      $billing_item = BillingItemGenerator::create_n_return_cred_billing_item(
-        $cred_to_carry, // should be negative (though, if not, it's corrected inside)
-        $this->monthrefdate,
-        $numberpart = 1,
-        $totalparts = 1
-      );
-      if ($billing_item != null) {
-        // $this->billingitems[] = $billing_item;
-        $this->billingitems->push($billing_item);
-      }
-    } // ends if cred_to_carry
-  } // ends
+  } // ends add_rent_billingitem()
 
   public function add_condominiotarifa_if_apply() {
 
@@ -238,33 +303,6 @@ class Cobranca extends Model {
 
   } // ends add_iptu()
 
-
-  public function add_rent_billingitem() {
-
-    $value = $this->contract->get_monthly_value();
-    $billing_item = BillingItemGenerator::create_n_return_alug_billing_item(
-      $value,
-      $this->monthrefdate,
-      $numberpart=1,
-      $totalparts=1
-    );
-    if ($billing_item != null) {
-      $this->billingitems->push($billing_item);
-    }
-
-  } // ends add_rent_billingitem()
-
-  public function add_configured_billing_items() {
-
-    $this->add_rent_billingitem();
-    $this->add_condominiotarifa_if_apply();
-    $this->add_iptu_if_apply();
-    $this->add_funesbom_if_apply();
-    $this->carryup_debt_from_the_previous_monthref_if_any();
-    $this->carryup_cred_from_the_previous_monthref_if_any();
-
-  } // ends add_configured_billing_items()
-
   public function add_funesbom_if_apply() {
     if ($this->imovel == null) {
       return;
@@ -288,7 +326,46 @@ class Cobranca extends Model {
         $this->billingitems->push($billing_item);
       }
     }
-  } // ends add_configured_billing_items()
+  } // ends ()
+
+  public function carryup_debt_or_cred_from_the_previous_monthref_if_any() {
+    $previous_cobranca = $this->fetch_previous_cobranca();
+    $balance = $previous_cobranca->get_balance();
+    if ($balance > 0) {
+      $this->carryup_debt_from_the_previous_monthref_if_any($balance);
+    }
+    elseif ($balance < 0) {
+      $this->carryup_cred_from_the_previous_monthref_if_any($balance);
+    }
+  } // ends ()
+
+  private function carryup_debt_from_the_previous_monthref_if_any($debt_to_carry) {
+
+    $billing_item = BillingItemGenerator::create_n_return_debt_billing_item(
+      $debt_to_carry,
+      $this->monthrefdate,
+      $numberpart = 1,
+      $totalparts = 1
+    );
+    if ($billing_item != null) {
+      //$this->billingitems[] = $billing_item;
+      $this->billingitems->push($billing_item);
+    }
+  } //
+
+  private function carryup_cred_from_the_previous_monthref_if_any($cred_to_carry) {
+
+    $billing_item = BillingItemGenerator::create_n_return_cred_billing_item(
+      $cred_to_carry, // should be negative (though, if not, it's corrected inside)
+      $this->monthrefdate,
+      $numberpart = 1,
+      $totalparts = 1
+    );
+    if ($billing_item != null) {
+      // $this->billingitems[] = $billing_item;
+      $this->billingitems->push($billing_item);
+    }
+  } // ends
 
   public function copy_without_billingitems() {
     /*

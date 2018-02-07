@@ -71,6 +71,12 @@ Route::prefix('/sa')->group( function() {
       'as'   => 'cobrancas.conciliadas',
       'uses' => 'Billing\CobrancaController@conciliadas'
     ]);
+    Route::get('/historico/{imovelapelido}', [
+      'as'   => 'cobrancasporimovelroute',
+      'uses' => 'Billing\CobrancaController@listar_cobrancas_por_imovel'
+    ]);
+
+
   }); // ends Route::prefix('/billings') //===>>> sa/billings
 
   // ----------------------
@@ -80,13 +86,13 @@ Route::prefix('/sa')->group( function() {
 
     //===>>> sa/billing/show/{cobranca_id}
     Route::get('show/{cobranca_id}', [
-      'as'   => 'cobranca.mostrar',
+      'as'   => 'cobrancaviaidroute',
       'uses' => 'Billing\CobrancaController@show'
     ]);
 
-    Route::get('ref/{year}/{month}/{imovel4char}/{monthseqnumber?}', [
-      'as'   => 'cobranca.mostrar',
-      'uses' => 'Billing\CobrancaController@show_by_year_month_imovel4char'
+    Route::get('ref/{year}/{month}/{imovelapelido}/{monthseqnumber?}', [
+      'as'   => 'cobrancaviayearmonthimovapelroute',
+      'uses' => 'Billing\CobrancaController@show_by_year_month_imovelapelido'
     ]);
 
     //===>>> sa/billing/showviaref/{contract_id}/{year}/{month}
@@ -96,13 +102,13 @@ Route::prefix('/sa')->group( function() {
     ]);
 
     //===>>> sa/billing/edit/{contract_id}/{year}/{month} GET
-    Route::get('edit/{contract_id}/{year}/{month}', [
-      'as'=>'cobranca.mensal.editar',
+    Route::get('edit/{year}/{month}/{imovelapelido}/{$monthseqnumber?}', [
+      'as'=>'cobrancaeditarhttpgetroute',
       'uses'=>'Billing\CobrancaController@edit_via_httpget'
     ]);
     //===>>> sa/billing/edit POST
     Route::post('/edit', [
-      'as'=>'cobranca.mensal.editar',
+      'as'=>'cobrancaeditarhttppostroute',
       'uses'=>'Billing\CobrancaController@edit_via_httppost'
     ]);
 
