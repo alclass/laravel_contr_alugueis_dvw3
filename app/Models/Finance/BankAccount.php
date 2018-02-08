@@ -18,6 +18,12 @@ class BankAccount extends Model {
     return self::get_defaultindb_or_firstindb_or_env_or_hardcoded();
   }
 
+  public static function get_by_char4id($char4id) {
+    return self
+      ::where('bank4char', $char4id)
+      ->first();
+  }
+
   public static function get_defaultindb_or_firstindb_or_env_or_hardcoded() {
     /*
       1st case => default comes from const or configfile and is in database

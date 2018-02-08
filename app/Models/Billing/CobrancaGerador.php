@@ -8,6 +8,7 @@ use App\Models\Billing\CobrancaTipo;
 use App\Models\Finance\BankAccount;
 use App\Models\Immeubles\Contract;
 use App\Models\Immeubles\CondominioTarifa;
+use App\Models\Immeubles\Imovel;
 use App\Models\Tributos\IPTUTabela;
 use App\Models\Utils\DateFunctions;
 use App\User;
@@ -22,6 +23,40 @@ class CobrancaGerador {
   */
 
 
+  public static function create_cobranca_with_imovelapelido_year_month_n_seq(
+      $imovelapelido,
+      $year,
+      $month,
+      $monthseqnumber=1
+    ) {
+    $imovel   = Imovel::fetch_by_apelido($imovelapelido);
+	  if ($imovel == null) {
+		  return null;
+	  }
+	  $contract = $imovel->get_active_contract();
+	  if ($contract == null) {
+		  return null;
+	  }
+	  $today = Carbon::today();
+    if ($today->day < 11) {
+      $today->addMonths(-1);
+    }
+    $monthrefdate = null;
+	  $year = intval($year);
+	  if ($year < $today->year-6 || $year > $today->year+6) {
+      $year = $today->year;
+	  }
+	  $month = intval($month);
+	  if ($month < 1 || $month > 12) {
+      $month = $today->month;
+	  }
+    $monthrefdate = new Carbon("$year-$month-01");
+    return self::create_n_return_cobranca_with_contractid_monthref_n_seq(
+      $contract->id,
+      $monthrefdate,
+      $monthseqnumber
+    );
+  } // ends create_cobranca_with_imovelapelido_year_month_n_seq()
 
   public static function fetch_or_create_cobranca_with_contractid_monthref_n_seq(
       $contract_id,
@@ -203,6 +238,81 @@ class CobrancaGerador {
       ->where('cobrancatipo_id', $cobrancatipo->id)->exists();
   } // verify_existence_of_billingitem_already_in_cobranca()
 
+  public static function make_billingitem_for_aluguel(
+      $charged_value,
+      $monthrefdate
+    ) {
+
+    // Okay: create new ALUG item
+    $billingitem  = new BillingItem;
+    // ->save() will be used below at method's end
+    // $billingitem->cobranca_id       = $this->cobranca->id;
+    $cobrancatipo = CobrancaTipo::fetch_by_char4id(CobrancaTipo::K_4CHAR_ALUG);
+    $billingitem->cobrancatipo_id   = $cobrancatipo->id;
+    $billingitem->brief_description = $cobrancatipo->brief_description;
+    $billingitem->charged_value     = $charged_value;
+    $billingitem->reftype           = CobrancaTipo::K_REFTYPE_D_DATE;
+    $billingitem->freqtype          = CobrancaTipo::K_FREQTYPE_M_MONTHLY;
+    $billingitem->monthrefdate      = $monthrefdate;
+
+    return $billingitem;
+  } // ()
+
+
+  public static function make_billingitem_for_condominio(
+      $charged_value,
+      $monthrefdate,
+      $brief_info = null
+    ) {
+
+    $cobrancatipo = CobrancaTipo::fetch_by_char4id(CobrancaTipo::K_4CHAR_COND);
+    $billingitem->charged_value = $charged_value;
+    $billingitem->reftype       = CobrancaTipo::K_REFTYPE_D_DATE;
+    $billingitem->freqtype      = CobrancaTipo::K_FREQTYPE_M_MONTHLY;
+    $billingitem->monthrefdate  = $monthrefdate;
+    if ($brief_info != null) {
+      $billingitem->obs = $brief_info;
+    }
+    return $billingitem;
+
+  } //ends make_billingitem_for_condominio()
+
+  public static function make_billingitem_for_iptu(
+      $iptutabela,
+      $monthrefdate
+    ) {
+
+    $billingitem  = new BillingItem();
+    // ->save() will be used below at method's end
+    // $billingitem->cobranca_id       = $this->cobranca->id;
+    $cobrancatipo = CobrancaTipo::fetch_by_char4id(CobrancaTipo::K_4CHAR_IPTU);
+    $billingitem->cobrancatipo_id   = $cobrancatipo->id;;
+    $billingitem->brief_description = $cobrancatipo->brief_description;
+
+    // 1st create case: cota-única anual foi escolhida a ser repassada em Fevereiro, ref. Janeiro
+    if ($iptutabela->optado_por_cota_unica == true && $monthrefdate->month == 1) {
+      $billingitem->charged_value = $iptutabela->valor_parcela_unica;
+      $billingitem->reftype       = CobrancaTipo::K_REFTYPE_B_BOTH_DATE_N_PARCEL;
+      $billingitem->freqtype      = CobrancaTipo::K_FREQTYPE_N_MONTHS_YEARLY;
+      $billingitem->numberpart    = 1;
+      //  1 itself hardcoded is logically okay, but for N cotas,
+      //  there'll be a static method in IPTUTabela to avoid hardcoding N (cotas) here
+      $billingitem->monthrefdate  = $monthrefdate;
+    } else {
+      // 2nd create case: escolhido o pagamento em 10 cotas (10 é const em IPTUTabela)
+      // if even the cota-única was chosen (because it was chosen but not paid...  Review this)
+      $billingitem->charged_value = $iptutabela->valor_por_parcela;
+      $billingitem->reftype       = CobrancaTipo::K_REFTYPE_B_BOTH_DATE_N_PARCEL;
+      $billingitem->freqtype      = CobrancaTipo::K_FREQTYPE_N_MONTHS_YEARLY;
+      $billingitem->numberpart    = $monthrefdate->month - 1;
+      $billingitem->totalparts    = IPTUTabela::get_IPTU_N_COTAS_ANO();
+      $billingitem->monthrefdate  = $monthrefdate;
+    }
+
+    return $billingitem;
+  }
+
+
   private function create_if_not_exist_billingitem_for_aluguel() {
 
     // Check existing before instantiating a new object
@@ -212,19 +322,10 @@ class CobrancaGerador {
     if ($does_biling_item_exist == true) {
       return false;
     }
-
-    // Okay: create new ALUG item
-    $billingitem  = new BillingItem;
-    // ->save() will be used below at method's end
-    // $billingitem->cobranca_id       = $this->cobranca->id;
-    $cobrancatipo = $this->cobrancatipo_objs_array[CobrancaTipo::K_4CHAR_ALUG];
-    $billingitem->cobrancatipo_id   = $cobrancatipo->id;
-    $billingitem->brief_description = $cobrancatipo->brief_description;
-    $billingitem->charged_value     = $this->cobranca->contract->current_rent_value;
-    $billingitem->ref_type          = BillingItem::K_REF_TYPE_IS_DATE;
-    $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_MONTHLY;
-    $billingitem->monthrefdate  = $this->cobranca->monthrefdate;
-
+    $billingitem = self::make_billingitem_for_aluguel(
+      $charged_value,
+      $monthrefdate
+    );
     $this->cobranca->billingitems()->save($billingitem);
     $billingitem->save();
     return true;
@@ -268,33 +369,10 @@ class CobrancaGerador {
       return false;
     }
 
-    $billingitem  = new BillingItem;
-    // ->save() will be used below at method's end
-    // $billingitem->cobranca_id       = $this->cobranca->id;
-    $cobrancatipo = $this->cobrancatipo_objs_array[CobrancaTipo::K_4CHAR_IPTU];
-    $billingitem->cobrancatipo_id   = $cobrancatipo->id;;
-    $billingitem->brief_description = $cobrancatipo->brief_description;
-
-    // 1st create case: cota-única anual foi escolhida a ser repassada em Fevereiro, ref. Janeiro
-    if ($iptutabela->optado_por_cota_unica == true && $this->monthrefdate->month == 1) {
-      $billingitem->charged_value     = $iptutabela->valor_parcela_unica;
-      $billingitem->ref_type          = BillingItem::K_REF_TYPE_IS_BOTH_DATE_N_PARCEL;
-      $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_YEARLY;
-      $billingitem->n_cota_ref        = 1;
-      $billingitem->total_cotas_ref   = 1; // no logical need for a const here,
-      //  1 itself hardcoded is logically okay, but for N cotas,
-      //  there'll be a static method in IPTUTabela to avoid hardcoding N (cotas) here
-      $billingitem->monthrefdate  = $this->cobranca->monthrefdate;
-    } else {
-      // 2nd create case: escolhido o pagamento em 10 cotas (10 é const em IPTUTabela)
-      // if even the cota-única was chosen (because it was chosen but not paid...  Review this)
-      $billingitem->charged_value     = $iptutabela->valor_parcela_10x;
-      $billingitem->ref_type          = BillingItem::K_REF_TYPE_IS_BOTH_DATE_N_PARCEL;
-      $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_MONTHLY;
-      $billingitem->n_cota_ref        = $this->cobranca->monthrefdate->month - 1;
-      $billingitem->total_cotas_ref   = IPTUTabela::get_IPTU_N_COTAS_ANO();
-      $billingitem->monthrefdate  = $this->cobranca->monthrefdate;
-    }
+    $billingitem = self::make_billingitem_for_iptu(
+      $charged_value,
+      $monthrefdate
+    );
 
     $this->cobranca->billingitems()->save($billingitem);
     $billingitem->save();
@@ -323,7 +401,8 @@ class CobrancaGerador {
       return false;
     }
 
-    $billingitem  = new BillingItem;
+
+
     // ->save() will be used below at method's end
     // $billingitem->cobranca_id       = $this->cobranca->id;
     $cobrancatipo = $this->cobrancatipo_objs_array[CobrancaTipo::K_4CHAR_COND];
@@ -338,13 +417,12 @@ class CobrancaGerador {
     $condominio_tarifa_valor = $valor_e_ou_brief_info['condominio_tarifa_valor'];
     $brief_info = $valor_e_ou_brief_info['brief_info'];
 
-    $billingitem->charged_value     = $condominio_tarifa_valor;
-    $billingitem->ref_type          = BillingItem::K_REF_TYPE_IS_DATE;
-    $billingitem->freq_used_ref     = BillingItem::K_FREQ_USED_IS_MONTHLY;
-    $billingitem->monthrefdate  = $this->cobranca->monthrefdate;
-    if ($brief_info != null) {
-      $billingitem->obs = $brief_info;
-    }
+    $billingitem = self::make_billingitem_for_condominio(
+      $condominio_tarifa_valor,
+      $monthrefdate,
+      $brief_info
+    );
+
     $this->cobranca->billingitems()->save($billingitem);
     $billingitem->save();
     return true;

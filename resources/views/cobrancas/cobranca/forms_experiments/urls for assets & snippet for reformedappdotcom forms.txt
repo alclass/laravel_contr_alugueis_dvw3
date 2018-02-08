@@ -1,0 +1,38 @@
+ 
+http://www.reformedapp.com/downloads/reformed.zip
+http://www.reformedapp.com/themes/reformed-form-ui-lightness.zip
+
+
+
+<div class="reformed-form">
+	<form method="post" name="cobrancaformname" id="cobrancaformname" action="reformed/formmail/formmail.php">
+		<dl>
+			<dt>
+				<label for="cobrancatipoid">cobrancatipotipolbl</label>
+			</dt>
+			<dd><input id="cobrancatipoid" name="cobrancatipo" value="ALUG" type="text" /></dd>
+		</dl>
+		<dl>
+			<dt>
+				<label for="cobrancatiporadioid">cobrancatiporadiolbl</label>
+			</dt>
+			<dd>
+				<ul>
+					<li><input id="cobrancatiporadioid" name="cobrancatiporadio" value="ALUG" checked="checked" type="radio" />
+						<label>Aluguel</label>
+					</li>
+					<li><input id="cobrancatiporadioid" name="cobrancatiporadio" value="COND" type="radio" />
+						<label>Condomínio</label>
+					</li>
+					<li><input id="cobrancatiporadioid" name="cobrancatiporadio" value="IPTU" type="radio" />
+						<label>IPTU</label>
+					</li>
+				</ul>
+						</dd>
+		</dl>
+		<div id="submit_buttons">
+			<button type="reset">Reset</button>
+			<button type="submit">Submit</button>
+		</div>
+		</form>
+</div>

@@ -88,6 +88,14 @@ class Imovel extends Model {
 		return null;
 	}
 
+	public function get_active_contract() {
+		/*
+			A synomym for get_current_rent_contract_if_any()
+		*/
+		return $this->get_current_rent_contract_if_any();
+
+	} // ends function get_active_contract()
+
 	private function get_private_default_condominiotarifa($monthrefdate) {
 		/*
 			This method is private because it cannot receive a null $monthrefdate

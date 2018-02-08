@@ -10,6 +10,7 @@ use App\Models\Finance\BankAccount;
 use App\Models\Billing\BillingItem;
 use App\Models\Billing\CobrancaTipo;
 use App\Models\Immeubles\Contract;
+use App\Models\Immeubles\Imovel;
 use App\Models\Tributos\FunesbomTaxa;
 use App\Models\Tributos\IPTUTabela;
 use App\Models\Utils\DateFunctions;
@@ -30,6 +31,16 @@ class Cobranca extends Model {
       Beginning of Static Methods
     =================================
   */
+
+  public static function create_cobranca_for_edit_with_imovelapelido_year_month_n_seq(
+    $imovelapelido,
+    $year,
+    $month,
+    $monthseqnumber=1
+  )	{
+    return CobrancaGerador::create();
+  }
+
   public static function fetch_cobranca_with_imovelapelido_year_month_n_seq(
       $imovelapelido,
       $year,
@@ -524,6 +535,25 @@ class Cobranca extends Model {
     }
     $n_days_until_duedate = $this->duedate->diffInDays($today);
     return $n_days_until_duedate;
+  }
+
+  public function gen_createable_billingitems() {
+    $billingitems = [];
+    $cobrancatipo = CobrancaTipo::fetch_by_char4id(CobrancaTipo::K_4CHAR_ALUG);
+    $billingitem = CobrancaGerador::make_billingitem_for_aluguel(
+        $cobrancatipo,
+        1000,
+        $this->monthrefdate
+    );
+    $billingitems[] = $billingitem;
+    $cobrancatipo = CobrancaTipo::fetch_by_char4id(CobrancaTipo::K_4CHAR_COND);
+    $billingitems = CobrancaGerador::make_billingitem_for_condominio(
+        $cobrancatipo,
+        1000,
+        $this->monthrefdate
+    );
+    $billingitems[] = $billingitem;
+    return $billingitems;
   }
 
   public function __toString() {

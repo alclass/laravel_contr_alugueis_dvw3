@@ -46,7 +46,7 @@
           </thead>
           <tbody>
             @if(!empty($cobranca->billingitems))
-            @foreach($cobranca->billingitems as $billingitem)
+            @foreach($cobranca->gen_createable_billingitems() as $billingitem)
               <tr>
                   <td class="col-md-9">
                     <?php
@@ -69,7 +69,31 @@
                   <td class="col-md-1" style="text-align: center">
                     {{ $billingitem->generate_ref_repr_for_cota_column() }}
                   </td>
-                  <td class="col-md-1 text-center">{{ $billingitem->monthrefdate->format('m-Y') }}</td>
+                  <td class="col-md-1 text-center">
+
+
+
+
+<form id="rendered-form">
+  <div class="rendered-form">
+    <div class="fb-date form-group field-date-1518106617049">
+      <label for="date-1518106617049" class="fb-date-label">dateField</label>
+      <input class="form-control" name="date-1518106617049" id="date-1518106617049" type="date">
+    </div>
+  </div>
+</form>
+
+
+
+
+
+
+
+
+
+
+
+                    {{ $billingitem->monthrefdate->format('m-Y') }}</td>
                   <td class="col-md-1 text-center">{{ $billingitem->value }}</td>
               </tr>
               @endforeach

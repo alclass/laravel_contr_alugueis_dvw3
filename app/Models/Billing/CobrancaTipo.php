@@ -17,7 +17,7 @@ class CobrancaTipo extends Model {
   const K_REFTYPE_P_PARCEL = 'P';
   const K_REFTYPE_B_BOTH_DATE_N_PARCEL = 'B';
 
-  const K_FREQTYPE_M_MONTHLY = 'D';
+  const K_FREQTYPE_M_MONTHLY = 'M';
   const K_FREQTYPE_Y_YEARLY  = 'Y';
   const K_FREQTYPE_N_MONTHS_YEARLY = 'N'; // means N monthly parcels in year
 

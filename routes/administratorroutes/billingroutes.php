@@ -101,13 +101,18 @@ Route::prefix('/sa')->group( function() {
       'uses' => 'Billing\CobrancaController@showviaref'
     ]);
 
+
     //===>>> sa/billing/edit/{contract_id}/{year}/{month} GET
-    Route::get('edit/{year}/{month}/{imovelapelido}/{$monthseqnumber?}', [
+    Route::get('edit/{year}/{month}/{imovelapelido}/{monthseqnumber?}', [
       'as'=>'cobrancaeditarhttpgetroute',
-      'uses'=>'Billing\CobrancaController@edit_via_httpget'
+      'uses'=>'Billing\CobrancaController@edit_via_httpget',
+      // 'uses'=> function($year, $month, $imovelapelido, $monthseqnumber) { return 'hi' . $year . '/' . $month . '/' . $imovelapelido . '/' . $monthseqnumber; }
     ]);
+
+    Route::get('xedit/{x}', ['uses' => function($x) { return 'hi'.$x; }]);
+
     //===>>> sa/billing/edit POST
-    Route::post('/edit', [
+    Route::post('edit/', [
       'as'=>'cobrancaeditarhttppostroute',
       'uses'=>'Billing\CobrancaController@edit_via_httppost'
     ]);
