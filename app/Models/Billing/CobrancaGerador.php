@@ -22,6 +22,149 @@ class CobrancaGerador {
         ::createOrRetrieveCobrancaWithTripleContractIdRefSeq()
   */
 
+  public static function make_billingitem_from_billingitempo_with_cobranca($billingitempo, $cobranca) {
+    return $billingitempo->complement_cobranca_n_generate_billingitem($cobranca);
+  }
+
+  public static function make_billingitempo(
+      $cobrancatipo4char,
+      $charged_value,
+      $monthrefdate,
+      $additionalinfo = '',
+      $numberpart = 1,
+      $totalparts = 1
+    ) {
+    return new BillingItemPO(
+      $cobrancatipo4char,
+      $charged_value,
+      $monthrefdate,
+      $numberpart
+    );
+  }
+
+  public static function make_billingitempo_for_aluguel(
+      $charged_value,
+      $monthrefdate
+      $additionalinfo = '',
+    ) {
+
+    // Okay: create new ALUG item
+    return self::make_billingitempo(
+      CobrancaTipo::K_4CHAR_ALUG,
+      $charged_value,
+      $monthrefdate,
+      $additionalinfo
+    );
+  } // make_billingitempo_for_aluguel()
+
+
+  public static function make_billingitempo_for_condominio(
+      $charged_value,
+      $monthrefdate
+      $additionalinfo = ''
+    ) {
+
+    // Okay: create new ALUG item
+    return self::make_billingitempo(
+      CobrancaTipo::K_4CHAR_COND,
+      $charged_value,
+      $monthrefdate,
+      $additionalinfo
+    );
+  } // make_billingitempo_for_condominio()
+
+  public static function make_billingitempo_for_iptu(
+      $charged_value,
+      $monthrefdate,
+      $additionalinfo = '',
+      $numberpart=1,
+      $totalparts=10
+    ) {
+    return self::make_billingitempo(
+      CobrancaTipo::K_4K_4CHAR_IPTU,
+      $charged_value,
+      $monthrefdate,
+      $additionalinfo,
+      $numberpart,
+      $totalparts
+    );
+  } // make_billingitempo_for_condominio()
+
+  public static function make_billingitem_for_condominio(
+      $charged_value,
+      $monthrefdate,
+      $additionalinfo = null
+    ) {
+
+    $billingitem = new BillingItem();
+    $cobrancatipo = CobrancaTipo::fetch_by_char4id(CobrancaTipo::K_4CHAR_COND);
+    $billingitem->cobrancatipo  = $cobrancatipo;
+    $billingitem->charged_value = $charged_value;
+    $billingitem->monthrefdate  = $monthrefdate;
+    if ($additionalinfo != null) {
+      $billingitem->additionalinfo = $additionalinfo;
+    }
+    return $billingitem;
+
+  } //ends make_billingitem_for_condominio()
+
+  public static function create_billingitem_for_iptu_with_iptutabela(
+      $iptutabela,
+      $monthrefdate,
+      $additionalinfo = null
+      $numberpart = 1,
+      $totalparts = 1
+    ) {
+    /*
+          DB-FIELD month_for_cotaunica is	mesref_de_inicio_repasse
+
+    */
+    // Check first when no bill must happen
+    if (
+      $iptutabela->optado_por_cota_unica == true &&
+      $monthrefdate->month != $iptutabela->mesref_de_inicio_repasse
+    ) {
+      return null;
+    }
+    if ($monthrefdate->month < $iptutabela->mesref_de_inicio_repasse) {
+      return null;
+    }
+
+
+    $billingitem  = new BillingItem();
+    $cobrancatipo = CobrancaTipo::fetch_by_char4id(CobrancaTipo::K_4CHAR_IPTU);
+    $billingitem->cobrancatipo = $cobrancatipo;
+    $billingitem->monthrefdate = $monthrefdate;
+    if ($additionalinfo != null) {
+      $billingitem->additionalinfo = $additionalinfo;
+    }
+
+    if (
+      $iptutabela->optado_por_cota_unica == true &&
+      $monthrefdate->month == $iptutabela->mesref_de_inicio_repasse
+    ) {
+      /*
+        1st create-case: cota-única anual
+          foi escolhida a ser repassada em Fevereiro, ref. Janeiro
+      */
+      $billingitem->charged_value = $iptutabela->valor_parcela_unica;
+      $billingitem->numberpart        = 1;
+      //$billingitem->total_de_parcelas = 1;
+    } else {
+      /* 2nd create-case: escolhido o pagamento em 10 cotas (10 é const em IPTUTabela)
+           if even the cota-única was chosen (because it was chosen but not paid...  Review this)
+      */
+      $billingitem->charged_value = $iptutabela->valor_por_parcela;
+      // $numberpart may or may not have been given in the params
+      $billingitem->numberpart = $numberpart;
+      if ($numberpart != null) {
+        $billingitem->numberpart = $monthrefdate->month - 1;
+      }
+      // do not set $totalparts, because it is a dynamic attribute, it's retrieved by context
+    }
+    return $billingitem;
+  }
+
 
   public static function create_cobranca_with_imovelapelido_year_month_n_seq(
       $imovelapelido,
@@ -237,81 +380,6 @@ class CobrancaGerador {
     return $this->cobranca->billingitems()
       ->where('cobrancatipo_id', $cobrancatipo->id)->exists();
   } // verify_existence_of_billingitem_already_in_cobranca()
-
-  public static function make_billingitem_for_aluguel(
-      $charged_value,
-      $monthrefdate
-    ) {
-
-    // Okay: create new ALUG item
-    $billingitem  = new BillingItem;
-    // ->save() will be used below at method's end
-    // $billingitem->cobranca_id       = $this->cobranca->id;
-    $cobrancatipo = CobrancaTipo::fetch_by_char4id(CobrancaTipo::K_4CHAR_ALUG);
-    $billingitem->cobrancatipo_id   = $cobrancatipo->id;
-    $billingitem->brief_description = $cobrancatipo->brief_description;
-    $billingitem->charged_value     = $charged_value;
-    $billingitem->reftype           = CobrancaTipo::K_REFTYPE_D_DATE;
-    $billingitem->freqtype          = CobrancaTipo::K_FREQTYPE_M_MONTHLY;
-    $billingitem->monthrefdate      = $monthrefdate;
-
-    return $billingitem;
-  } // ()
-
-
-  public static function make_billingitem_for_condominio(
-      $charged_value,
-      $monthrefdate,
-      $brief_info = null
-    ) {
-
-    $billingitem = new BillingItem();
-    $cobrancatipo = CobrancaTipo::fetch_by_char4id(CobrancaTipo::K_4CHAR_COND);
-    $billingitem->charged_value = $charged_value;
-    $billingitem->reftype       = CobrancaTipo::K_REFTYPE_D_DATE;
-    $billingitem->freqtype      = CobrancaTipo::K_FREQTYPE_M_MONTHLY;
-    $billingitem->monthrefdate  = $monthrefdate;
-    if ($brief_info != null) {
-      $billingitem->obs = $brief_info;
-    }
-    return $billingitem;
-
-  } //ends make_billingitem_for_condominio()
-
-  public static function make_billingitem_for_iptu(
-      $iptutabela,
-      $monthrefdate
-    ) {
-
-    $billingitem  = new BillingItem();
-    // ->save() will be used below at method's end
-    // $billingitem->cobranca_id       = $this->cobranca->id;
-    $cobrancatipo = CobrancaTipo::fetch_by_char4id(CobrancaTipo::K_4CHAR_IPTU);
-    $billingitem->cobrancatipo_id   = $cobrancatipo->id;
-    $billingitem->brief_description = $cobrancatipo->brief_description;
-
-    // 1st create case: cota-única anual foi escolhida a ser repassada em Fevereiro, ref. Janeiro
-    if ($iptutabela->optado_por_cota_unica == true && $monthrefdate->month == 1) {
-      $billingitem->charged_value = $iptutabela->valor_parcela_unica;
-      $billingitem->reftype       = CobrancaTipo::K_REFTYPE_B_BOTH_DATE_N_PARCEL;
-      $billingitem->freqtype      = CobrancaTipo::K_FREQTYPE_N_MONTHS_YEARLY;
-      $billingitem->numberpart    = 1;
-      //  1 itself hardcoded is logically okay, but for N cotas,
-      //  there'll be a static method in IPTUTabela to avoid hardcoding N (cotas) here
-      $billingitem->monthrefdate  = $monthrefdate;
-    } else {
-      // 2nd create case: escolhido o pagamento em 10 cotas (10 é const em IPTUTabela)
-      // if even the cota-única was chosen (because it was chosen but not paid...  Review this)
-      $billingitem->charged_value = $iptutabela->valor_por_parcela;
-      $billingitem->reftype       = CobrancaTipo::K_REFTYPE_B_BOTH_DATE_N_PARCEL;
-      $billingitem->freqtype      = CobrancaTipo::K_FREQTYPE_N_MONTHS_YEARLY;
-      $billingitem->numberpart    = $monthrefdate->month - 1;
-      $billingitem->totalparts    = IPTUTabela::get_IPTU_N_COTAS_ANO();
-      $billingitem->monthrefdate  = $monthrefdate;
-    }
-
-    return $billingitem;
-  }
 
 
   private function create_if_not_exist_billingitem_for_aluguel() {

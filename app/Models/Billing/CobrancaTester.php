@@ -48,6 +48,25 @@ class CobrancaTester {
     return $iptuanoimovel;
   }
 
+  public function create_billingitempos() {
+    $charged_value = 100;
+    $monthrefdate = new Carbon('2018-2-1');
+    $additionalinfo = 'Additional Info';
+
+    $numberpart=1;
+    $totalparts=10;
+    $billingitempo = CobrancaGerador::make_billingitempo_for_iptu(
+      $charged_value,
+      $monthrefdate,
+      $additionalinfo,
+      $numberpart,
+      $totalparts
+    );
+    print('$billingitempo = ');
+    print_r($billingitempo);
+    return $billingitempo;
+  }
+
   public function gerar() {
     $this->cobranca_gerador->gerar_cobranca_based_on_today();
   }
