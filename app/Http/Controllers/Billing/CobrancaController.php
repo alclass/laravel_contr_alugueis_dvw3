@@ -357,7 +357,7 @@ class CobrancaController extends Controller {
 			'monthrefdate' => $monthrefdate,
 			'today' => $today,
 		];
-		// return var_dump($aarray);
+		//return var_dump($aarray);
 		return view(
 			'cobrancas.cobranca.editarcobranca2', $aarray
 			//$array,

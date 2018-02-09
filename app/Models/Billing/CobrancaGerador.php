@@ -265,6 +265,7 @@ class CobrancaGerador {
       $brief_info = null
     ) {
 
+    $billingitem = new BillingItem();
     $cobrancatipo = CobrancaTipo::fetch_by_char4id(CobrancaTipo::K_4CHAR_COND);
     $billingitem->charged_value = $charged_value;
     $billingitem->reftype       = CobrancaTipo::K_REFTYPE_D_DATE;
@@ -286,7 +287,7 @@ class CobrancaGerador {
     // ->save() will be used below at method's end
     // $billingitem->cobranca_id       = $this->cobranca->id;
     $cobrancatipo = CobrancaTipo::fetch_by_char4id(CobrancaTipo::K_4CHAR_IPTU);
-    $billingitem->cobrancatipo_id   = $cobrancatipo->id;;
+    $billingitem->cobrancatipo_id   = $cobrancatipo->id;
     $billingitem->brief_description = $cobrancatipo->brief_description;
 
     // 1st create case: cota-única anual foi escolhida a ser repassada em Fevereiro, ref. Janeiro

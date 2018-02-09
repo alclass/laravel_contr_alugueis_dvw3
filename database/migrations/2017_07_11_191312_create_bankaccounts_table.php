@@ -10,18 +10,18 @@ class CreateBankaccountsTable extends Migration {
 	 *
 	 * @return void
 	 */
-	public function up()
-	{
-		Schema::create('bankaccounts', function(Blueprint $table)
-		{
+	public function up() {
+		Schema::create('bankaccounts', function(Blueprint $table) {
 			$table->increments('id');
-			$table->integer('banknumber')->smallint()->primary_key();
+			$table->smallInteger('banknumber')->unsigned();
+			$table->char('bank4char', 4);
 			$table->string('bankname', 30);
-			$table->integer('agency')->smallint();
+			$table->string('agency', 12);
+			$table->string('midaccount', 4);
 			$table->string('account', 20);
-			$table->string('customer', 40)->nullable();
+			$table->string('customer', 50)->nullable();
 			$table->string('cpf', 11)->nullable();
-			$table->timestamps();
+			$table->nullableTimestamps();
 		});
 	}
 

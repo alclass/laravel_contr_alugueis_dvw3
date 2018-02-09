@@ -69,6 +69,7 @@ class BankAccount extends Model {
       */
       $bankaccount_obj = new self();
       $bankaccount_obj->bankname = env(BANKNAME_DEFAULT, 'Itaú');
+      $bankaccount_obj->bank4char = 'ITAU';
       $bankaccount_obj->agency   = env(BANKAGENCY_DEFAULT, '8112');
       $bankaccount_obj->account  = env(BANKACCOUNT_DEFAULT, '07977-0');
       $bankaccount_obj->customer = env(BANKSCUSTOMER, 'LET Ferreira');
@@ -104,7 +105,7 @@ class BankAccount extends Model {
 	 */
 
 	protected $fillable = [
-		'banknumber', 'bank_4char',
+		'banknumber', 'bank4char',
     'bankname', 'agency', 'account', 'customer', 'cpf',
   ];
 
