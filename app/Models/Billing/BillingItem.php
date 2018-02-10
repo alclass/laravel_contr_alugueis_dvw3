@@ -104,19 +104,23 @@ class BillingItem extends Model {
   } // ends toString()
 
   public function getReftypeAttribute() {
-    $reftype = 'n/a';
-    if ($this->cobrancatipo != null) {
-      $reftype = $this->cobrancatipo->reftype;
+    if ($this->reftype != null) {
+      return $this->reftype;
     }
-    return $reftype;
+    if ($this->cobrancatipo != null) {
+      return $this->cobrancatipo->reftype;
+    }
+    return 'n/a';
   }
 
   public function getFreqtypeAttribute() {
-    $freqtype = 'n/a';
-    if ($this->cobrancatipo != null) {
-      $freqtype = $this->cobrancatipo->freqtype;
+    if ($this->freqtype != null) {
+      return $this->freqtype;
     }
-    return $freqtype;
+    if ($this->cobrancatipo != null) {
+      return $this->cobrancatipo->freqtype;
+    }
+    return 'n/a';
   }
 
   public function getImovelAttribute() {

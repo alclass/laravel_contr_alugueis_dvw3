@@ -1,6 +1,6 @@
 <?php
-
 namespace App\Models\Tributos;
+// use App\Models\Tributos\IPTUTabela;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -33,7 +33,7 @@ class IPTUTabela extends Model {
     return $iptu_ano_imovel;
   } // ends static make_instance_with_imovel_n_ano_or_null()
 
-  public static function make_instance_with_imovel_n_ano_or_return_null($imovel, $ano) {
+  public static function fetch_by_imovel_n_ano_or_return_null($imovel, $ano) {
     if ($imovel == null) {
       return null;
     }
@@ -45,14 +45,21 @@ class IPTUTabela extends Model {
       return $iptu_ano_imovel;
     }
     return null;
-  } // ends static make_instance_with_imovel_n_ano_or_return_null()
+  } // ends static fetch_by_imovel_n_ano_or_return_null()
+
+  public static function fetch_by_imovelapelido_n_ano_or_return_null($imovelapelido, $ano) {
+    $imovel = Imovel
+      ::where('apelido', $imovelapelido)
+      ->first();
+    return self::fetch_by_imovel_n_ano_or_return_null($imovel, $ano);
+  }
 
   public static function make_instance_with_imovel_n_ano_or_get_default($imovel, $ano) {
     // There is no default if $imovel is null (the default is if $ano does get back a db-record)
     if ($imovel == null) {
       return null;
     }
-    $iptu_ano_imovel = self::make_instance_with_imovel_n_ano_or_return_null($imovel, $ano);
+    $iptu_ano_imovel = self::fetch_by_imovel_n_ano_or_return_null($imovel, $ano);
     if ($iptu_ano_imovel != null) {
       return $iptu_ano_imovel;
     }
