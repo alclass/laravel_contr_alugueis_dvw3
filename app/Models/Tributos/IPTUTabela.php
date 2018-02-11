@@ -2,6 +2,8 @@
 namespace App\Models\Tributos;
 // use App\Models\Tributos\IPTUTabela;
 
+use App\Models\Immeubles\Imovel;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 class IPTUTabela extends Model {
@@ -54,7 +56,7 @@ class IPTUTabela extends Model {
     return self::fetch_by_imovel_n_ano_or_return_null($imovel, $ano);
   }
 
-  public static function make_instance_with_imovel_n_ano_or_get_default($imovel, $ano) {
+  public static function fetch_by_imovel_n_ano_or_get_default($imovel, $ano) {
     // There is no default if $imovel is null (the default is if $ano does get back a db-record)
     if ($imovel == null) {
       return null;
@@ -64,7 +66,7 @@ class IPTUTabela extends Model {
       return $iptu_ano_imovel;
     }
     return self::make_default_instance_with_imovel_n_ano($imovel, $ano);
-  } // ends static make_instance_with_imovel_n_ano_or_get_default()
+  } // ends static fetch_by_imovel_n_ano_or_get_default()
 
   protected $table = 'iptutabelas';
 

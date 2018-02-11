@@ -6,6 +6,8 @@ use App\Models\Billing\BillingItem;
 use App\Models\Billing\BillingItemPO;
 use App\Models\Billing\CobrancaTipo;
 use App\Models\Tributos\IPTUTabela;
+use App\Models\Tributos\FunesbomTabela;
+use App\Models\Utils\StringFunctions;
 use Carbon\Carbon;
 
 
@@ -31,6 +33,7 @@ class BillingItemGenStatic {
     make_billingitem_for_iptu()
     create_iptu_billing_item() (( same as above but doesn't use PO))
 
+    make_billingitem_for_fune_with_funetabela()
     make_billingitem_for_fune()
     create_fune_billing_item() (( same as above but doesn't use PO))
 
@@ -48,7 +51,6 @@ class BillingItemGenStatic {
     create_billing_item()
 
   */
-
 
   public static function make_billingitem_from_po_n_cobranca($billingitempo, $cobranca) {
     if ($billingitempo == null || $cobranca == null) {
@@ -118,12 +120,12 @@ class BillingItemGenStatic {
   public static function make_billingitempo_for_iptu(
       $charged_value,
       $monthrefdate,
-      $additionalinfo = '',
+      $additionalinfo='',
       $numberpart=1,
       $totalparts=null
     ) {
     if ($totalparts==null) {
-      $totalparts = IPTUTabela::K_DEFAULT_IPTU_TOTAL_COTAS;
+      $totalparts = IPTUTabela::get_DEFAULT_IPTU_TOTAL_COTAS();
     }
     return self::make_billingitempo(
       CobrancaTipo::K_4K_4CHAR_IPTU,
@@ -143,7 +145,15 @@ class BillingItemGenStatic {
     /*
           DB-FIELD month_for_cotaunica is	mesref_de_inicio_repasse
     */
-    if ($monthrefdate==null) {
+    if ($monthrefdate == null) {
+      return null;
+    }
+
+    /*
+        It's enough to check just the name of the Class (not yet the full namespace)
+        (This check is necessary for a caller might send in a wrongly typed object)
+    */
+    if (!StringFunctions::is_var_of_class($iptutabela, 'IPTUTabela')) {
       return null;
     }
 
@@ -152,7 +162,7 @@ class BillingItemGenStatic {
     $totalparts = null;
     // Check first when no iptu bill is to happen
     if (
-      $iptutabela->optado_por_cota_unica == true &&
+      $iptutabela->optado_por_cota_unica &&
       $monthrefdate->month != $iptutabela->mesref_de_inicio_repasse
     ) {
       return null;
@@ -198,7 +208,7 @@ class BillingItemGenStatic {
     if ($funetabela == null) {
       return null;
     }
-    if ($monthrefdate->month == $funetabela->monthref_for_payment) {
+    if ($monthrefdate->month == $funetabela->mesref_de_repasse) {
       $charged_value = $funetabela->valor;
       $numberpart    = 1;
       $total_de_parcelas = 1;
@@ -357,7 +367,7 @@ class BillingItemGenStatic {
       $monthrefdate,
       $additionalinfo = null
     ) {
-    $billingitempo = self::make_billingitem_for_fune_with_funetabela(
+    $billingitempo = self::make_billingitempo_for_fune_with_funetabela(
       $funetabela,
       $monthrefdate,
       $additionalinfo
@@ -515,6 +525,9 @@ class BillingItemGenStatic {
   }
 
   public static function adhoctest1() {
+
+    // test aluguel $billingitempo
+    print ("1) test aluguel billingitempo \n");
     $charged_value = 1900;
     $monthrefdate = new Carbon('2018-2-1');
     $additionalinfo = 'additional info';
@@ -527,9 +540,10 @@ class BillingItemGenStatic {
       $numberpart,
       $totalparts
     );
-    var_dump($billingitempo);
+    print ("billingitempo => $billingitempo \n");
 
-
+    // test condominio $billingitempo
+    print ("2) test condominio billingitempo \n");
     $charged_value = 600;
     $monthrefdate = new Carbon('2018-2-1');
     $additionalinfo = 'additional info';
@@ -542,23 +556,78 @@ class BillingItemGenStatic {
       $numberpart,
       $totalparts
     );
-    var_dump($billingitempo);
+    print ("billingitempo => $billingitempo \n");
 
-    // $charged_value = 600;
+    // test iptu $billingitempo
+    print ("3) test iptu billingitempo \n");
     $monthrefdate = new Carbon('2018-2-1');
-    $additionalinfo = 'additional info';
+    $additionalinfo = 'additional info iptu';
     $iptutabela = IPTUTabela
       ::fetch_by_imovelapelido_n_ano_or_return_null('hlobo', 2018);
     $numberpart = null;
     $totalparts = null;
     $billingitempo = self::make_billingitempo_for_iptu_with_iptutabela(
+      $iptutabela,
+      $monthrefdate,
+      $additionalinfo,
+      $numberpart,
+      $totalparts
+    );
+    print ("billingitempo => $billingitempo \n");
+    // var_dump($billingitempo);
+
+    // test funesbom $billingitempo
+    print ("4) test funesbom billingitempo \n");
+    $monthrefdate = new Carbon('2018-6-1');
+    $additionalinfo = 'additional info funesbom';
+    $funetabela = FunesbomTabela
+      ::fetch_by_imovelapelido_n_ano('hlobo', 2018);
+    $numberpart = 1;
+    $totalparts = 1;
+    $billingitempo = self::make_billingitempo_for_fune_with_funetabela(
+      $funetabela,
+      $monthrefdate,
+      $additionalinfo,
+      $numberpart,
+      $totalparts
+    );
+    print ("billingitempo => $billingitempo \n");
+    // var_dump($billingitempo);
+
+    // test carr $billingitempo
+    print ("5) test carr billingitempo \n");
+    $charged_value = 600;
+    $monthrefdate = new Carbon('2018-2-1');
+    $additionalinfo = 'additional info';
+    $numberpart = 1;
+    $totalparts = 1;
+    $billingitempo = self::make_billingitempo_for_carr(
       $charged_value,
       $monthrefdate,
       $additionalinfo,
       $numberpart,
       $totalparts
     );
-    var_dump($billingitempo);
+    print ("billingitempo => $billingitempo \n");
+    // var_dump($billingitempo);
+
+    // test cred $billingitempo
+    print ("6) test cred billingitempo \n");
+    $charged_value = 600;
+    $monthrefdate = new Carbon('2018-2-1');
+    $additionalinfo = 'additional info';
+    $numberpart = 1;
+    $totalparts = 1;
+    $billingitempo = self::make_billingitempo_for_cred(
+      $charged_value,
+      $monthrefdate,
+      $additionalinfo,
+      $numberpart,
+      $totalparts
+    );
+    print ("billingitempo => $billingitempo \n");
+    // var_dump($billingitempo);
+
   }
 
 } // ends class class BillingItemGenStatic

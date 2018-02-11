@@ -13,29 +13,45 @@ class BillingItemPO {
    * setAttribute of Cobrança as a relationship for BillingItem.
   */
 
+
+  var $cobrancatipo;
+  var $charged_value;
+  var $monthrefdate;
+  var $additionalinfo;
+  var $numberpart;
+  var $totalparts;
+  var $reftype;
+  var $freqtype;
+
   public function __construct(
       $cobrancotipo_char4id,
       $charged_value,
-      $monthrefdate=null,
-      $numberpart=1
+      $monthrefdate,
+      $additionalinfo='',
+      $numberpart=1,
+      $totalparts=1
     ) {
-    $this->cobrancotipo  = CobrancaTipo::fetch_by_char4id($cobrancotipo_char4id);
+    $this->cobrancatipo  = CobrancaTipo::fetch_by_char4id($cobrancotipo_char4id);
     $this->charged_value = $charged_value;
     $this->monthrefdate  = $monthrefdate;
+    $this->additionalinfo= $additionalinfo;
     $this->numberpart    = $numberpart;
+    $this->totalparts    = $totalparts;
+    // When overwrite is needed, these below are to be used
     $this->reftype = null;
+    $this->freqtype = null;
   }
 
   public function get_reftype_attribute() {
     if ($this->reftype == null) {
-      return $this->cobrancotipo->reftype;
+      return $this->cobrancatipo->reftype;
     }
     return $this->reftype;
   }
 
   public function get_freqtype_attribute() {
     if ($this->freqtype == null) {
-      return $this->cobrancotipo->freqtype;
+      return $this->cobrancatipo->freqtype;
     }
     return $this->freqtype;
   }
@@ -65,7 +81,7 @@ class BillingItemPO {
     }
     $billingitem = new BillingItem();
     $billingitem->cobranca = $cobranca;
-    $billingitem->cobrancotipo  = $this->cobrancotipo;
+    $billingitem->cobrancatipo  = $this->cobrancatipo;
     $billingitem->charged_value = $this->charged_value;
     $billingitem->monthrefdate  = $this->monthrefdate;
     $billingitem->numberpart    = $this->numberpart;
@@ -86,10 +102,19 @@ class BillingItemPO {
   }
 
   public function __toString() {
-    // TO-DO
-    return 'toString';
+    $outstr = '';
+    $char4id = 'n/a';
+    if ($this->cobrancatipo != null) {
+      $char4id = $this->cobrancatipo->char4id;
+    }
+    $outstr .= "cobrancatipo => $char4id \n";
+    $outstr .= "charged_value => $this->charged_value \n";
+    $outstr .= "monthrefdate => $this->monthrefdate \n";
+    $outstr .= "additionalinfo => $this->additionalinfo \n";
+    $outstr .= "numberpart => $this->numberpart \n";
+    $outstr .= "totalparts => $this->totalparts \n";
+    return $outstr;
   }
-
 
 
 } // ends class BillingItemPO
