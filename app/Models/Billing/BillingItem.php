@@ -28,10 +28,10 @@ class BillingItem extends Model {
   * @var array
   */
 	protected $fillable = [
-		'brief_description', 'value', 'monthrefdate',
+		'brief_description', 'charged_value', 'monthrefdate',
     'use_partnumber', 'numberpart', 'totalparts',
     'was_original_value_modified', 'brief_description_for_modifier',
-    'original_value', 'modifying_percent', 'modifying_amount',
+    'original_charged_value', 'modifying_percent', 'modifying_amount',
     'obsinfo',
 	];
 

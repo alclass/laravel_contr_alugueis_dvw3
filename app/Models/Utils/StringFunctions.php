@@ -8,6 +8,16 @@ namespace App\Models\Utils;
 class StringFunctions {
 
   public static function is_classname_at_the_end_of_namepath($namepath, $classname) {
+    /*
+      Classname is checked at the end of the full path string.
+
+      $namepath is the folder path to class, in the form:
+        'App\Models\Folder\ClassNameABC'
+
+      The strpos() below returns the position at which
+        ClassNameABC occurs in the namespace path indicated above;
+        - if it's not in the string, strpos() returns false.
+    */
 
     $strpos_value = strpos($namepath, $classname);
     // 1st check: is substring found?
@@ -28,15 +38,7 @@ class StringFunctions {
     /*
       The checking here is only for the classname.
       The method DOES NOT check the full namespace + classname.
-
       Classname is checked at the end of the full path string.
-
-      $namepath will return something like
-        'App\Models\Folder\ClassNameABC'
-
-      The strpos() below returns the position at which
-        ClassNameABC occurs in the namespace path indicated above;
-        - if it's not in the string, strpos() returns false.
     */
 
     // Before issuing get_class(), check that $variable has an object
@@ -48,21 +50,33 @@ class StringFunctions {
 
   } // ends static is_var_of_class()
 
+
+
+
+  /*
+      Adhoc Tests
+      ===========
+  */
+
   public static function adhoctest_is_var_of_class() {
+
+    // Test 1
     $namepath  = 'App\Models\Folder\ClassNameABC';
     $classname = 'ClassNameABC';
     $bool = self::is_classname_at_the_end_of_namepath($namepath, $classname);
     print "$namepath + $classname => at_end = $bool \n";
 
+    // Test 2
     $namepath  = 'App\Models\Folder\ClassNameABC';
     $classname = 'ClassNameABX';
     $bool = self::is_classname_at_the_end_of_namepath($namepath, $classname);
     print "$namepath + $classname => at_end = $bool \n";
 
+    // Test 3
     $namepath  = 'App\Models\Folder\ClassNameABC\X';
     $classname = 'ClassNameABC';
     $bool = self::is_classname_at_the_end_of_namepath($namepath, $classname);
     print "$namepath + $classname => at_end = $bool \n";
-  }
+  } // ends static adhoctest_is_var_of_class()
 
 } // ends class DateFunctions

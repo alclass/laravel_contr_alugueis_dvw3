@@ -337,17 +337,24 @@ class CobrancaController extends Controller {
 		$cobranca = Cobranca
  		  ::fetch_cobranca_with_imovelapelido_year_month_n_seq($imovelapelido, $year, $month, $monthseqnumber);
 		if ($cobranca == null) {
-			$cobranca = CobrancaGerador::create_cobranca_with_imovelapelido_year_month_n_seq($imovelapelido, $year, $month, $monthseqnumber);
+			$cobranca = CobrancaGerador::create_cobranca_with_imovelapelido_year_month_n_seq(
+				$imovelapelido,
+				$year,
+				$month,
+				$monthseqnumber);
 		}
-		$bankaccount = BankAccount::get_by_char4id('ITAU');
 		if ($cobranca == null) {
 			$cobranca = new Cobranca();
 			$cobranca->monthrefdate = $monthrefdate;
 			$cobranca->duedate = $monthrefdate->copy()->addMonths(1)->day(10);
 			$cobranca->monthseqnumber = $monthseqnumber;
 			$cobranca->contract_id = $contract->id;
-			$cobranca->bankaccount_id = $bankaccount->id;
 			// throw new Exception('$cobranca == null in controller for cobrança-editar');
+		}
+		$cobranca->generate_autoinsertable_billingitems();
+		$bankaccount = $cobranca->get_bankaccount();
+		if ($bankaccount == null) {
+			$bankaccount = BankAccount::get_default();
 		}
 		$aarray = [
 			'bankaccount' => $bankaccount,
@@ -357,9 +364,9 @@ class CobrancaController extends Controller {
 			'monthrefdate' => $monthrefdate,
 			'today' => $today,
 		];
-		//return var_dump($aarray);
+		// return var_dump($aarray);
 		return view(
-			'cobrancas.cobranca.editarcobranca2', $aarray
+			'cobrancas.cobranca.editarcobranca', $aarray
 			//$array,
 		);
  	} // ends edit_via_httppost()

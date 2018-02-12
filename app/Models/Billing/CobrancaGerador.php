@@ -29,7 +29,7 @@ class CobrancaGerador {
       $month,
       $monthseqnumber=1
     ) {
-    $imovel   = Imovel::fetch_by_apelido($imovelapelido);
+    $imovel = Imovel::fetch_by_apelido($imovelapelido);
 	  if ($imovel == null) {
 		  return null;
 	  }
@@ -37,18 +37,18 @@ class CobrancaGerador {
 	  if ($contract == null) {
 		  return null;
 	  }
-	  $today = Carbon::today();
-    if ($today->day < 11) {
-      $today->addMonths(-1);
+	  $today_or_lastmonthdate = Carbon::today();
+    if ($today_or_lastmonthdate->day < 11) {
+      $today_or_lastmonthdate->addMonths(-1);
     }
     $monthrefdate = null;
 	  $year = intval($year);
-	  if ($year < $today->year-6 || $year > $today->year+6) {
-      $year = $today->year;
+	  if ($year < $today_or_lastmonthdate->year-6 || $year > $today_or_lastmonthdate->year+6) {
+      $year = $today_or_lastmonthdate->year;
 	  }
 	  $month = intval($month);
 	  if ($month < 1 || $month > 12) {
-      $month = $today->month;
+      $month = $today_or_lastmonthdate->month;
 	  }
     $monthrefdate = new Carbon("$year-$month-01");
     return self::create_n_return_cobranca_with_contractid_monthref_n_seq(
@@ -93,7 +93,12 @@ class CobrancaGerador {
 
     if ($monthrefdate == null) {
       // if it's null, no risk to mutate reference outsidedly
-      $monthrefdate = Carbon::today()->day(10)->addMonths(-1);
+      $today = Carbon::today();
+      if ($today->day < 11) {
+        $monthrefdate = $today->day(1)->addMonths(-1);
+      } else {
+        $monthrefdate = $today->day(1);
+      }
     }
 
     $allowed_to_create_billing = false;

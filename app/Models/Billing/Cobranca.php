@@ -9,6 +9,8 @@ namespace App\Models\Billing;
 use App\Models\Finance\BankAccount;
 use App\Models\Billing\BillingItem;
 use App\Models\Billing\CobrancaTipo;
+use App\Models\Billing\BillingItemPO;
+use App\Models\Billing\BillingItemGenStatic;
 use App\Models\Immeubles\Contract;
 use App\Models\Immeubles\Imovel;
 use App\Models\Tributos\FunesbomTaxa;
@@ -215,7 +217,7 @@ class Cobranca extends Model {
   public function get_total_value() {
     $total_value = 0;
     foreach ($this->billingitems as $billingitem) {
-      $total_value += $billingitem->value;
+      $total_value += $billingitem->charged_value;
     }
     return $total_value;
   }
@@ -537,22 +539,56 @@ class Cobranca extends Model {
     return $n_days_until_duedate;
   }
 
-  public function gen_createable_billingitems() {
+  public function generate_autoinsertable_billingitems() {
     $billingitems = [];
     $cobrancatipo = CobrancaTipo::fetch_by_char4id(CobrancaTipo::K_4CHAR_ALUG);
-    $billingitem = CobrancaGerador::make_billingitem_for_aluguel(
-        $cobrancatipo,
-        1000,
-        $this->monthrefdate
+    $charged_value = $this->contract->current_rent_value;
+    $monthrefdate = $this->monthrefdate->copy();
+    $additionalinfo = 'additional info';
+    $numberpart = 1;
+    $totalparts = 1;
+    $billingitem = BillingItemGenStatic::make_billingitem_for_aluguel(
+      $this,
+      $charged_value,
+      $monthrefdate,
+      $additionalinfo,
+      $numberpart,
+      $totalparts
     );
-    $billingitems[] = $billingitem;
+    if ($billingitem != null) {
+      $billingitems[] = $billingitem;
+    }
+
     $cobrancatipo = CobrancaTipo::fetch_by_char4id(CobrancaTipo::K_4CHAR_COND);
-    $billingitems = CobrancaGerador::make_billingitem_for_condominio(
-        $cobrancatipo,
-        1000,
-        $this->monthrefdate
+    $charged_value = $this->imovel->get_condominiotarifa_in_refmonth($monthrefdate);
+    $billingitem = BillingItemGenStatic::make_billingitem_for_condominio(
+      $this,
+      $charged_value,
+      $monthrefdate,
+      $additionalinfo,
+      $numberpart,
+      $totalparts
     );
-    $billingitems[] = $billingitem;
+    if ($billingitem != null) {
+      $billingitems[] = $billingitem;
+    }
+
+    $cobrancatipo = CobrancaTipo::fetch_by_char4id(CobrancaTipo::K_4CHAR_IPTU);
+    $iptutabela = IPTUTabela::fetch_by_imovel_n_ano_or_return_null($this->imovel, $this->monthrefdate->year);
+    if ($iptutabela != null) {
+      $billingitem = BillingItemGenStatic::make_billingitem_for_iptu_with_iptutabela(
+        $this,
+        $iptutabela,
+        $monthrefdate,
+        $additionalinfo
+      );
+      if ($billingitem != null) {
+        $billingitems[] = $billingitem;
+      }
+    }
+    foreach ($billingitems as $billingitem) {
+      $this->billingitems->push($billingitem);
+    }
     return $billingitems;
   }
 
@@ -592,6 +628,17 @@ class Cobranca extends Model {
     return [];
   }
 
+  public function get_bankaccount() {
+    if ($this->bankaccount == null) {
+      if (!empty($this->bankaccount_id)) {
+        $this->bankaccount = BankAccount::find($bankaccount_id);
+      }
+    }
+    if ($this->bankaccount != null) {
+      return $this->bankaccount;
+    }
+    return BankAccount::get_default();
+  }
   public function bankaccount() {
     return $this->belongsTo('App\Models\Finance\BankAccount');
   }

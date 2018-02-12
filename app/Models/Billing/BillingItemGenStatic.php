@@ -128,7 +128,7 @@ class BillingItemGenStatic {
       $totalparts = IPTUTabela::get_DEFAULT_IPTU_TOTAL_COTAS();
     }
     return self::make_billingitempo(
-      CobrancaTipo::K_4K_4CHAR_IPTU,
+      CobrancaTipo::K_4CHAR_IPTU,
       $charged_value,
       $monthrefdate,
       $additionalinfo,
@@ -180,8 +180,8 @@ class BillingItemGenStatic {
           foi escolhida a ser repassada em Fevereiro, ref. Janeiro
       */
       $charged_value = $iptutabela->valor_parcela_unica;
-      $numberpart        = 1;
-      $total_de_parcelas = 1;
+      $numberpart = 1;
+      $totalparts = 1;
     } else {
       /* 2nd create-case: escolhido o pagamento em 10 cotas (10 é const em IPTUTabela)
            if even the cota-única was chosen (because it was chosen but not paid...  Review this)
@@ -559,8 +559,26 @@ class BillingItemGenStatic {
     print ("billingitempo => $billingitempo \n");
 
     // test iptu $billingitempo
-    print ("3) test iptu billingitempo \n");
-    $monthrefdate = new Carbon('2018-2-1');
+    print ("3a) test iptu billingitempo (jacum, 2018) \n");
+    $monthrefdate = new Carbon('2018-5-1');
+    $additionalinfo = 'additional info iptu';
+    $iptutabela = IPTUTabela
+      ::fetch_by_imovelapelido_n_ano_or_return_null('jacum', 2018);
+    $numberpart = null;
+    $totalparts = null;
+    $billingitempo = self::make_billingitempo_for_iptu_with_iptutabela(
+      $iptutabela,
+      $monthrefdate,
+      $additionalinfo,
+      $numberpart,
+      $totalparts
+    );
+    print ("billingitempo => $billingitempo \n");
+    // var_dump($billingitempo);
+
+    // test iptu $billingitempo
+    print ("3b) test iptu billingitempo (hlobo, 2018, month=5 with cota ún.) \n");
+    $monthrefdate = new Carbon('2018-5-1');
     $additionalinfo = 'additional info iptu';
     $iptutabela = IPTUTabela
       ::fetch_by_imovelapelido_n_ano_or_return_null('hlobo', 2018);
@@ -581,7 +599,7 @@ class BillingItemGenStatic {
     $monthrefdate = new Carbon('2018-6-1');
     $additionalinfo = 'additional info funesbom';
     $funetabela = FunesbomTabela
-      ::fetch_by_imovelapelido_n_ano('hlobo', 2018);
+      ::fetch_by_imovelapelido_n_ano('cdutra', 2018);
     $numberpart = 1;
     $totalparts = 1;
     $billingitempo = self::make_billingitempo_for_fune_with_funetabela(

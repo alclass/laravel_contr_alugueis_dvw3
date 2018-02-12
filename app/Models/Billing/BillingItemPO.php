@@ -85,6 +85,7 @@ class BillingItemPO {
     $billingitem->charged_value = $this->charged_value;
     $billingitem->monthrefdate  = $this->monthrefdate;
     $billingitem->numberpart    = $this->numberpart;
+    $billingitem->totalparts    = $this->totalparts;
     // reftype firstly belongs to cobrancatipo, but if it's in billingitem, it's overwritten
     if ($this->reftype != null) {
       $billingitem->reftype = $this->reftype;

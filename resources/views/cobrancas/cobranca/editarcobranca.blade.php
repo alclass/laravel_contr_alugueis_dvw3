@@ -45,63 +45,70 @@
               </tr>
           </thead>
           <tbody>
-            @if(!empty($cobranca->billingitems))
-            @foreach($cobranca->gen_createable_billingitems() as $billingitem)
-              <p>1 2 3 ...</p>
+
+    <form id="form_id" class="form-horizontal">
+    <fieldset>
+
+    <!-- Form Name -->
+    <legend>cobranca_form</legend>
+            @foreach($cobranca->billingitems as $billingitem)
               <tr>
-                <em>{{ $tipocobrancastr }}</em>
-                @if($cobrancatipo != null && $cobrancatipo->is_it_carried_debt())
-                  <a href="{{ route('$billingitemroute', $cobranca->get_routeparams_toformerbill_asarray()) }}">
+                <td class="col-md-9">
+                  <?php
+                    $cobrancatipochar4id = 'n/a';
+                    $cobrancatipobriefdescr = 'descr.';
+                    $cobrancatipo = $billingitem->cobrancatipo;
+                    if ($cobrancatipo != null) {
+                      $cobrancatipochar4id = $cobrancatipo->char4id;
+                      $cobrancatipobriefdescr = $cobrancatipo->brief_description;
+                    }
+                    $tipocobrancastr = $cobrancatipobriefdescr . ' (' . $cobrancatipochar4id . ')';
+                  ?>
+                  {{ $tipocobrancastr }}
+              </td>
+              <td class="col-md-1 text-center">
+
+<div class="fb-date form-group field-date-{{ $loop->iteration }}">
+  <label for="date-{{ $loop->iteration }}" class="fb-date-label">Mês Ref.</label>
+  <input class="form-control" name="date-{{ $loop->iteration }}"
+    id="date-{{ $loop->iteration }}" type="date" value="{{ $billingitem->monthrefdate->format('d/m/Y') }}">
+</div>
+
+                {{ $billingitem->monthrefdate->format('d/m/Y') }}</td>
+
+              <td class="col-md-1" style="text-align: center">
+<input id="textinput" name="textinput" placeholder="placeholder"
+ class="form-control input-md" type="text"
+ maxlength="1" value="{{ $billingitem->numberpart }}">
+/
+<input id="textinput" name="textinput" placeholder="placeholder"
+ class="form-control input-md"
+ maxlength="1" type="text" value="{{ $billingitem->totalparts }}">
+                {{ $billingitem->numberpart . '/' . $billingitem->totalparts }}
+                <br>
+                @if($billingitem->cobrancatipo != null && $billingitem->cobrancatipo->is_it_carried_debt())
+                  <a href="{{ route('billingitemroute', $cobranca->get_routeparams_toformerbill_asarray()) }}">
                     Cobr. Anterior
                   </a>
                 @endif
               </td>
-              <td class="col-md-1" style="text-align: center">
-                {{ $billingitem->generate_ref_repr_for_cota_column() }}
+
+
+              <td>
+
+  <?php
+    $charged_value = number_format(floor($billingitem->charged_value),2)
+  ?>
+
+  <input id="textinput" name="textinput" placeholder="placeholder"
+   class="form-control input-md" type="text" value="{{ $charged_value }}">
+                {{ $charged_value }}
               </td>
-              <td class="col-md-1 text-center">
-
-
-
-
-<form id="rendered-form">
-<div class="rendered-form">
-<div class="fb-date form-group field-date-1518106617049">
-  <label for="date-1518106617049" class="fb-date-label">dateField</label>
-  <input class="form-control" name="date-1518106617049" id="date-1518106617049" type="date">
-</div>
-</div>
-</form>
-
-
-
-
-
-
-
-
-
-
-
-                {{ $billingitem->monthrefdate->format('m-Y') }}</td>
-              <td class="col-md-1 text-center">{{ $billingitem->value }}</td>
-                  <td class="col-md-9">
-                    <?php
-                      $cobrancatipochar4id = 'n/a';
-                      $cobrancatipobriefdescr = 'descr.';
-                      $cobrancatipo = $billingitem->get_cobrancatipo();
-                      if ($cobrancatipo != null) {
-                        $cobrancatipochar4id = $cobrancatipo->char4id;
-                        $cobrancatipobriefdescr = $cobrancatipo->brief_description;
-                      }
-                      $tipocobrancastr = $cobrancatipobriefdescr . ' (' . $cobrancatipochar4id . ')';
-                    ?>
-
-
               </tr>
               @endforeach
-              @endif
               <tr>
+    </fieldset>
+  </form>
                   <td>   </td>
                   <td>   </td>
                   <td class="text-right"><h4><strong>Total: </strong></h4></td>
