@@ -2,6 +2,7 @@ aa_css_etc/
 bootstrap/
 docs/
 nbproject/
+node_modules/
 storage/
 vendor/
 .buildpath

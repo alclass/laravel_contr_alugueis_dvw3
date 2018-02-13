@@ -44,6 +44,16 @@ Here we dedicate to routes below
     /sa/billing/late/{contract_id}/calcfinanctimecorrection
   ------------
 */
+
+Route::prefix('/submit')->group( function() {
+  Route::get('/billingitems', [
+    'as'   => 'billingitemscreatorroute',
+    'uses' => function() {
+      return view('cobrancas.cobranca.billingitemscreator');
+    }
+  ]);
+});
+
 Route::prefix('/sa')->group( function() {
 
   // -----------------------
