@@ -59,6 +59,27 @@ class BillingItemGenStatic {
     return $billingitempo->generate_billingitem_for_cobranca($cobranca);
   }
 
+  public static function make_billingitem(
+      $cobranca,
+      $cobrancatipo4char,
+      $charged_value,
+      $monthrefdate,
+      $additionalinfo = '',
+      $numberpart = 1,
+      $totalparts = 1
+    ) {
+
+    $billingitempo = self::make_billingitempo(
+      $cobrancatipo4char,
+      $charged_value,
+      $monthrefdate,
+      $additionalinfo,
+      $numberpart,
+      $totalparts
+    );
+    return self::make_billingitem_from_po_n_cobranca($billingitempo, $cobranca);
+  } // make_billingitem()
+
   public static function make_billingitempo(
       $cobrancatipo4char,
       $charged_value,
@@ -262,6 +283,7 @@ class BillingItemGenStatic {
       $totalparts
     );
   } // make_billingitempo_for_carr()
+
 
   public static function make_billingitempo_for_cred(
       $charged_value,

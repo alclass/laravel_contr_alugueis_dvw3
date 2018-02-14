@@ -6,6 +6,9 @@
     <link rel="stylesheet" href="{{ URL::asset('css/rwd-table.css') }}">
 @endsection
 @section('content')
+<?php
+  $form_date_ids = [];
+?>
 <div class="container">
 <div class="row">
   <div class="well col-xs-10 col-sm-10 col-md-6 col-xs-offset-1 col-sm-offset-1 col-md-offset-2">
@@ -39,76 +42,76 @@
           <thead>
               <tr>
                   <th>Aluguel e Encargos</th>
-                  <th>Ref.Q.</th>
-                  <th class="text-center">Ref.Mês</th>
+                  <th>Ref.Mês</th>
+                  <th class="text-center">Ref.Q.</th>
                   <th class="text-center">Valor</th>
               </tr>
           </thead>
           <tbody>
 
-    <form id="form_id" class="form-horizontal">
+    <form id="form_id" class="form-horizontal" action="{{ route('cobrancaeditarhttppostroute') }}" method="post">
     <fieldset>
 
     <!-- Form Name -->
     <legend>cobranca_form</legend>
             @foreach($cobranca->billingitems as $billingitem)
               <tr>
-                <td class="col-md-9">
-                  <?php
-                    $cobrancatipochar4id = 'n/a';
-                    $cobrancatipobriefdescr = 'descr.';
-                    $cobrancatipo = $billingitem->cobrancatipo;
-                    if ($cobrancatipo != null) {
-                      $cobrancatipochar4id = $cobrancatipo->char4id;
-                      $cobrancatipobriefdescr = $cobrancatipo->brief_description;
-                    }
-                    $tipocobrancastr = $cobrancatipobriefdescr . ' (' . $cobrancatipochar4id . ')';
-                  ?>
-                  {{ $tipocobrancastr }}
-              </td>
+  <td class="col-md-9">
+    <?php
+      $cobrancatipochar4id = 'n/a';
+      $cobrancatipobriefdescr = 'descr.';
+      $cobrancatipo = $billingitem->cobrancatipo;
+      if ($cobrancatipo != null) {
+        $cobrancatipochar4id = $cobrancatipo->char4id;
+        $cobrancatipobriefdescr = $cobrancatipo->brief_description;
+      }
+      $tipocobrancastr = $cobrancatipobriefdescr . ' (' . $cobrancatipochar4id . ')';
+    ?>
+    {{ $tipocobrancastr }}
+    <input type="hidden"
+      name="cobrancatipo4char-{{ $loop->iteration }}-fieldname"
+      value="{{ $tipocobrancastr }}">
+</td>
               <td class="col-md-1 text-center">
 
+<?php
+  $form_date_id    = 'date-' . $loop->iteration . '-id';
+  $form_date_ids[] = $form_date_id;
+?>
+
 <div class="fb-date form-group field-date-{{ $loop->iteration }}">
-  <label for="date-{{ $loop->iteration }}" class="fb-date-label">Mês Ref.</label>
-  <input class="form-control" name="date-{{ $loop->iteration }}"
-    id="date-{{ $loop->iteration }}" type="date" value="{{ $billingitem->monthrefdate->format('d/m/Y') }}">
+  <label for="{{ $form_date_id }}" class="fb-date-label"></label>
+
+  <input class="form-control" name="date-{{ $loop->iteration }}-fieldname"
+    id="{{ $form_date_id }}" type="date">
 </div>
-
-                {{ $billingitem->monthrefdate->format('d/m/Y') }}</td>
-
+              </td>
               <td class="col-md-1" style="text-align: center">
-<input id="textinput" name="textinput" placeholder="placeholder"
+<input id="textinput" name="numberpart-{{ $loop->iteration }}-fieldname" placeholder="placeholder"
  class="form-control input-md" type="text"
  maxlength="1" value="{{ $billingitem->numberpart }}">
 /
-<input id="textinput" name="textinput" placeholder="placeholder"
+<input id="textinput" name="totalparts-{{ $loop->iteration }}-fieldname" placeholder="placeholder"
  class="form-control input-md"
  maxlength="1" type="text" value="{{ $billingitem->totalparts }}">
-                {{ $billingitem->numberpart . '/' . $billingitem->totalparts }}
-                <br>
-                @if($billingitem->cobrancatipo != null && $billingitem->cobrancatipo->is_it_carried_debt())
-                  <a href="{{ route('billingitemroute', $cobranca->get_routeparams_toformerbill_asarray()) }}">
-                    Cobr. Anterior
-                  </a>
-                @endif
+  @if($billingitem->cobrancatipo != null && $billingitem->cobrancatipo->is_it_carried_debt())
+    <br>
+    <a href="{{ route('billingitemroute', $cobranca->get_routeparams_toformerbill_asarray()) }}">
+      Cobr. Anterior
+    </a>
+  @endif
               </td>
-
-
               <td>
-
   <?php
-    $charged_value = number_format(floor($billingitem->charged_value),2)
+    $charged_value = number_format($billingitem->charged_value,2);
   ?>
 
-  <input id="textinput" name="textinput" placeholder="placeholder"
+  <input id="textinput" name="charged_value-{{ $loop->iteration }}-fieldname"
    class="form-control input-md" type="text" value="{{ $charged_value }}">
-                {{ $charged_value }}
               </td>
               </tr>
               @endforeach
               <tr>
-    </fieldset>
-  </form>
                   <td>   </td>
                   <td>   </td>
                   <td class="text-right"><h4><strong>Total: </strong></h4></td>
@@ -116,7 +119,7 @@
                     <h4>
                       <strong>
 
-  {{ number_format(floor($cobranca->get_total_value()),2) }}
+  {{ number_format($cobranca->get_total_value(),2) }}
 
                       </strong>
                     </h4>
@@ -148,11 +151,16 @@
           </tbody>
       </table>
 
-    <?php
-      if ($bankaccount == null) {
-        $bankaccount = \App\Models\Finance\BankAccount::get_default();
-      }
-    ?>
+@if(count($form_date_ids)>0)
+<div align="center">
+  {{ csrf_field() }}
+  <button type="submit" name="button">Enviar</button>
+  <hr>
+</div>
+@endif
+
+</fieldset>
+</form>
 
     @if(!empty($bankaccount))
       <button type="button" class="btn btn-success btn-lg btn-block">
@@ -174,4 +182,18 @@
   </div>
 </div>
 </div>
+
+<script type="text/javascript">
+
+$( function() {
+
+  @foreach($form_date_ids as $form_date_id)
+    $('#{{ $form_date_id }}').val('{{ $cobranca->monthrefdate->format("Y-m-d") }}');
+  @endforeach
+
+});
+
+</script>
+
+
 @endsection

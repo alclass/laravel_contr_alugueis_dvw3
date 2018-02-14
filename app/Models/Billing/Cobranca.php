@@ -629,16 +629,70 @@ class Cobranca extends Model {
   }
 
   public function get_bankaccount() {
+    /*
+      Because cobranças can be created with a mininum 3-field param-set:
+        contract_id
+        monthrefdate and
+        monthseqnumber
+
+      Attribute bankaccount is not set at instantiation time.
+      (Nor is it dynamically set via a somewhat contract_id setAttribute method.)
+
+      So, bankaccount is planned to be 'lazyly' picked up here.
+      
+      get_bankaccount() will be look up for a bankaccount in a certain order, ie:
+
+      1) firstly, it will look up whether or not bankaccount_id is present
+          (at the same time bankaccount being absent);
+      2) secondly, it will inspect contract and contract_id;
+
+      3) if 2) above fails, it will return the system's default.
+
+        Obs.: in any case, it will also set it to the object.
+    */
+
+    // 1st look-up
     if ($this->bankaccount == null) {
       if (!empty($this->bankaccount_id)) {
         $this->bankaccount = BankAccount::find($bankaccount_id);
+        if ($this->bankaccount != null) {
+          return $this->bankaccount;
+        }
       }
     }
-    if ($this->bankaccount != null) {
+
+    // 2nd look-up (give up and return default if contract is null and contract_id is empty)
+    if ($this->contract == null) {
+      if (!empty($this->contract_id)) {
+        $this->contract = Contract::find($contract_id);
+        if ($this->contract == null) {
+          $this->bankaccount = BankAccount::get_default();
+          return $this->bankaccount;
+        }
+      }
+    }
+
+    // 3rd look-up (contract is not null, try to get bankaccount from it)
+    if ($this->contract->bankaccount != null) {
+      $this->bankaccount = $this->contract->bankaccount;
       return $this->bankaccount;
     }
-    return BankAccount::get_default();
-  }
+
+    // 4th look-up (contract has a null bankaccount, inspect its bankaccount_id)
+    if (!empty($this->contract->bankaccount_id)) {
+      $this->bankaccount_id = $this->contract->bankaccount_id;
+      $this->bankaccount = BankAccount::find($this->bankaccount_id);
+      if ($this->bankaccount != null) {
+        return $this->bankaccount;
+      }
+    }
+
+    // All above failed to return a bankaccount, fall back lastly to default
+    // In the last resort, even if db doesn't have the default, get_default() will make it
+    $this->bankaccount = BankAccount::get_default();
+    return $this->bankaccount;
+  } // ends get_bankaccount()
+  
   public function bankaccount() {
     return $this->belongsTo('App\Models\Finance\BankAccount');
   }

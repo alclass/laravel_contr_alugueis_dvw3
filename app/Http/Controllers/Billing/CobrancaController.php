@@ -1,5 +1,6 @@
 <?php namespace App\Http\Controllers\Billing;
 
+use App\Models\Billing\BillingItemGenStatic;
 use App\Models\Billing\Cobranca;
 use App\Models\Billing\CobrancaGerador;
 use App\Models\Billing\CobrancaTipo;
@@ -11,10 +12,13 @@ use App\Models\Utils\DateFunctions;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use Carbon\Carbon;
-use Exception;
+use \Exception;
+use \Thowable;
 use Illuminate\Http\Request;
 
 class CobrancaController extends Controller {
+
+	const LIMIT_WHILE_LOOPS_TO = 500;
 
 	/**
 	 * Display a listing of the resource.
@@ -315,8 +319,15 @@ class CobrancaController extends Controller {
 	 * @param  int  $contract_id, int $year, int $month
 	 * @return Response
 	 */
-	public function edit_via_httpget($year, $month, $imovelapelido, $monthseqnumber=1)	{
-	  $imovel   = Imovel::fetch_by_apelido($imovelapelido);
+	public function edit_via_httpget(
+			$year, 
+			$month, 
+			$imovelapelido, 
+			$monthseqnumber=1,
+			$error_msgs = []
+		)	{
+
+			$imovel   = Imovel::fetch_by_apelido($imovelapelido);
 	  if ($imovel == null) {
 		  return redirect()->route('/');
 		}
@@ -353,9 +364,7 @@ class CobrancaController extends Controller {
 		}
 		$cobranca->generate_autoinsertable_billingitems();
 		$bankaccount = $cobranca->get_bankaccount();
-		if ($bankaccount == null) {
-			$bankaccount = BankAccount::get_default();
-		}
+		session()->put('cobranca', $cobranca);
 		$aarray = [
 			'bankaccount' => $bankaccount,
 			'cobranca' => $cobranca,
@@ -363,13 +372,60 @@ class CobrancaController extends Controller {
 			'imovel'   => $imovel,
 			'monthrefdate' => $monthrefdate,
 			'today' => $today,
+			'error_msgs' => $error_msgs,
 		];
 		// return var_dump($aarray);
 		return view(
 			'cobrancas.cobranca.editarcobranca', $aarray
 			//$array,
 		);
- 	} // ends edit_via_httppost()
+ 	} // ends edit_via_httpget()
+
+	public function try_recover_editcobranca_from_request_or_errorpage(
+			Request $request,
+			$error_msgs = []
+		)	{
+		/*
+			In edit_via_httppost(), cobrança was not recovered from session(),
+				so try to recover individual fields and redirect to edit_via_httpget()
+			If this recovery is not possible, show an error page.
+
+			Recovery intends to recup, ie:
+				$year,
+				$month,
+				$imovelapelido,
+				$monthseqnumber=1
+		*/
+		$year  = $request->input('yearref');
+		$month = $request->input('monthref');
+
+		try {
+			$monthrefdate = new Carbon("$yearref-$monthref-01");
+		} catch (Throwable $t) {
+			// Executed only in PHP 7, will not match in PHP 5
+			$monthrefdate = DateFunctions::make_n_get_monthrefdate_with_year_n_month();
+			$error_msg = 'Mês de referência está faltando.';
+			$error_msgs[] = $error_msg;
+		}
+
+		$imovelapelido  = $request->input('imovelapelido');
+		if (empty($imovelapelido)) {
+			$error_msg = 'Imóvel está faltando.';
+			$error_msgs[] = $error_msg;
+		}
+		$monthseqnumber = $request->input('monthseqnumber');
+		if (empty($monthseqnumber)) {
+			$monthseqnumber = 1;
+		}
+
+		return $this->edit_via_httpget(
+			$year, 
+			$month, 
+			$imovelapelido, 
+			$monthseqnumber
+		);
+
+	} // ends try_recover_cobranca_from_request_or_errorpage()
 
 	/**
 	 * HTTP-post the edit form for creating/updating the 'cobranca'
@@ -378,38 +434,66 @@ class CobrancaController extends Controller {
 	 * @return Response
 	 */
 	public function edit_via_httppost(Request $request)	{
+		/*
+			This method receives the html-form that contains
+				the billing items for a cobrança.
+			=> if data components are good, the Eloquent 'cobranca'
+				object is saved.
+			=> if data components are NOT good, a redirect to the 
+				edit page should happen carrying the errors array.
+		*/
 
-		$cobranca_id     = $request->input('cobranca_id');
-		$cobranca = Cobranca::findOrFail($cobranca_id);
-		// -------------------------------------
-		$monthref = $request->input('monthref');
-		$yearref  = $request->input('yearref');
-		// -------------------------------------
-		$cobrancatipo_id = $request->input('cobrancatipo_id');
-		$cobrancatipo  = CobrancaTipo::findOrFail($cobrancatipo_id);
-		$monthrefdate = DateFunctions::make_n_get_monthrefdate_with_year_n_month($yearref, $monthref);
-		// -------------------------------------
-		$value   = $request->input('value');
-		$ref_type        = $request->input('reftype');
-		$numberpart      = $request->input('numberpart');
-		$totalparts = $request->input('totalparts');
-		// -------------------------------------
-		$bi_generator = BillingItemGenerator($cobranca);
-
-		$billingitem = $bi_generator->createIfNeededBillingItemFor(
-			$cobranca,
-      $cobrancatipo,
-      $monthrefdate,
-			$value,
-      $numberpart,
-      $totalparts
-		);
-		$obsinfo = $request->input('obsinfo');
-		if (!empty($obsinfo)) {
-			$billingitem->$obsinfo = $obsinfo;
-			$billingitem->save();
+		$cobranca = session()->get('cobranca');
+		if ($cobranca == null) {
+			return $this->try_recover_editcobranca_from_request_or_errorpage($request);
 		}
-		return view('cobrancas.cobranca.mostrarcobranca', ['cobranca'=>$cobranca]);
+		
+		$billingitem_n = 1;
+		
+		while (true) {
+			$billingitem_n += 1;
+			$datefieldname = 'date-' . $billingitem_n . '-fieldname';
+			if ($datefieldname == null) {
+				break;
+			}
+			$billingitem_monthrefdate = $request->input($datefieldname);
+			$cobrancatipofieldname = 'cobrancatipo4char-' . $billingitem_n . '-fieldname';
+			$cobrancatipo4char = $request->input($cobrancatipofieldname);
+ 			$charged_valuefieldname = 'charged_value-' . $billingitem_n . '-fieldname';
+			$charged_valuestr = $request->input($charged_valuefieldname);
+			$charged_value = floatval($charged_valuestr);
+			$numberpartfieldname = 'numberpart-' . $billingitem_n . '-fieldname';
+			$numberpartstr = $request->input($numberpartfieldname);
+			$numberpart = intval($numberpartstr);
+			$totalpartsfieldname = 'totalparts-' . $billingitem_n . '-fieldname';
+			$totalpartsstr = $request->input($totalpartsfieldname);
+			$totalparts = intval($totalpartsstr);
+			if (!isset($additionalinfo) || empty($additionalinfo)) {
+				$additionalinfo = 'Additional Info not yet set.';
+			}
+			$billingitem = BillingItemGenStatic
+				::make_billingitem(
+					$cobranca,
+					$cobrancatipo4char,
+					$charged_value,
+					$additionalinfo,
+					$numberpart,
+					$totalparts
+				);
+			// protect against infinite loop
+			if ($billingitem_n > self::LIMIT_WHILE_LOOPS_TO) {
+				break;
+			}
+			
+		} // ends while
+
+		// $cobranca->save();
+		return '(Not saved yet) cobrança with id = ' 
+			. $cobranca->monthrefdate . ' => '
+			. $cobranca->get_total_value() . ' => '
+			. $cobranca;
+		// return var_dump($cobranca);
+		// return view('cobrancas.cobranca.mostrarcobranca', ['cobranca'=>$cobranca]);
 
 	} // ends edit_via_httppost()
 
