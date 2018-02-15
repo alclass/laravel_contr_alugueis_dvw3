@@ -1,6 +1,6 @@
 <?php
 namespace App\Models\Billing;
-// use App\Models\Billing\BillingItem\CobrancaGerador;
+// use App\Models\Billing\CobrancaGerador;
 
 use App\Models\Billing\BillingItem;
 use App\Models\Billing\Cobranca;
@@ -81,16 +81,14 @@ class CobrancaGerador {
     );
   }
 
-  public static function create_n_return_cobranca_with_contractid_monthref_n_seq(
-      $contract_id,
-      $monthrefdate,
-      $monthseqnumber=1
-    ) {
-
-    if (!Contract::where('id', $contract_id)->exists()) {
+  public static function create_n_return_cobranca_with_contract_monthref_n_seq(
+    $contract,
+    $monthrefdate,
+    $monthseqnumber=1
+  ) {
+    if ($contract == null) {
       return null;
     }
-
     if ($monthrefdate == null) {
       // if it's null, no risk to mutate reference outsidedly
       $today = Carbon::today();
@@ -101,6 +99,7 @@ class CobrancaGerador {
       }
     }
 
+
     $allowed_to_create_billing = false;
     /*
       Cobranca can only be created if a previous one
@@ -108,6 +107,7 @@ class CobrancaGerador {
        or if no previous one exists for the contract
     */
 
+/*
     $n_of_cobrancas = Cobranca
       ::where('contract_id', $contract_id)
       ->count();
@@ -131,22 +131,44 @@ class CobrancaGerador {
       // can't create a new bill
       return null;
     }
-
+*/
     $cobranca = new Cobranca();
-    $cobranca->contract_id    = $contract_id;
+    $cobranca->contract_id    = $contract->id;
     $cobranca->monthrefdate   = $monthrefdate;
     $cobranca->monthseqnumber = $monthseqnumber;
 
     $cobranca->set_duedate_from_monthrefdate();
     $cobranca->add_autoincludeable_billing_items();
 
+    $cobranca->set_bankaccountid_from_contract_or_default();
+    $cobranca->save();
+
+/*
     $today = Carbon::today();
     if ($monthrefdate < $today && $monthrefdate->month != $today->month) {
       $cobranca->save();
     }
-
+*/
     return $cobranca;
-  } // ends [static] create_or_retrieve_cobranca()
+
+
+  }
+
+
+  public static function create_n_return_cobranca_with_contractid_monthref_n_seq(
+      $contract_id,
+      $monthrefdate,
+      $monthseqnumber=1
+    ) {
+
+    $contract = Contract::find($contract_id);
+    return self::create_n_return_cobranca_with_contract_monthref_n_seq(
+      $contract,
+      $monthrefdate,
+      $monthseqnumber
+    );
+
+  } // ends [static] create_n_return_cobranca_with_contractid_monthref_n_seq()
 
 
   /*--------------------------------------------

@@ -1,7 +1,4 @@
 <?php
-/**
- * Cobranca.php
- */
 namespace App\Models\Billing;
 // To import class Cobranca elsewhere in the Laravel App
 // use App\Models\Billing\Cobranca;
@@ -13,7 +10,7 @@ use App\Models\Billing\BillingItemPO;
 use App\Models\Billing\BillingItemGenStatic;
 use App\Models\Immeubles\Contract;
 use App\Models\Immeubles\Imovel;
-use App\Models\Tributos\FunesbomTaxa;
+use App\Models\Tributos\FunesbomTabela;
 use App\Models\Tributos\IPTUTabela;
 use App\Models\Utils\DateFunctions;
 use App\User;
@@ -228,7 +225,8 @@ class Cobranca extends Model {
       return null;
     }
     if (!$previous_cobranca->closed) {
-      $previous_cobranca->closeit();
+      // $previous_cobranca->closeit();
+      $previous_cobranca->close = true;
     }
     return $previous_cobranca;
   }
@@ -240,19 +238,17 @@ class Cobranca extends Model {
     $this->add_condominiotarifa_if_apply();
     $this->add_iptu_if_apply();
     $this->add_funesbom_if_apply();
-    $this->carryup_debt_from_the_previous_monthref_if_any();
-    $this->carryup_cred_from_the_previous_monthref_if_any();
+    $this->carryup_debt_or_cred_from_the_previous_monthref_if_any();
 
   } // ends add_configured_billing_items()
 
   public function add_rent_billingitem() {
 
-    $value = $this->contract->get_monthly_value();
-    $billing_item = BillingItemGenerator::create_n_return_alug_billing_item(
-      $value,
-      $this->monthrefdate,
-      $numberpart=1,
-      $totalparts=1
+    $charged_value = $this->contract->get_monthly_value();
+    $billing_item = BillingItemGenStatic::make_billingitem_for_aluguel(
+      $this,
+      $charged_value,
+      $this->monthrefdate
     );
     if ($billing_item != null) {
       $this->billingitems->push($billing_item);
@@ -269,12 +265,11 @@ class Cobranca extends Model {
     if (!$this->imovel->is_condominio_billable()) {
       return;
     }
-    $value = $this->imovel->get_condominiotarifa_in_refmonth($this->monthrefdate);
-    $billing_item = BillingItemGenerator::create_n_return_cond_billing_item(
-      $value,
-      $this->monthrefdate,
-      $numberpart = 1,
-      $totalparts = 1
+    $charged_value = $this->imovel->get_condominiotarifa_in_refmonth($this->monthrefdate);
+    $billing_item = BillingItemGenStatic::make_billingitem_for_condominio(
+      $this,
+      $charged_value,
+      $this->monthrefdate
     );
     if ($billing_item != null) {
       // $this->billingitems[] = $billing_item;
@@ -295,12 +290,14 @@ class Cobranca extends Model {
     if (!$iptuanoimovel->is_refmonth_billable($this->monthrefdate)) {
       return;
     }
-    $value = $iptuanoimovel->get_months_repass_value($this->monthrefdate);
-    $numberpart = $iptuanoimovel->get_numberpart_with_refmonth($this->monthrefdate);
-    $totalparts = $iptuanoimovel->totalparts; // do not use: total_de_parcelas for totalparts may embody either of two values
-    $billing_item = BillingItemGenerator::create_n_return_iptu_billing_item(
-      $value,
+    $charged_value = $iptuanoimovel->get_months_repass_value($this->monthrefdate);
+    $numberpart    = $iptuanoimovel->get_numberpart_with_refmonth($this->monthrefdate);
+    $totalparts    = $iptuanoimovel->totalparts; // do not use: total_de_parcelas for totalparts may embody either of two values
+    $billing_item = BillingItemGenStatic::make_billingitem_for_iptu(
+      $this,
+      $charged_value,
       $this->monthrefdate,
+      'additional info iptu',
       $numberpart,
       $totalparts
     );
@@ -315,17 +312,19 @@ class Cobranca extends Model {
     if ($this->imovel == null) {
       return;
     }
-    $funesbomtaxa = FunesbomTaxa::get_instance_by_imovel_apelido($this->imovel->apelido);
-    if ($funesbomtaxa == null) {
+    $funesbom = FunesbomTabela::fetch_by_imovelapelido_n_ano($this->imovel->apelido, $this->monthrefdate->year);
+    if ($funesbom == null) {
       return;
     }
-    if ($funesbomtaxa->is_refmonth_billable($this->monthrefdate)) {
-      $value = $funesbomtaxa->get_months_repass_value($this->monthrefdate);
-      $numberpart = $funesbomtaxa->get_numberpart_with_refmonth($this->monthrefdate);
-      $totalparts = $funesbomtaxa->totalparts; // do not use: total_de_parcelas for totalparts may embody either of two values
-      $billing_item = BillingItemGenerator::create_n_return_fune_billing_item(
-        $value,
+    if ($funesbom->is_refmonth_billable($this->monthrefdate)) {
+      $charged_value = $funesbom->get_months_repass_value($this->monthrefdate);
+      $numberpart = $funesbom->get_numberpart_with_refmonth($this->monthrefdate);
+      $totalparts = $funesbom->totalparts; // do not use: total_de_parcelas for totalparts may embody either of two values
+      $billing_item = BillingItemGenStatic::make_billingitem_for_fune(
+        $this,
+        $charged_value,
         $this->monthrefdate,
+        'additional info iptu',
         $numberpart,
         $totalparts
       );
@@ -338,6 +337,9 @@ class Cobranca extends Model {
 
   public function carryup_debt_or_cred_from_the_previous_monthref_if_any() {
     $previous_cobranca = $this->fetch_previous_cobranca();
+    if ($previous_cobranca == null) {
+      return;
+    }
     $balance = $previous_cobranca->get_balance();
     if ($balance > 0) {
       $this->carryup_debt_from_the_previous_monthref_if_any($balance);
@@ -349,9 +351,11 @@ class Cobranca extends Model {
 
   private function carryup_debt_from_the_previous_monthref_if_any($debt_to_carry) {
 
-    $billing_item = BillingItemGenerator::create_n_return_debt_billing_item(
+    $billing_item = BillingItemGenStatic::make_billingitem_for_carr(
+      $this,
       $debt_to_carry,
       $this->monthrefdate,
+      '$additional info carr',
       $numberpart = 1,
       $totalparts = 1
     );
@@ -363,9 +367,11 @@ class Cobranca extends Model {
 
   private function carryup_cred_from_the_previous_monthref_if_any($cred_to_carry) {
 
-    $billing_item = BillingItemGenerator::create_n_return_cred_billing_item(
+    $billing_item = BillingItemGenStatic::make_billingitem_for_cred(
+      $this,
       $cred_to_carry, // should be negative (though, if not, it's corrected inside)
       $this->monthrefdate,
+      '$additional info cred',
       $numberpart = 1,
       $totalparts = 1
     );
@@ -436,7 +442,38 @@ class Cobranca extends Model {
     ];
   }
 
-  public function search_previous_bill() {
+  public function fetch_next_bill() {
+    /*
+      Obs.:
+        Because there's no guarantee the logical keys (contract_id, monthrefdate & monthseqnumber)
+        might be repeated in db,
+        this fetch must be taken in TWO steps.
+
+        See also docstring for fetch_previous_bill()
+    */
+    $next_bill = self
+      ::where('contract_id', $this->contract_id)
+      ->where('monthrefdate', '=', $this->monthrefdate)
+      ->where('monthseqnumber', '>', $this->monthseqnumber)
+      ->orderBy('monthseqnumber', 'asc')
+      ->first(); // skip(1) does not make it null if there's only "itself"
+
+    if ($next_bill != null) {
+      return $next_bill;
+    }
+
+    $next_bill = self
+      ::where('contract_id', $this->contract_id)
+      ->where('monthrefdate', '>', $this->monthrefdate)
+      ->orderBy('monthrefdate', 'asc')
+      ->orderBy('monthseqnumber', 'asc')
+      ->first(); // skip(1) does not make it null if there's only "itself"
+
+    return $next_bill;
+}
+
+// get_routeparams_tonextbill_asarray
+  public function fetch_previous_bill() {
     /*
 
       This method searches 'backwards' in two steps.
@@ -454,7 +491,7 @@ class Cobranca extends Model {
       ::where('contract_id', $this->contract_id)
       ->where('monthrefdate', $this->monthrefdate)
       ->where('monthseqnumber', '<', $this->monthseqnumber)
-      ->order_by('monthrefdate', 'desc')
+      ->orderBy('monthrefdate', 'desc')
       ->first();
 
     if ($previous_bill != null) {
@@ -468,14 +505,21 @@ class Cobranca extends Model {
     $previous_bill = self
       ::where('contract_id', $this->contract_id)
       ->where('monthrefdate', '<', $this->monthrefdate)
-      ->order_by('monthrefdate', 'desc')
-      ->order_by('monthseqnumber', 'desc')
+      ->orderBy('monthrefdate', 'desc')
+      ->orderBy('monthseqnumber', 'desc')
       ->first();
 
     // null may be returned from here which means that no previous bill has been found
     return $previous_bill;
   }
 
+  public function get_routeparams_tonextbill_asarray() {
+    $next_bill = $this->fetch_next_bill();
+    if ($next_bill == null) {
+      return [];
+    }
+    return $next_bill->urlrouteparamsasarray;
+  }
 
   public function get_routeparams_toformerbill_asarray() {
     /*
@@ -484,9 +528,9 @@ class Cobranca extends Model {
       Eg.:
         /urlroute.../2018/1/cdutra/1/
     */
-    $previous_bill = $this->get_previous_bill();
+    $previous_bill = $this->fetch_previous_bill();
     if ($previous_bill == null) {
-      return null;
+      return [];
     }
     return $previous_bill->urlrouteparamsasarray;
   } // ends get_routeparams_toformerbill_asarray()
@@ -624,89 +668,60 @@ class Cobranca extends Model {
     return [];
   }
 
-  public function set_bankaccount_via_contract_or_default() {
+  public function get_contract_queried_or_by_id() {
     /*
+      This method is useful at the object's creation time, before saving,
+      when Eloquent has not yet resolved its belongsTo relationship
 
-    FIRST obs.:
-     o1) a direct setting (ie, $attrib=<value>) works and
-         should be used when the user wants to change it only
-        for the cobrança;
-     o2) the user will also be able to change it in contract;
-     o3) this method is to be used when first creating a cobrança,
-         where it'll take bankaccount preferrably from contract or
-         fallback to the default.
-
-      Because cobranças can be created with a mininum 3-field param-set:
-        contract_id
-        monthrefdate and
-        monthseqnumber
-
-      Attribute bankaccount is not set at instantiation time.
-      (Nor is it dynamically set via a somewhat contract_id setAttribute method.)
-
-      So, bankaccount is planned to be 'lazyly' picked up here.
-
-      get_n_set_bankaccount() will be look up for a bankaccount in a certain order, ie:
-
-      1) firstly, it will look up whether or not bankaccount_id is present
-          (at the same time bankaccount being absent);
-      2) secondly, it will inspect contract and contract_id;
-
-      3) if 2) above fails, it will return the system's default.
-
-        Obs.: in any case, it will also set it to the object.
+      (Notwithstanding, we don't know it yet,
+       there may be some other way to solve this chicken-and-egg problem...)
     */
-    // 1st look-up
+
+    if (!empty($this->contract)) {
+      return $this->contract;
+    }
+
+    return Contract::find($this->contract_id);
+
+  } // ends get_contract_queried_or_by_id()
+
+  public function set_bankaccountid_from_contract_or_default() {
+
     if (!empty($this->bankaccount_id)) {
-      $this->bankaccount = BankAccount::find($bankaccount_id);
-      if ($this->bankaccount != null) {
-        return;
-      }
-    }
-    // 2nd look-up (give up and return default if contract is null and contract_id is empty)
-    if ($this->contract == null) {
-      if (!empty($this->contract_id)) {
-        $this->contract = Contract::find($contract_id);
-        if ($this->contract == null) {
-          $this->bankaccount = BankAccount::get_default();
-          return;
-        }
-      }
-    }
-    // 3rd look-up (contract is not null, try to get bankaccount from it)
-    if ($this->contract->bankaccount != null) {
-      $this->bankaccount = $this->contract->bankaccount;
       return;
     }
-    // 4th look-up (contract has a null bankaccount, inspect its bankaccount_id)
-    if (!empty($this->contract->bankaccount_id)) {
-      $this->bankaccount_id = $this->contract->bankaccount_id;
-      $this->bankaccount = BankAccount::find($this->bankaccount_id);
-      if ($this->bankaccount != null) {
+
+    $contract = $this->get_contract_queried_or_by_id();
+    if (!empty($contract)) {
+      if (!empty($contract->bankaccount)) {
+        // SET only bankaccount_id, NOT bankaccount
+        $this->bankaccount_id = $contract->bankaccount->id;
+        return;
+      } elseif (!empty($contract->bankaccount_id)) {
+        $this->bankaccount_id = $contract->bankaccount_id;
         return;
       }
     }
-    // All above failed to return a bankaccount, fall back lastly to default
-    // In the last resort, even if db doesn't have the default, get_default() will make it
-    // method has not returned yet, fallback to default
-    $this->bankaccount = BankAccount::get_default();
+    // If method has not yet returned, fall back bankaccount_id to default_id
+    $bankaccount = BankAccount::get_default();
+    $this->bankaccount_id = $bankaccount->id;
     return;
-  } // ends set_bankaccount_via_contract_or_default()
+  } // ends set_bankaccountid_from_contract_or_default()
 
-  public function get_n_set_bankaccount() {
+  public function get_bankaccount_queried_or_by_id() {
+
     /*
-      Obs.: a direct accessor $obj->attrib is also possible.
-        However, this method covers cobrança's creation moment
-        when bankaccount will preferrably come from contract or
-        fallback to its default.
+      This method retrieves bankaccount either by the Eloquent automatc fetch
+        or, at the object's creation before save() and id assignment, by bankaccount_id
     */
-
-    if ($this->bankaccount != null) {
+    if (!empty($this->bankaccount)) {
       return $this->bankaccount;
     }
-    $this->set_bankaccount_via_contract_or_default();
-    return $this->bankaccount;
-  } // ends get_n_set_bankaccount()
+    if (empty($this->bankaccount_id)) {
+      $this->set_bankaccountid_from_contract_or_default();
+    }
+    return BankAccount::find($this->bankaccount_id);
+  } // ends get_contract_queried_or_by_id()
 
   public function bankaccount() {
     return $this->belongsTo('App\Models\Finance\BankAccount');
@@ -742,5 +757,14 @@ class Cobranca extends Model {
   public function amountincreasetrails() {
     return $this->hasMany('App\Models\Billing\AmountIncreaseTrail');
   }
+
+  public function save_propagating_billingitems() {
+    $this->save();
+    foreach ($this->billingitems as $billingitem) {
+      $billingitem->cobranca_id = $this->id;
+      $billingitem->save();
+    }
+  }
+
 
 } // ends class Cobranca extends Model

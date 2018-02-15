@@ -1,3 +1,8 @@
+<?php
+  $routeparams_toformerbill_asarray = $cobranca->get_routeparams_toformerbill_asarray();
+  $routeparams_tonextbill_asarray   = $cobranca->get_routeparams_tonextbill_asarray();
+?>
+
 <div class="row">
   <div class="text-center">
     <h2>Boleta da Cobrança Mensal</h2>
@@ -20,7 +25,6 @@
             <?php
               $cobrancatipochar4id = 'n/a';
               $cobrancatipobriefdescr = 'descr.';
-              $cobrancatipo = $billingitem->get_cobrancatipo();
               if ($billingitem->cobrancatipo == null) {
                 continue;
               }
@@ -31,8 +35,8 @@
 
               <td class="col-md-9">
                 <em>{{ $tipocobrancastr }}</em>
-                @if($cobrancatipo != null && $cobrancatipo->is_it_carried_debt() == true && $cobranca->$previous_bill_id != null)
-                  <a href="{{ route('$billingitemroute', $cobranca->get_routeparams_toformerbill_asarray()) }}">
+                @if($billingitem->cobrancatipo != null && $billingitem->cobrancatipo->is_it_carried_debt() == true && !empty($routeparams_toformerbill_asarray))
+                  <a href="{{ route('cobrancaviayearmonthimovapelroute', $routeparams_toformerbill_asarray) }}">
                     Cobr. Anterior
                   </a>
                 @endif
@@ -84,6 +88,7 @@
       </tbody>
   </table>
 
+@if($bankaccount!=null)
   <button type="button" class="btn btn-success btn-lg btn-block">
       <span class="glyphicon glyphicon-chevron-right">
         Dados para Depósito/Transferência
@@ -98,3 +103,59 @@
     A: {{ $bankaccount->customer }} <br>
     CPF {{ $bankaccount->cpf }} <br>
   </p>
+
+  <hr>
+  <p>
+    Cobr. ID {{ $cobranca->id }}
+    <a href="{{ route('cobrancaeditarhttpgetroute', $cobranca->urlrouteparamsasarray) }}">
+      edit
+    </a>
+    ||
+    <?php
+      if (!session()->has('cobranca')) {
+        session()->put('cobranca', $cobranca);
+      }
+      $scobranca = session()->get('cobranca');
+      if ($scobranca->id != $cobranca->id) {
+        session()->put('cobranca', $cobranca);
+      }
+    ?>
+    <form id="deletecobrancaformid" action="{{ route('cobrancadeletehttppostroute') }}" method="post">
+      {{ csrf_field() }}
+      <a href="#" onclick="document.getElementById('deletecobrancaformid').submit();">
+        delete
+      </a>
+      <br>
+      <button type="button" name="button">
+        delete
+      </button>
+  </form>
+  </p>
+
+  <table>
+    <tr>
+      <td>
+        @if(!empty($routeparams_toformerbill_asarray))
+        <a href="{{ route('cobrancaviayearmonthimovapelroute', $routeparams_toformerbill_asarray) }}">
+          Próx. Anterior
+        </a>
+        @else
+          Primeira cobr. no DB
+        @endif
+      </td>
+<td>
+  ||
+</td>
+      <td>
+        @if(!empty($routeparams_tonextbill_asarray))
+        <a href="{{ route('cobrancaviayearmonthimovapelroute', $routeparams_tonextbill_asarray) }}">
+          Próx. Cobr.
+        </a>
+        @else
+          Última cobr. no DB
+        @endif
+      </td>
+
+    </tr>
+  </table>
+@endif

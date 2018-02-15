@@ -9,7 +9,7 @@
 <?php
   $contract    = $cobranca->contract;
   $imovel      = $contract->imovel;
-  $bankaccount = $cobranca->bankaccount;
+  $bankaccount = $cobranca->get_bankaccount_queried_or_by_id();
   if (!isset($today)) {
     $today = \Carbon\Carbon::today();
   }

@@ -354,7 +354,7 @@ class CobrancaController extends Controller {
 			// throw new Exception('$cobranca == null in controller for cobrança-editar');
 		}
 		$cobranca->generate_autoinsertable_billingitems();
-		$cobranca->set_bankaccount_via_contract_or_default();
+		$cobranca->set_bankaccountid_from_contract_or_default();
 		session()->put('cobranca', $cobranca);
 
 		// return var_dump($aarray);
@@ -424,12 +424,28 @@ class CobrancaController extends Controller {
 
 	} // ends try_recover_cobranca_from_request_or_errorpage()
 
+	public function delete_cobranca(Request $request)	{
+		$cobranca = session()->get('cobranca');
+		$imovelapelido = null;
+		if ($cobranca != null) {
+			$imovel = $cobranca->imovel;
+			if ($imovel != null) {
+				$imovelapelido = $imovel->apelido;
+			}
+			$cobranca->delete();
+		}
+		if ($imovelapelido != null) {
+			return redirect()->route('cobrancasporimovelroute', [$imovelapelido]);
+		}
+		return redirect()->route('/');
+	} // ends delete_cobranca()
 
 	public function save_cobranca(Request $request)	{
 
 		$cobranca = session()->get('cobranca');
 		// $cobranca->save();    // Eloquent is trying to save columns '0' & '1' (of course, it's an error)
 		// return 'Saved $cobranca->id = ' . $cobranca->id;
+		$cobranca->save_propagating_billingitems();
 		return view('cobrancas.cobranca.mostrar2', [
 			'cobranca' => $cobranca,
 		]);

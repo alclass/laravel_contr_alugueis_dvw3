@@ -80,8 +80,8 @@ class BillingItemPO {
       return null;
     }
     $billingitem = new BillingItem();
-    $billingitem->cobranca = $cobranca;
-    $billingitem->cobrancatipo  = $this->cobrancatipo;
+    // $billingitem->cobranca      = $cobranca;
+    $billingitem->cobrancatipo_id  = $this->cobrancatipo->id;
     $billingitem->charged_value = $this->charged_value;
     $billingitem->monthrefdate  = $this->monthrefdate;
     $billingitem->numberpart    = $this->numberpart;
@@ -116,6 +116,7 @@ class BillingItemPO {
     $outstr .= "totalparts => $this->totalparts \n";
     return $outstr;
   }
+
 
 
 } // ends class BillingItemPO

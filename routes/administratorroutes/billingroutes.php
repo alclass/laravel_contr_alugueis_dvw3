@@ -19,6 +19,7 @@ Here we dedicate to routes below
   /sa/billing
     /sa/billing/show/{cobranca_id}
     /sa/billing/showbyref/{contract_id}/{year}/{month}
+    /sa/billing/ref/{year}/{month}/{imovelapelido}/{monthseqnumber?}
     /sa/billing/edit/{contract_id}/{year}/{month}
     /sa/billing/edit
 
@@ -131,7 +132,11 @@ Route::prefix('/sa')->group( function() {
       'as'=>'savecobrancahttppostroute',
       'uses'=>'Billing\CobrancaController@save_cobranca'
     ]);
-    // 
+    //
+    Route::post('deletecobranca/', [
+      'as'=>'cobrancadeletehttppostroute',
+      'uses'=>'Billing\CobrancaController@delete_cobranca'
+    ]);
 
     //===>>> sa/billing/edit POST
     Route::post('edit/', [

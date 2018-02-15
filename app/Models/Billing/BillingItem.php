@@ -13,7 +13,7 @@ class BillingItem extends Model {
    * docstring
   */
 
-
+  // var $cobrancatmp; // to be used before db-saving
   protected $table = 'billingitems';
 
   protected $dates = [
@@ -35,12 +35,13 @@ class BillingItem extends Model {
     'obsinfo',
 	];
 
-  protected $attributes = ['reftype', 'freqtype', 'imovel'];
+  // This line below is misinforming Eloquent on db-fields for inserting/updating
+  // However, the get<field>Attribute() continues to exist at the end.
+  // protected $attributes = ['reftype', 'freqtype', 'imovel'];
 
   public function generate_ref_repr_for_cota_column() {
-    $cobrancatipo = $this->get_cobrancatipo();
-    if ($cobrancatipo != null) {
-      if ($cobrancatipo->reftype == CobrancaTipo::K_REFTYPE_D_DATE) {
+    if ($this->cobrancatipo != null) {
+      if ($this->cobrancatipo->reftype == CobrancaTipo::K_REFTYPE_D_DATE) {
         return '';
       }
     }
@@ -134,18 +135,32 @@ class BillingItem extends Model {
   }
 
   public function cobranca() {
-    $this->belongsTo('App\Models\Billing\Cobranca');
+    return $this->belongsTo('App\Models\Billing\Cobranca', 'cobranca_id');
   }
 
   //=========================================================
   // TO-DO: make cobrancatipo work with Eloquent-ORM
   //=========================================================
+  /*
   public function get_cobrancatipo() {
     return CobrancaTipo::find($this->cobrancatipo_id);
   }
+  */
   public function cobrancatipo() {
-    $this->belongsTo('App\Models\Billing\CobrancaTipo');
+    return $this->belongsTo('App\Models\Billing\CobrancaTipo');
   }
   //=========================================================
+
+/*
+  public function save_extracting_cobrancaid() {
+    // TO-DO
+    if (!empty($this->cobrancatmp)) {
+      $this->cobranca_id = $this->cobrancatmp->id;
+      $this->save();
+      return true;
+    }
+    return false;
+  }
+*/
 
 } // ends class BillingItem extends Model
