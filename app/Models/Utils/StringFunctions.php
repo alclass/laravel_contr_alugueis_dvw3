@@ -79,4 +79,37 @@ class StringFunctions {
     print "$namepath + $classname => at_end = $bool \n";
   } // ends static adhoctest_is_var_of_class()
 
+
+  public static function parseStrToFloat($strfloat, $dec_point=null) {
+    /*
+      The snippet in here came from a question in StackOverflow in the url below:
+      https://stackoverflow.com/questions/2935906/how-do-i-convert-output-of-number-format-back-to-numbers-in-php
+
+      The code takes into consideration $dec_point (eg. point in English , comma in Portuguese).
+      However, float needs 'point' anyway.
+
+      The regexp below also takes care of thousand separators, stripping them out.
+
+      Eg.
+      1)
+        $strfloat = '1,295.67'
+        $float will be 1295.67
+      2)
+        $strfloat = '1.295,67'
+        $float will be 1295.67
+    */
+
+    if (empty($dec_point)) {
+      $locale = localeconv();
+      $dec_point = $locale['decimal_point'];
+    }
+    return floatval(
+      str_replace(
+        $dec_point,
+        '.',
+        preg_replace('/[^\d'.preg_quote($dec_point).']/', '', $strfloat)
+      )
+    );
+  } // ends static parseStrToFloat()
+
 } // ends class DateFunctions

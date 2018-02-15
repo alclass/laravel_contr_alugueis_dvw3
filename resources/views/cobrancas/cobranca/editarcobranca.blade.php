@@ -7,8 +7,15 @@
 @endsection
 @section('content')
 <?php
-  $form_date_ids = [];
+  $contract    = $cobranca->contract;
+  $imovel      = $contract->imovel;
+  $bankaccount = $cobranca->bankaccount;
+  if (!isset($today)) {
+    $today = \Carbon\Carbon::today();
+  }
+  $form_billingitem_monthrefdate_ids = []; // this array will help extract billing item after submition
 ?>
+
 <div class="container">
 <div class="row">
   <div class="well col-xs-10 col-sm-10 col-md-6 col-xs-offset-1 col-sm-offset-1 col-md-offset-2">
@@ -38,6 +45,19 @@
           <h2>Boleta da Cobrança Mensal</h2>
       </div>
       </span>
+
+<?php
+  if (!isset($error_msgs)) {
+    $error_msgs = [];
+  }
+?>
+@foreach($error_msgs as $error_msg)
+  <p>
+    {{ $error_msg }}
+  </p>
+@endforeach
+
+
       <table class="table table-hover">
           <thead>
               <tr>
@@ -70,20 +90,20 @@
     {{ $tipocobrancastr }}
     <input type="hidden"
       name="cobrancatipo4char-{{ $loop->iteration }}-fieldname"
-      value="{{ $tipocobrancastr }}">
+      value="{{ $cobrancatipochar4id }}">
 </td>
               <td class="col-md-1 text-center">
 
 <?php
-  $form_date_id    = 'date-' . $loop->iteration . '-id';
-  $form_date_ids[] = $form_date_id;
+  $form_billingitem_monthrefdate_id    = 'monthrefdate-' . $loop->iteration . '-id';
+  $form_billingitem_monthrefdate_ids[] = $form_billingitem_monthrefdate_id;
 ?>
 
-<div class="fb-date form-group field-date-{{ $loop->iteration }}">
-  <label for="{{ $form_date_id }}" class="fb-date-label"></label>
+<div class="fb-date form-group">
+  <label for="{{ $form_billingitem_monthrefdate_id }}" class="fb-date-label"></label>
 
-  <input class="form-control" name="date-{{ $loop->iteration }}-fieldname"
-    id="{{ $form_date_id }}" type="date">
+  <input class="form-control" name="monthrefdate-{{ $loop->iteration }}-fieldname"
+    id="{{ $form_billingitem_monthrefdate_id }}" type="date">
 </div>
               </td>
               <td class="col-md-1" style="text-align: center">
@@ -119,7 +139,7 @@
                     <h4>
                       <strong>
 
-  {{ number_format($cobranca->get_total_value(),2) }}
+  {{ number_format($cobranca->totalvalue, 2) }}
 
                       </strong>
                     </h4>
@@ -151,7 +171,7 @@
           </tbody>
       </table>
 
-@if(count($form_date_ids)>0)
+@if(count($form_billingitem_monthrefdate_ids)>0)
 <div align="center">
   {{ csrf_field() }}
   <button type="submit" name="button">Enviar</button>
@@ -162,7 +182,6 @@
 </fieldset>
 </form>
 
-    @if(!empty($bankaccount))
       <button type="button" class="btn btn-success btn-lg btn-block">
         <span class="glyphicon glyphicon-chevron-right">
           Dados para Depósito/Transferência
@@ -176,7 +195,6 @@
         A: {{ $bankaccount->customer }}<br>
         CPF {{ $bankaccount->cpf }}<br>
       </p>
-    @endif
 
   </div>
   </div>
@@ -187,8 +205,8 @@
 
 $( function() {
 
-  @foreach($form_date_ids as $form_date_id)
-    $('#{{ $form_date_id }}').val('{{ $cobranca->monthrefdate->format("Y-m-d") }}');
+  @foreach($form_billingitem_monthrefdate_ids as $form_billingitem_monthrefdate_id)
+    $('#{{ $form_billingitem_monthrefdate_id }}').val('{{ $cobranca->monthrefdate->format("Y-m-d") }}');
   @endforeach
 
 });

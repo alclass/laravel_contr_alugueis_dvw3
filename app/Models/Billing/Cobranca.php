@@ -143,7 +143,7 @@ class Cobranca extends Model {
     =================================
   */
 
-  protected $table     = 'cobrancas';
+  protected $table = 'cobrancas';
 
 	/**
 	 * The attributes that are mass assignable.
@@ -157,6 +157,7 @@ class Cobranca extends Model {
    //'created_at',
    //'updated_at',
  ];
+ //protected $properties = ['totalitems','totalvalue'];
 
 /*
   monthrefdate
@@ -176,6 +177,7 @@ class Cobranca extends Model {
 */
 
 	protected $fillable = [
+    'id',
 		'monthrefdate', 'monthseqnumber', 'duedate',
     'contract_id',  'bankaccount_id',
 
@@ -214,13 +216,6 @@ class Cobranca extends Model {
     return false;
   } // ends is_iptu_ano_quitado()
 
-  public function get_total_value() {
-    $total_value = 0;
-    foreach ($this->billingitems as $billingitem) {
-      $total_value += $billingitem->charged_value;
-    }
-    return $total_value;
-  }
 
   public function fetch_previous_cobranca() {
     $previous_monthrefdate = $this->monthrefdate->copy()->addMonths(-1);
@@ -610,14 +605,15 @@ class Cobranca extends Model {
 
   public function get_balance() {
     /*
-      This method should consider the end of month
-      (Another method may reopen month if a next bill )
+    TO-DO:
+      This method, for the time being, just calls 'totalvalue',
+      however, the idea that we probably tried to express
+      is one for closing the cobrança at the end of month,
+      having another one to be opened and carry debts or credits
+      if there are any, or, if no new month is open, keep this open.
     */
-    $total_value = $this->get_total_value();
-    // process payment
-    // payments are inside a JSON field
 
-    return $total_value;
+    return $this->totalvalue;
   }
 
   public function get_users() {
@@ -628,8 +624,18 @@ class Cobranca extends Model {
     return [];
   }
 
-  public function get_bankaccount() {
+  public function set_bankaccount_via_contract_or_default() {
     /*
+
+    FIRST obs.:
+     o1) a direct setting (ie, $attrib=<value>) works and
+         should be used when the user wants to change it only
+        for the cobrança;
+     o2) the user will also be able to change it in contract;
+     o3) this method is to be used when first creating a cobrança,
+         where it'll take bankaccount preferrably from contract or
+         fallback to the default.
+
       Because cobranças can be created with a mininum 3-field param-set:
         contract_id
         monthrefdate and
@@ -639,8 +645,8 @@ class Cobranca extends Model {
       (Nor is it dynamically set via a somewhat contract_id setAttribute method.)
 
       So, bankaccount is planned to be 'lazyly' picked up here.
-      
-      get_bankaccount() will be look up for a bankaccount in a certain order, ie:
+
+      get_n_set_bankaccount() will be look up for a bankaccount in a certain order, ie:
 
       1) firstly, it will look up whether or not bankaccount_id is present
           (at the same time bankaccount being absent);
@@ -650,49 +656,58 @@ class Cobranca extends Model {
 
         Obs.: in any case, it will also set it to the object.
     */
-
     // 1st look-up
-    if ($this->bankaccount == null) {
-      if (!empty($this->bankaccount_id)) {
-        $this->bankaccount = BankAccount::find($bankaccount_id);
-        if ($this->bankaccount != null) {
-          return $this->bankaccount;
-        }
+    if (!empty($this->bankaccount_id)) {
+      $this->bankaccount = BankAccount::find($bankaccount_id);
+      if ($this->bankaccount != null) {
+        return;
       }
     }
-
     // 2nd look-up (give up and return default if contract is null and contract_id is empty)
     if ($this->contract == null) {
       if (!empty($this->contract_id)) {
         $this->contract = Contract::find($contract_id);
         if ($this->contract == null) {
           $this->bankaccount = BankAccount::get_default();
-          return $this->bankaccount;
+          return;
         }
       }
     }
-
     // 3rd look-up (contract is not null, try to get bankaccount from it)
     if ($this->contract->bankaccount != null) {
       $this->bankaccount = $this->contract->bankaccount;
-      return $this->bankaccount;
+      return;
     }
-
     // 4th look-up (contract has a null bankaccount, inspect its bankaccount_id)
     if (!empty($this->contract->bankaccount_id)) {
       $this->bankaccount_id = $this->contract->bankaccount_id;
       $this->bankaccount = BankAccount::find($this->bankaccount_id);
       if ($this->bankaccount != null) {
-        return $this->bankaccount;
+        return;
       }
     }
-
     // All above failed to return a bankaccount, fall back lastly to default
     // In the last resort, even if db doesn't have the default, get_default() will make it
+    // method has not returned yet, fallback to default
     $this->bankaccount = BankAccount::get_default();
+    return;
+  } // ends set_bankaccount_via_contract_or_default()
+
+  public function get_n_set_bankaccount() {
+    /*
+      Obs.: a direct accessor $obj->attrib is also possible.
+        However, this method covers cobrança's creation moment
+        when bankaccount will preferrably come from contract or
+        fallback to its default.
+    */
+
+    if ($this->bankaccount != null) {
+      return $this->bankaccount;
+    }
+    $this->set_bankaccount_via_contract_or_default();
     return $this->bankaccount;
-  } // ends get_bankaccount()
-  
+  } // ends get_n_set_bankaccount()
+
   public function bankaccount() {
     return $this->belongsTo('App\Models\Finance\BankAccount');
   }
@@ -700,8 +715,21 @@ class Cobranca extends Model {
     return $this->belongsTo('App\Models\Immeubles\Contract');
   }
 
-  public function get_total_items() {
+  // dynamic attribute: 'totalitems'
+  public function getTotalitemsAttribute() {
     return count($this->billingitems);
+  }
+  // dynamic attribute: 'totalvalue'
+  public function getTotalvalueAttribute() {
+    /*
+      Billing Items, summed up, tell the bill's total.
+      Notice this ($this->totalvalue) is a dynamic attribute
+    */
+    $total_charged = 0;
+    foreach ($this->billingitems as $billingitem) {
+      $total_charged += $billingitem->charged_value;
+    }
+    return $total_charged;
   }
   public function billingitems() {
     return $this->hasMany('App\Models\Billing\BillingItem');

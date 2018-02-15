@@ -122,6 +122,18 @@ Route::prefix('/sa')->group( function() {
     Route::get('xedit/{x}', ['uses' => function($x) { return 'hi'.$x; }]);
 
     //===>>> sa/billing/edit POST
+    Route::post('confirm/', [
+      'as'=>'cobrancaeditarhttppostroute',
+      'uses'=>'Billing\CobrancaController@show_confirm_cobranca'
+    ]);
+
+    Route::post('registered/', [
+      'as'=>'savecobrancahttppostroute',
+      'uses'=>'Billing\CobrancaController@save_cobranca'
+    ]);
+    // 
+
+    //===>>> sa/billing/edit POST
     Route::post('edit/', [
       'as'=>'cobrancaeditarhttppostroute',
       'uses'=>'Billing\CobrancaController@edit_via_httppost'

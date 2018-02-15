@@ -42,6 +42,20 @@
 @include('cobrancas.cobranca.mostrar_inner')
 
 
+<p>
+
+  <form id="form_id" class="form-horizontal"
+    action="{{ route('savecobrancahttppostroute') }}" method="post">
+
+    <div align="center">
+      {{ csrf_field() }}
+      <button type="submit" name="button">Confirmar Criação/Edição da Cobrança</button>
+      <hr>
+    </div>
+
+  </form>
+</p>
+
 </div>
 </div>
 </div>

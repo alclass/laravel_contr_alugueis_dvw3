@@ -53,7 +53,7 @@
     @endforeach
 
     </table>
-    <h5>Total: {{ $cobranca->get_total_value() }}</h5>
+    <h5>Total: {{ $cobranca->totalvalue }}</h5>
     <h6>Vencimento: {{ $cobranca->duedate->format('d/m/Y') }}</h6>
     @endif  {{-- @if ( $cobranca->billingitems()->count() > 0 ) --}}
 

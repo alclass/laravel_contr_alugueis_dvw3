@@ -23,8 +23,8 @@
 
   @foreach ($cobrancas as $cobranca)
     <?php
-      $valor_cobranca   = $cobranca->get_total_value();
-      $total_cobrancas += $cobranca->get_total_value();
+      $valor_cobranca   = $cobranca->totalvalue;
+      $total_cobrancas += $cobranca->totalvalue;
       $imovel_apelido = 'n/a';
       if ($cobranca->contract->imovel != null) {
         $imovel_apelido = $cobranca->contract->imovel->apelido;

@@ -9,6 +9,7 @@ use App\Models\Finance\BankAccount;
 use App\Models\Immeubles\Contract;
 use App\Models\Immeubles\Imovel;
 use App\Models\Utils\DateFunctions;
+use App\Models\Utils\StringFunctions;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use Carbon\Carbon;
@@ -235,11 +236,6 @@ class CobrancaController extends Controller {
 		// return var_dump($cobranca);
 		return view('cobrancas.cobranca.mostrar2', [
 			'cobranca'=>$cobranca,
-			'contract'=>$contract,
-			'bankaccount'=>$bankaccount,
-			'imovel'=>$imovel,
-			// 'user'=>$user,
-			'today'=>$today,
 		]); // alt.:cobrancas.cobranca.mostrarcobranca
 
 
@@ -290,11 +286,6 @@ class CobrancaController extends Controller {
 		$today = Carbon::today();
 		return view('cobrancas.cobranca.mostrar2', [
 			'cobranca'=>$cobranca,
-			'contract'=>$contract,
-			'bankaccount'=>$bankaccount,
-			'imovel'=>$imovel,
-			// 'user'=>$user,
-			'today'=>$today,
 		]); // alt.:cobrancas.cobranca.mostrarcobranca
 	}
 
@@ -320,14 +311,14 @@ class CobrancaController extends Controller {
 	 * @return Response
 	 */
 	public function edit_via_httpget(
-			$year, 
-			$month, 
-			$imovelapelido, 
+			$year,
+			$month,
+			$imovelapelido,
 			$monthseqnumber=1,
 			$error_msgs = []
 		)	{
 
-			$imovel   = Imovel::fetch_by_apelido($imovelapelido);
+		$imovel = Imovel::fetch_by_apelido($imovelapelido);
 	  if ($imovel == null) {
 		  return redirect()->route('/');
 		}
@@ -363,23 +354,28 @@ class CobrancaController extends Controller {
 			// throw new Exception('$cobranca == null in controller for cobrança-editar');
 		}
 		$cobranca->generate_autoinsertable_billingitems();
-		$bankaccount = $cobranca->get_bankaccount();
+		$cobranca->set_bankaccount_via_contract_or_default();
 		session()->put('cobranca', $cobranca);
-		$aarray = [
-			'bankaccount' => $bankaccount,
-			'cobranca' => $cobranca,
-			'contract' => $contract,
-			'imovel'   => $imovel,
-			'monthrefdate' => $monthrefdate,
-			'today' => $today,
-			'error_msgs' => $error_msgs,
-		];
+
 		// return var_dump($aarray);
 		return view(
-			'cobrancas.cobranca.editarcobranca', $aarray
-			//$array,
-		);
+			'cobrancas.cobranca.editarcobranca', [
+				'cobranca' => $cobranca,
+				'error_msgs' => $error_msgs,
+			]);
  	} // ends edit_via_httpget()
+
+	public function show_confirm_cobranca() {
+
+		$cobranca = session()->get('cobranca');
+		if ($cobranca == null) {
+			return 'Cobranca não existe.';
+		}
+		return view(
+			'cobrancas.cobranca.mostrar2', [
+				'cobranca' => $cobranca,
+			]);
+	} // ends show_confirm_cobranca()
 
 	public function try_recover_editcobranca_from_request_or_errorpage(
 			Request $request,
@@ -419,13 +415,27 @@ class CobrancaController extends Controller {
 		}
 
 		return $this->edit_via_httpget(
-			$year, 
-			$month, 
-			$imovelapelido, 
-			$monthseqnumber
+			$year,
+			$month,
+			$imovelapelido,
+			$monthseqnumber,
+			$error_msgs
 		);
 
 	} // ends try_recover_cobranca_from_request_or_errorpage()
+
+
+	public function save_cobranca(Request $request)	{
+
+		$cobranca = session()->get('cobranca');
+		// $cobranca->save();    // Eloquent is trying to save columns '0' & '1' (of course, it's an error)
+		// return 'Saved $cobranca->id = ' . $cobranca->id;
+		return view('cobrancas.cobranca.mostrar2', [
+			'cobranca' => $cobranca,
+		]);
+
+	} // ends ()
+
 
 	/**
 	 * HTTP-post the edit form for creating/updating the 'cobranca'
@@ -439,7 +449,7 @@ class CobrancaController extends Controller {
 				the billing items for a cobrança.
 			=> if data components are good, the Eloquent 'cobranca'
 				object is saved.
-			=> if data components are NOT good, a redirect to the 
+			=> if data components are NOT good, a redirect to the
 				edit page should happen carrying the errors array.
 		*/
 
@@ -447,53 +457,92 @@ class CobrancaController extends Controller {
 		if ($cobranca == null) {
 			return $this->try_recover_editcobranca_from_request_or_errorpage($request);
 		}
-		
-		$billingitem_n = 1;
-		
+
+		$billingitem_n = 0; // it'll start at index 1 below
+
+		$to_vardump = [];
+
+		$cobranca->billingitems()->delete();
+
 		while (true) {
 			$billingitem_n += 1;
-			$datefieldname = 'date-' . $billingitem_n . '-fieldname';
-			if ($datefieldname == null) {
+			// 1) $billingitem_monthrefdate
+			$monthrefdatefieldname = 'monthrefdate-' . $billingitem_n . '-fieldname';
+
+			$billingitem_monthrefdatestr = $request->input($monthrefdatefieldname);
+
+			if ($billingitem_monthrefdatestr == null) {
 				break;
 			}
-			$billingitem_monthrefdate = $request->input($datefieldname);
+			$billingitem_monthrefdate = new Carbon($billingitem_monthrefdatestr);
+
+			//$to_vardump[$monthrefdatefieldname] = $billingitem_monthrefdate;
+
+			// 2) $cobrancatipo4char
 			$cobrancatipofieldname = 'cobrancatipo4char-' . $billingitem_n . '-fieldname';
 			$cobrancatipo4char = $request->input($cobrancatipofieldname);
+
+			//$to_vardump[$cobrancatipofieldname] = $cobrancatipo4char;
+
+			// 3) $charged_value
  			$charged_valuefieldname = 'charged_value-' . $billingitem_n . '-fieldname';
 			$charged_valuestr = $request->input($charged_valuefieldname);
-			$charged_value = floatval($charged_valuestr);
-			$numberpartfieldname = 'numberpart-' . $billingitem_n . '-fieldname';
-			$numberpartstr = $request->input($numberpartfieldname);
-			$numberpart = intval($numberpartstr);
-			$totalpartsfieldname = 'totalparts-' . $billingitem_n . '-fieldname';
-			$totalpartsstr = $request->input($totalpartsfieldname);
-			$totalparts = intval($totalpartsstr);
+			$charged_value = StringFunctions::parseStrToFloat($charged_valuestr);
+
+			//$to_vardump[$charged_valuefieldname] = $charged_value;
+
+			// 4) $additionalinfo
 			if (!isset($additionalinfo) || empty($additionalinfo)) {
 				$additionalinfo = 'Additional Info not yet set.';
 			}
+			// 5) $numberpart
+			$numberpartfieldname = 'numberpart-' . $billingitem_n . '-fieldname';
+			$numberpartstr = $request->input($numberpartfieldname);
+			$numberpart = intval($numberpartstr);
+			// 6) $totalparts
+			$totalpartsfieldname = 'totalparts-' . $billingitem_n . '-fieldname';
+			$totalpartsstr = $request->input($totalpartsfieldname);
+			$totalparts = intval($totalpartsstr);
 			$billingitem = BillingItemGenStatic
 				::make_billingitem(
 					$cobranca,
 					$cobrancatipo4char,
 					$charged_value,
+					$billingitem_monthrefdate,
 					$additionalinfo,
 					$numberpart,
 					$totalparts
 				);
+
+			// $to_vardump[$cobrancatipofieldname] = $billingitem->cobrancatipo->char4id;
+
+			/*
+			if ($billingitem != null) {
+				$cobranca->billingitems->push($billingitem);
+			}
+			*/
 			// protect against infinite loop
 			if ($billingitem_n > self::LIMIT_WHILE_LOOPS_TO) {
 				break;
 			}
-			
+
 		} // ends while
 
+
+		// return var_dump($to_vardump);
+
+
 		// $cobranca->save();
-		return '(Not saved yet) cobrança with id = ' 
+		/* return '(Not saved yet) cobrança with id = '
 			. $cobranca->monthrefdate . ' => '
-			. $cobranca->get_total_value() . ' => '
+			. $cobranca->totalvalue . ' => '
 			. $cobranca;
 		// return var_dump($cobranca);
-		// return view('cobrancas.cobranca.mostrarcobranca', ['cobranca'=>$cobranca]);
+		*/
+		session()->put('cobranca', $cobranca);
+		return view('cobrancas.cobranca.editconfirm', [
+			'cobranca' => $cobranca,
+		]);
 
 	} // ends edit_via_httppost()
 

@@ -77,7 +77,10 @@ class BillingItemGenStatic {
       $numberpart,
       $totalparts
     );
-    return self::make_billingitem_from_po_n_cobranca($billingitempo, $cobranca);
+    return self::make_billingitem_from_po_n_cobranca(
+      $billingitempo,
+      $cobranca
+    );
   } // make_billingitem()
 
   public static function make_billingitempo(
