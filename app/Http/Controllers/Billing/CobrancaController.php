@@ -304,6 +304,26 @@ class CobrancaController extends Controller {
 		return view('cobrancas.cobranca.mostrarcobranca', ['cobranca'=>$cobranca]);
 	}
 
+	public function edit_via_httpget_inner(
+			$cobranca,
+			$error_msgs = []
+		) {
+
+		if (count($cobranca->billingitems)==0) {
+			$cobranca->generate_autoinsertable_billingitems();
+		}
+		$cobranca->set_bankaccountid_from_contract_or_default();
+		session()->put('cobranca', $cobranca);
+
+		// return var_dump($aarray);
+		return view(
+			'cobrancas.cobranca.editarcobranca', [
+				'cobranca' => $cobranca,
+				'error_msgs' => $error_msgs,
+			]);
+
+	}
+
 	/**
 	 * Show the edit form for editing the 'cobranca'
 	 *
@@ -318,6 +338,10 @@ class CobrancaController extends Controller {
 			$error_msgs = []
 		)	{
 
+		$cobranca = session()->get('cobranca');
+		if ($cobranca != null) {
+			return $this->edit_via_httpget_inner($cobranca, $error_msgs);
+		}
 		$imovel = Imovel::fetch_by_apelido($imovelapelido);
 	  if ($imovel == null) {
 		  return redirect()->route('/');
@@ -353,16 +377,8 @@ class CobrancaController extends Controller {
 			$cobranca->contract_id = $contract->id;
 			// throw new Exception('$cobranca == null in controller for cobrança-editar');
 		}
-		$cobranca->generate_autoinsertable_billingitems();
-		$cobranca->set_bankaccountid_from_contract_or_default();
-		session()->put('cobranca', $cobranca);
 
-		// return var_dump($aarray);
-		return view(
-			'cobrancas.cobranca.editarcobranca', [
-				'cobranca' => $cobranca,
-				'error_msgs' => $error_msgs,
-			]);
+		return $this->edit_via_httpget_inner($cobranca, $error_msgs);
  	} // ends edit_via_httpget()
 
 	public function show_confirm_cobranca() {
@@ -478,7 +494,7 @@ class CobrancaController extends Controller {
 
 		$to_vardump = [];
 
-		$cobranca->billingitems()->delete();
+		//$cobranca->billingitems()->delete();
 
 		while (true) {
 			$billingitem_n += 1;
@@ -497,7 +513,10 @@ class CobrancaController extends Controller {
 			// 2) $cobrancatipo4char
 			$cobrancatipofieldname = 'cobrancatipo4char-' . $billingitem_n . '-fieldname';
 			$cobrancatipo4char = $request->input($cobrancatipofieldname);
+			$cobranca_id = CobrancaTipo::fetch_id_by_4char($cobrancatipo4char);
 
+			// verify if this id already exists in ->billingitems
+			$billingitem = $cobranca->billingitems->where('cobranca_id', $cobranca_id)->first();
 			//$to_vardump[$cobrancatipofieldname] = $cobrancatipo4char;
 
 			// 3) $charged_value
@@ -519,6 +538,7 @@ class CobrancaController extends Controller {
 			$totalpartsfieldname = 'totalparts-' . $billingitem_n . '-fieldname';
 			$totalpartsstr = $request->input($totalpartsfieldname);
 			$totalparts = intval($totalpartsstr);
+
 			$billingitem = BillingItemGenStatic
 				::make_billingitem(
 					$cobranca,
@@ -530,13 +550,22 @@ class CobrancaController extends Controller {
 					$totalparts
 				);
 
-			// $to_vardump[$cobrancatipofieldname] = $billingitem->cobrancatipo->char4id;
+				if ($billingitem != null) {
+					if ($cobranca->has_billing_item_of_type($cobrancatipo4char)) {
 
-			/*
-			if ($billingitem != null) {
-				$cobranca->billingitems->push($billingitem);
+						$cobranca->update_billing_item_of_type(
+							$cobrancatipo4char,
+							$charged_value,
+							$billingitem_monthrefdate,
+							$additionalinfo,
+							$numberpart,
+							$totalparts
+						);
+					} else {
+						$cobranca->billingitems->push($billingitem);
+				}
 			}
-			*/
+
 			// protect against infinite loop
 			if ($billingitem_n > self::LIMIT_WHILE_LOOPS_TO) {
 				break;

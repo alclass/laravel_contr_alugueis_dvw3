@@ -39,6 +39,57 @@ class BillingItem extends Model {
   // However, the get<field>Attribute() continues to exist at the end.
   // protected $attributes = ['reftype', 'freqtype', 'imovel'];
 
+  public update_cobranca_if_cobrancaidchanged() {
+    if ($this->cobranca == null) {
+      return;
+    }
+    if ($this->cobranca_id != $this->cobranca->id) {
+      // Unsure whether or not the line below works
+      $this->cobranca = Cobranca::find($this->cobranca_id);
+    }
+  }
+
+  public function update_with(
+      $cobranca,
+      $cobrancatipo4char,
+      $charged_value,
+      $billingitem_monthrefdate,
+      $additionalinfo,
+      $numberpart,
+      $totalparts
+    ) {
+    if ($cobranca != null) {
+      if ($this->cobranca_id != $cobranca->id) {
+        $this->cobranca_id = $cobranca->id;
+      }
+      $this->update_cobranca_if_cobrancaidchanged()
+    }
+    $cobrancatipo_id = CobrancaTipo::fetch_id_by_4char($cobrancatipo4char);
+    if ($cobrancatipo_id != $this->cobrancatipo_id) {
+      $this->cobrancatipo_id = $cobrancatipo_id;
+      if ($this->cobrancatipo != null && $this->cobrancatipo->id != $cobrancatipo_id) {
+        // check what to do
+      }
+
+    }
+    if ($this->charged_value != $charged_value) {
+      $this->charged_value = $charged_value;
+    }
+    if ($this->monthrefdate != $billingitem_monthrefdate) {
+      $this->monthrefdate = $billingitem_monthrefdate;
+    }
+    if ($this->additionalinfo != $additionalinfo) {
+      $this->additionalinfo = $additionalinfo;
+    }
+    if ($this->numberpart != $numberpart) {
+      $this->numberpart = $numberpart;
+    }
+    if ($this->totalparts != $totalparts) {
+      $this->totalparts = $totalparts;
+    }
+
+  }
+
   public function generate_ref_repr_for_cota_column() {
     if ($this->cobrancatipo != null) {
       if ($this->cobrancatipo->reftype == CobrancaTipo::K_REFTYPE_D_DATE) {

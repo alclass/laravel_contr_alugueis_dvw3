@@ -122,7 +122,7 @@
     ?>
     <form id="deletecobrancaformid" action="{{ route('cobrancadeletehttppostroute') }}" method="post">
       {{ csrf_field() }}
-      <a href="#" onclick="document.getElementById('deletecobrancaformid').submit();">
+      <a href="#" class="confirmdeleteeventclass">
         delete
       </a>
       <br>
@@ -158,4 +158,15 @@
 
     </tr>
   </table>
+
+<script type="text/javascript">
+$(document).on('click', '.confirmdeleteeventclass', function(e) {
+  var answer = confirm('Tem certeza que quer deletá-lo?');
+  console.log('passed the confirm line');
+  if (answer == true) {
+    document.getElementById('deletecobrancaformid').submit();
+  }
+});
+</script>
+
 @endif
