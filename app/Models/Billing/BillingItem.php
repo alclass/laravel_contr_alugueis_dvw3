@@ -39,7 +39,8 @@ class BillingItem extends Model {
   // However, the get<field>Attribute() continues to exist at the end.
   // protected $attributes = ['reftype', 'freqtype', 'imovel'];
 
-  public update_cobranca_if_cobrancaidchanged() {
+  private function check_cobranca_with_cobrancaid_n_update_ifdif() {
+
     if ($this->cobranca == null) {
       return;
     }
@@ -58,37 +59,50 @@ class BillingItem extends Model {
       $numberpart,
       $totalparts
     ) {
+    $was_changed = false;
     if ($cobranca != null) {
       if ($this->cobranca_id != $cobranca->id) {
         $this->cobranca_id = $cobranca->id;
+        $was_changed = true;
+        $this->check_cobranca_with_cobrancaid_n_update_ifdif();
       }
-      $this->update_cobranca_if_cobrancaidchanged()
     }
     $cobrancatipo_id = CobrancaTipo::fetch_id_by_4char($cobrancatipo4char);
     if ($cobrancatipo_id != $this->cobrancatipo_id) {
       $this->cobrancatipo_id = $cobrancatipo_id;
-      if ($this->cobrancatipo != null && $this->cobrancatipo->id != $cobrancatipo_id) {
+      $was_changed = true;
+      if ($this->cobrancatipo != null) {
         // check what to do
+        $this->cobrancatipo = CobrancaTipo::find($cobrancatipo_id);
       }
-
     }
     if ($this->charged_value != $charged_value) {
       $this->charged_value = $charged_value;
+      $was_changed = true;
     }
     if ($this->monthrefdate != $billingitem_monthrefdate) {
       $this->monthrefdate = $billingitem_monthrefdate;
+      $was_changed = true;
     }
     if ($this->additionalinfo != $additionalinfo) {
       $this->additionalinfo = $additionalinfo;
+      $was_changed = true;
     }
     if ($this->numberpart != $numberpart) {
       $this->numberpart = $numberpart;
+      $was_changed = true;
     }
     if ($this->totalparts != $totalparts) {
       $this->totalparts = $totalparts;
+      $was_changed = true;
     }
+    if ($was_changed && !empty($this->id)) {
+      // if id is set, the object is in db
+      $this->save();
+    }
+    return $was_changed;
 
-  }
+  } // ends update_with()
 
   public function generate_ref_repr_for_cota_column() {
     if ($this->cobrancatipo != null) {

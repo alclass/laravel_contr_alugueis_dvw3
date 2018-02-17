@@ -9,7 +9,8 @@
 <?php
   $contract    = $cobranca->contract;
   $imovel      = $contract->imovel;
-  $bankaccount = $cobranca->bankaccount;
+  $bankaccount = $cobranca->get_bankaccount_queried_or_by_id();
+
   if (!isset($today)) {
     $today = \Carbon\Carbon::today();
   }
@@ -86,32 +87,33 @@
         $cobrancatipobriefdescr = $cobrancatipo->brief_description;
       }
       $tipocobrancastr = $cobrancatipobriefdescr . ' (' . $cobrancatipochar4id . ')';
+      $fieldsindex = $loop->iteration - 1;
     ?>
     {{ $tipocobrancastr }}
     <input type="hidden"
-      name="cobrancatipo4char-{{ $loop->iteration }}-fieldname"
+      name="cobrancatipo4char-{{ $fieldsindex }}-fieldname"
       value="{{ $cobrancatipochar4id }}">
 </td>
               <td class="col-md-1 text-center">
 
 <?php
-  $form_billingitem_monthrefdate_id    = 'monthrefdate-' . $loop->iteration . '-id';
+  $form_billingitem_monthrefdate_id    = 'monthrefdate-' . $fieldsindex . '-id';
   $form_billingitem_monthrefdate_ids[] = $form_billingitem_monthrefdate_id;
 ?>
 
 <div class="fb-date form-group">
   <label for="{{ $form_billingitem_monthrefdate_id }}" class="fb-date-label"></label>
 
-  <input class="form-control" name="monthrefdate-{{ $loop->iteration }}-fieldname"
+  <input class="form-control" name="monthrefdate-{{ $fieldsindex }}-fieldname"
     id="{{ $form_billingitem_monthrefdate_id }}" type="date">
 </div>
               </td>
               <td class="col-md-1" style="text-align: center">
-<input id="textinput" name="numberpart-{{ $loop->iteration }}-fieldname" placeholder="placeholder"
+<input id="textinput" name="numberpart-{{ $fieldsindex }}-fieldname"
  class="form-control input-md" type="text"
  maxlength="1" value="{{ $billingitem->numberpart }}">
 /
-<input id="textinput" name="totalparts-{{ $loop->iteration }}-fieldname" placeholder="placeholder"
+<input id="textinput" name="totalparts-{{ $fieldsindex }}-fieldname" 
  class="form-control input-md"
  maxlength="1" type="text" value="{{ $billingitem->totalparts }}">
   @if($billingitem->cobrancatipo != null && $billingitem->cobrancatipo->is_it_carried_debt())
@@ -123,10 +125,10 @@
               </td>
               <td>
   <?php
-    $charged_value = number_format($billingitem->charged_value,2);
+    $charged_value = number_format($billingitem->charged_value, 2);
   ?>
 
-  <input id="textinput" name="charged_value-{{ $loop->iteration }}-fieldname"
+  <input id="textinput" name="charged_value-{{ $fieldsindex }}-fieldname"
    class="form-control input-md" type="text" value="{{ $charged_value }}">
               </td>
               </tr>

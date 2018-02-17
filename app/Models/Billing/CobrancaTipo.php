@@ -109,6 +109,13 @@ class CobrancaTipo extends Model {
     return $cobrancatipo;
   } // ends [static] fetch_or_create_cobrancatipo_by_char4id()
 
+  public static function fetch_id_by_4char($char4id) {
+    $cobrancatipo = CobrancaTipo::where('char4id', $char4id)->first();
+    if ($cobrancatipo == null) {
+      return null;
+    }
+    return $cobrancatipo->id;
+  } // ends [static] fetch_id_by_4char()
 
   public static function fetch_by_char4id($p_4char_repr) {
     return self::fetch_or_create_cobrancatipo_by_char4id($p_4char_repr, $raise_exception_if_null=false);

@@ -457,16 +457,24 @@ class CobrancaController extends Controller {
 	} // ends delete_cobranca()
 
 	public function save_cobranca(Request $request)	{
-
+		/*
+			From route:
+				savecobrancahttppostroute
+			This method must "redirect" insteading of returning a view
+			This is because a [F5] from the browser should
+				not reexecute this method
+		*/
 		$cobranca = session()->get('cobranca');
+		if ($cobranca==null) {
+			redirect()->route('/');
+		}
 		// $cobranca->save();    // Eloquent is trying to save columns '0' & '1' (of course, it's an error)
 		// return 'Saved $cobranca->id = ' . $cobranca->id;
 		$cobranca->save_propagating_billingitems();
-		return view('cobrancas.cobranca.mostrar2', [
-			'cobranca' => $cobranca,
-		]);
 
-	} // ends ()
+		return redirect()->route('cobrancaviayearmonthimovapelroute', $cobranca->urlrouteparamsasarray);
+
+	} // ends save_cobranca()
 
 
 	/**
@@ -487,22 +495,20 @@ class CobrancaController extends Controller {
 
 		$cobranca = session()->get('cobranca');
 		if ($cobranca == null) {
-			return $this->try_recover_editcobranca_from_request_or_errorpage($request);
+			return $this->try_recover_editcobranca_from_request_or_errorpage(
+				$request
+			);
 		}
 
-		$billingitem_n = 0; // it'll start at index 1 below
-
+		$billingitem_n = 0; // it'll start at index 0 (normal index startpoint)
 		$to_vardump = [];
 
 		//$cobranca->billingitems()->delete();
 
 		while (true) {
-			$billingitem_n += 1;
 			// 1) $billingitem_monthrefdate
 			$monthrefdatefieldname = 'monthrefdate-' . $billingitem_n . '-fieldname';
-
 			$billingitem_monthrefdatestr = $request->input($monthrefdatefieldname);
-
 			if ($billingitem_monthrefdatestr == null) {
 				break;
 			}
@@ -515,16 +521,10 @@ class CobrancaController extends Controller {
 			$cobrancatipo4char = $request->input($cobrancatipofieldname);
 			$cobranca_id = CobrancaTipo::fetch_id_by_4char($cobrancatipo4char);
 
-			// verify if this id already exists in ->billingitems
-			$billingitem = $cobranca->billingitems->where('cobranca_id', $cobranca_id)->first();
-			//$to_vardump[$cobrancatipofieldname] = $cobrancatipo4char;
-
 			// 3) $charged_value
  			$charged_valuefieldname = 'charged_value-' . $billingitem_n . '-fieldname';
 			$charged_valuestr = $request->input($charged_valuefieldname);
 			$charged_value = StringFunctions::parseStrToFloat($charged_valuestr);
-
-			//$to_vardump[$charged_valuefieldname] = $charged_value;
 
 			// 4) $additionalinfo
 			if (!isset($additionalinfo) || empty($additionalinfo)) {
@@ -550,26 +550,29 @@ class CobrancaController extends Controller {
 					$totalparts
 				);
 
-				if ($billingitem != null) {
-					if ($cobranca->has_billing_item_of_type($cobrancatipo4char)) {
-
-						$cobranca->update_billing_item_of_type(
-							$cobrancatipo4char,
-							$charged_value,
-							$billingitem_monthrefdate,
-							$additionalinfo,
-							$numberpart,
-							$totalparts
-						);
-					} else {
-						$cobranca->billingitems->push($billingitem);
+			if ($billingitem != null) {
+				if ($billingitem_n < count($cobranca->billingitems)) {
+					$cobranca->update_billing_item_having_seqnumber(
+						$billingitem_n,
+						$cobrancatipo4char,
+						$charged_value,
+						$billingitem_monthrefdate,
+						$additionalinfo,
+						$numberpart,
+						$totalparts
+					);
 				}
-			}
+				else {
+					$cobranca->billingitems->push($billingitem);
+				} // ends inner if
+			} // ends outer if
 
 			// protect against infinite loop
 			if ($billingitem_n > self::LIMIT_WHILE_LOOPS_TO) {
 				break;
 			}
+
+			$billingitem_n += 1;
 
 		} // ends while
 

@@ -1,6 +1,12 @@
 <?php
   $routeparams_toformerbill_asarray = $cobranca->get_routeparams_toformerbill_asarray();
   $routeparams_tonextbill_asarray   = $cobranca->get_routeparams_tonextbill_asarray();
+  $imovel = $cobranca->imovel;
+  // for cobrancasporimovelroute
+  $imovelapelido = '';
+  if ($imovel!=null){
+    $imovelapelido = $imovel->apelido;
+  }
 ?>
 
 <div class="row">
@@ -144,6 +150,10 @@
         @endif
       </td>
 <td>
+  ||
+  <a href="{{ route('cobrancasporimovelroute', $imovelapelido) }}">
+    Histórico
+  </a>
   ||
 </td>
       <td>

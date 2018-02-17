@@ -242,6 +242,37 @@ class Cobranca extends Model {
 
   } // ends add_configured_billing_items()
 
+  public function update_billing_item_having_seqnumber(
+			$billingitem_n,
+      $cobrancatipo4char,
+      $charged_value,
+      $billingitem_monthrefdate,
+      $additionalinfo,
+      $numberpart,
+      $totalparts
+    ) {
+		if ($billingitem_n >= count($this->billingitems)) {
+      return false;
+    }
+    $billingitem = $this->billingitems[$billingitem_n];
+		if ($billingitem == null) {
+      return false;
+    }
+    
+    $was_updated = $billingitem->update_with(
+      $this,
+      $cobrancatipo4char,
+      $charged_value,
+      $billingitem_monthrefdate,
+      $additionalinfo,
+      $numberpart,
+      $totalparts
+    );
+
+    return $was_updated;
+    
+  } // ends update_billing_item_having_seqnumber()
+
   public function add_rent_billingitem() {
 
     $charged_value = $this->contract->get_monthly_value();

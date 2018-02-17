@@ -49,7 +49,8 @@
 
     <div align="center">
       {{ csrf_field() }}
-      <button type="submit" name="button">Confirmar Criação/Edição da Cobrança</button>
+      <button type="submit" name="button">
+        Confirmar Criação/Edição da Cobrança</button>
       <hr>
     </div>
 
