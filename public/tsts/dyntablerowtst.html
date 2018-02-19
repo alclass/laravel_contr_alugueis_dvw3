@@ -1,0 +1,78 @@
+<html>
+<head>
+  <!--link rel="stylesheet"
+    href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+    integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+    crossorigin="anonymous"-->
+
+ <script src="http://code.jquery.com/jquery-3.2.1.min.js"></script>
+</head>
+
+<body>
+
+  <input id='date' type='date'>
+
+<table id="tableid" class="tableclass">
+  <tr>
+    <td>
+      <select class="selectClass" name="selectName">
+        <option value="ALUG">Aluguel</option>
+        <option value="COND">Condomínio</option>
+        <option value="IPTU">IPTU</option>
+      </select>
+    </td>
+    <td>
+
+      <?php
+        $fieldsindex = 0;
+        $form_billingitem_monthrefdate_id    = 'monthrefdate-' . $fieldsindex . '-id';
+        $form_billingitem_monthrefdate_ids[] = $form_billingitem_monthrefdate_id;
+      ?>
+
+      <div class="fb-date form-group">
+        <label for="monthrefdate-0-id" class="fb-date-label"></label>
+
+        <input class="form-control" name="monthrefdate-0-fieldname"
+          id="monthrefdate-0-id" type="date">
+      </div>
+
+    </td>
+
+    <td>
+
+<input id="textinput" name="charged_value-0-fieldname"
+class="form-control input-md" type="text" value="{{ $charged_value }}">
+
+    </td>
+
+  </tr>
+</table>
+
+<input type="button" name="insertButton" class="insertButtonClass"
+  value="Inserir Linha">
+
+
+
+</body>
+
+<script type="text/javascript">
+  $(document).ready(function(){
+    $(".add-row").click(function(){
+      var name = $("#name").val();
+      var email = $("#email").val();
+      var markup = "<tr><td><input type='checkbox' name='record'></td><td>"
+       + name + "</td><td>" + email + "</td></tr>";
+      $("table tbody").append(markup);
+    });
+
+    // Find and remove selected table rows
+    $(".delete-row").click(function(){
+      $("table tbody").find('input[name="record"]').each(function(){
+      	if($(this).is(":checked")){
+          $(this).parents("tr").remove();
+        }
+      });
+    });
+  });
+</script>
+</html>
