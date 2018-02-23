@@ -1,0 +1,72 @@
+<html>
+<head>
+
+  <style>
+
+  </style>
+
+  <script src="http://code.jquery.com/jquery-3.2.1.min.js">
+  </script>
+</head>
+<body>
+
+  <table border='1' id='ct_blah'>
+    <tr>
+      <td>
+        header
+      </td>
+      <td>
+        <input type='text' /></td><td>more stuff
+      </td>
+    </tr>
+    <tr>
+      <td>
+        mid
+      </td>
+      <td>
+        <input type='text' />
+      </td>
+      <td>
+        more stuff
+      </td>
+    </tr>
+    <tr>
+      <td>
+        last
+      </td>
+      <td>
+        <input type='text' />
+      </td>
+      <td>
+        more stuff
+      </td>
+    </tr>
+    <tr class="ui-widget-header">
+      <td>
+        <input value="add" type='button' />
+      </td>
+      <td>
+      </td>
+      <td>
+      </td>
+    </tr>
+
+  </table>
+
+</body>
+
+<script type="text/javascript">
+
+//$("table tr:not('ui-widget-header'):last").clone().appendTo('body');
+
+  $(":button").click(function(){
+    //grab row before the last row
+    var $lastRow = $("[id$=blah] tr:not('.ui-widget-header'):last");
+    var $newRow = $lastRow.clone(); //clone it
+    $newRow.find(":text").val(""); //clear out textbox values
+    $lastRow.after($newRow); //add in the new row at the end
+  });
+
+</script>
+
+</html>

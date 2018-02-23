@@ -1,0 +1,106 @@
+<html>
+<!-- Similar to the previous one, but avoid duplicate with some content on the text fields -->
+<head>
+
+<style>
+.downpanel .active, .downpanel .active * {
+    background:orange
+}
+.downpanel>tbody>tr:first-child .down {
+    display:none
+}
+.downpanel>tbody>tr .down {
+    display:inline;
+    text-indent:-9999px;
+    width:20px;
+    height:20px;
+    background-image:url(http://media.3defy.com/site/images/tutorial/arrow-key-down.png)
+}
+</style>
+<script src="http://code.jquery.com/jquery-3.2.1.min.js">
+</script>
+</head>
+<body>
+<table class="downpanel">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Name</th>
+      <th></th>
+      <th colspan="2">Count</th>
+      <th></th>
+      <th>Unit</th>
+      <th>Category</th>
+      <th>Date1</th>
+      <th>Data2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <button class="down">Copy all data from prev row</button>
+      </td>
+      <td>
+        <input type="text" size="25" name="name">
+      </td>
+      <td>
+        <button class="down">Copy data from prev row from column Name</button>
+      </td>
+      <td>
+        <input type="text" size="3" name="from">
+      </td>
+      <td>
+        <input type="text" size="3" name="to">
+      </td>
+      <td>
+        <button class="down">Copy data from prev row from column Count (From and to)</button>
+      </td>
+      <td>
+        <select name="unit" style="width: 75px;">
+          <option value="szt">szt</option>
+        </select>
+      </td>
+      <td>
+        <input type="text" size="25" name="category">
+      </td>
+      <td>
+        <input type="text" size="10" id="datepicker" name="date1">
+      </td>
+      <td>
+        <input type="text" size="7" name="date2">
+      </td>
+    </tr>
+  </tbody>
+</table>
+</body>
+
+<script type="text/javascript">
+
+$(document).ready(function () {
+  $('.downpanel td:has(.down)').width(20)
+  $('.downpanel').on('keyup', 'tr:last', function keyup() {
+    var $aRow = $(this).closest('tr');
+    if ($aRow.siblings().length >= 10) {
+      $('<tr><th colpsan="7">Too Many</th></tr>').insertAfter($aRow);
+      $('.downpanel').off('keyup', keyup)
+    } else {
+      $aRow.clone(true).removeClass('active')
+        .insertAfter($aRow)
+        .find(':input').val('');
+    }
+  }).on('focus', ':input', function () {
+      $(this).closest('tr').addClass('active')
+        .siblings().removeClass('active')
+  }).on('click', '.down', function () {
+    var inputs = $(this).parent().nextUntil('td:has(.down)').children(':input'),
+      allInputsInRow = $(this).closest('tr').find(':input:not(.down)'),
+      allInputsInPrevRow = $(this).closest('tr').prev().find(':input:not(.down)');
+    console.log( inputs, allInputsInRow, allInputsInPrevRow)
+    inputs.each(function(){
+      var i=allInputsInRow.index(this)
+      allInputsInRow.eq(i).val(allInputsInPrevRow.eq(i).val())
+    })
+  })
+});
+</script>
+</html>
