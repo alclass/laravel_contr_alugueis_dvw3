@@ -1,0 +1,82 @@
+<html>
+<head>
+  <!--link rel="stylesheet"
+    href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+    integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+    crossorigin="anonymous"-->
+
+
+<style>
+
+.downpanel .active, .downpanel .active * {
+    background:orange
+}
+
+</style>
+
+ <script src="http://code.jquery.com/jquery-3.2.1.min.js"></script>
+
+
+</head>
+<body>
+
+<table class="downpanel">
+    <tr>
+        <th>Name</th>
+        <th colspan="2">Count</th>
+        <th>Unit</th>
+        <th>Category</th>
+        <th>Date1</th>
+        <th>Data2</th>
+    </tr>
+    <tr>
+        <td>
+            <input type="text" size="25" name="name">
+        </td>
+        <td>
+            <input type="text" size="3" name="from">
+        </td>
+        <td>
+            <input type="text" size="3" name="to">
+        </td>
+        <td>
+            <select name="unit" style="width: 75px;">
+                <option value="szt">szt</option>
+            </select>
+        </td>
+        <td>
+            <input type="text" size="25" name="category">
+        </td>
+        <td>
+            <input type="text" size="10" id="datepicker" name="date1">
+        </td>
+        <td>
+            <input type="text" size="7" name="date2">
+        </td>
+    </tr>
+</table>
+
+</body>
+
+<script type="text/javascript">
+
+$(document).ready(function () {
+
+  $('.downpanel').on('keyup', 'tr:last', function keyup() {
+      var $aRow = $(this).closest('tr');
+      if ($aRow.siblings().length >= 10) {
+          $('<tr><th colpsan="7">Too Many</th></tr>').insertAfter($aRow);
+          $('.downpanel').off('keyup', keyup)
+      } else {
+          $aRow.clone(true).removeClass('active')
+              .insertAfter($aRow)
+              .find(':input').val('');
+      }
+  }).on('focus', ':input', function () {
+      $(this).closest('tr').addClass('active')
+          .siblings().removeClass('active')
+  });
+});
+
+</script>
+</html>

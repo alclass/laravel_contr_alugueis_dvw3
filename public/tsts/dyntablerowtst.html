@@ -12,10 +12,10 @@
 
   <input id='date' type='date'>
 
-<table id="tableid" class="tableclass">
-  <tr>
+<table id="table-id" class="tableclass">
+  <tr id="tr-id">
     <td>
-      <select class="selectClass" name="selectName">
+      <select id="cobrancatipo-n-id" class="selectClass" name="selectName">
         <option value="ALUG">Aluguel</option>
         <option value="COND">Condomínio</option>
         <option value="IPTU">IPTU</option>
@@ -23,25 +23,27 @@
     </td>
     <td>
 
-      <?php
-        $fieldsindex = 0;
-        $form_billingitem_monthrefdate_id    = 'monthrefdate-' . $fieldsindex . '-id';
-        $form_billingitem_monthrefdate_ids[] = $form_billingitem_monthrefdate_id;
-      ?>
 
-      <div class="fb-date form-group">
-        <label for="monthrefdate-0-id" class="fb-date-label"></label>
-
-        <input class="form-control" name="monthrefdate-0-fieldname"
-          id="monthrefdate-0-id" type="date">
+      <div id="form-group-n-id" class="fb-date form-group">
+        <label for="monthrefdate-n-id" class="fb-date-label"></label>
+        <input class="form-control" name="monthrefdate-n-fieldname"
+          id="monthrefdate-n-id" type="date">
       </div>
+
+
+
 
     </td>
 
     <td>
 
-<input id="textinput" name="charged_value-0-fieldname"
-class="form-control input-md" type="text" value="{{ $charged_value }}">
+      <input name="numberpart-n-fieldname"
+        id="numberpart-n-id" type="integer"
+        maxlength="2">
+
+      <input name="totalparts-n-fieldname"
+        id="totalparts-n-id" type="number"
+        maxlength="2">
 
     </td>
 
@@ -49,13 +51,19 @@ class="form-control input-md" type="text" value="{{ $charged_value }}">
 </table>
 
 <input type="button" name="insertButton" class="insertButtonClass"
-  value="Inserir Linha">
+  value="Copiar Linha" onclick="javascript:inserirLinha()">
 
 
 
 </body>
 
 <script type="text/javascript">
+
+  void function inserirLinha() {
+    $("#tr-id").clone().appendTo("#table-id");
+  }
+
+
   $(document).ready(function(){
     $(".add-row").click(function(){
       var name = $("#name").val();

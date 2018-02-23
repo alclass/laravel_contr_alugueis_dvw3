@@ -1,0 +1,53 @@
+<html>
+<head>
+  <!--link rel="stylesheet"
+    href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+    integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+    crossorigin="anonymous"-->
+
+ <script src="http://code.jquery.com/jquery-3.2.1.min.js"></script>
+</head>
+
+<body>
+<table width="100%" border="0" cellspacing="0"
+ cellpadding="0" id="table-data">
+  <tr>
+    <td>Name</td>
+    <td>Location</td>
+    <td>From</td>
+    <td>To</td>
+    <td>Add</td>
+  </tr>
+  <tr class="tr_clone">
+    <td>
+      <input type="text" autofocus placeholder="who" name="who" >
+    </td>
+    <td>
+      <input type="text" autofocus placeholder="location" name="location" >
+    </td>
+    <td>
+      <input type="text" placeholder="Start Date"
+        name="datepicker_start" class="datepicker">
+    </td>
+    <td>
+      <input type="text" placeholder="End Date" name="datepicker_end" class="datepicker">
+    </td>
+    <td>
+      <input type="button" name="add" value="Add" class="tr_clone_add">
+    </td>
+  </tr>
+</table><!-- /table#table-data -->
+
+</body>
+
+<script type="text/javascript">
+
+  $(".tr_clone_add").live('click', function() {
+    var $tr    = $(this).closest('.tr_clone');
+    var $clone = $tr.clone();
+    $clone.find(':text').val('');
+    $tr.after($clone);
+  });
+
+</script>
+</html>
